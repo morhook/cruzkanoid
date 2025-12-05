@@ -116,8 +116,16 @@ void draw_paddle() {
     draw_filled_rect(paddle.x, paddle.y, paddle.width, PADDLE_HEIGHT, 15);
 }
 
+void erase_paddle(int x) {
+    draw_filled_rect(x, paddle.y, paddle.width, PADDLE_HEIGHT, 0);
+}
+
 void draw_ball() {
     draw_filled_rect(ball.x, ball.y, BALL_SIZE, BALL_SIZE, 14);
+}
+
+void erase_ball(int x, int y) {
+    draw_filled_rect(x, y, BALL_SIZE, BALL_SIZE, 0);
 }
 
 void update_paddle() {
@@ -142,7 +150,7 @@ void update_paddle() {
     }
 }
 
-int check_brick_collision() {
+int check_brick_collision(int *hit_x, int *hit_y) {
     int i, j;
     for (i = 0; i < BRICK_ROWS; i++) {
         for (j = 0; j < BRICK_COLS; j++) {
@@ -154,6 +162,8 @@ int check_brick_collision() {
 
                     bricks[i][j].active = 0;
                     score += 10;
+                    *hit_x = bricks[i][j].x;
+                    *hit_y = bricks[i][j].y;
                     return 1;
                 }
             }
@@ -162,8 +172,10 @@ int check_brick_collision() {
     return 0;
 }
 
-void update_ball() {
+int update_ball(int *brick_hit_x, int *brick_hit_y) {
     int hit_pos;
+    int brick_hit = 0;
+
     ball.x += ball.dx;
     ball.y += ball.dy;
 
@@ -191,8 +203,9 @@ void update_ball() {
     }
 
     // Brick collision
-    if (check_brick_collision()) {
+    if (check_brick_collision(brick_hit_x, brick_hit_y)) {
         ball.dy = -ball.dy;
+        brick_hit = 1;
     }
 
     // Ball lost
@@ -206,6 +219,8 @@ void update_ball() {
             delay(1000);
         }
     }
+
+    return brick_hit;
 }
 
 int check_win() {
@@ -346,15 +361,47 @@ void draw_ui() {
 
 void game_loop() {
     char buffer[50];
+    int old_ball_x, old_ball_y;
+    int old_paddle_x;
+    int first_frame = 1;
+    int brick_hit_x, brick_hit_y;
+    int brick_was_hit;
+
     while (lives > 0 && !check_win()) {
-	clear_screen(0);
+	if (first_frame) {
+	    clear_screen(0);
+	    draw_bricks();
+	    draw_paddle();
+	    draw_ball();
+	    draw_ui();
+	    first_frame = 0;
+	}
 
+	/* Save old positions */
+	old_ball_x = ball.x;
+	old_ball_y = ball.y;
+	old_paddle_x = paddle.x;
+
+	/* Update game state */
 	update_paddle();
-	update_ball();
+	brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
 
-	draw_bricks();
+	/* Erase old positions */
+	erase_ball(old_ball_x, old_ball_y);
+	if (old_paddle_x != paddle.x) {
+	    erase_paddle(old_paddle_x);
+	}
+
+	/* Erase destroyed brick */
+	if (brick_was_hit) {
+	    draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+	}
+
+	/* Draw new positions */
 	draw_paddle();
 	draw_ball();
+
+	/* Redraw UI (borders, score, lives) */
 	draw_ui();
 
 	delay(20);
