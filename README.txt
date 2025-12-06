@@ -1,5 +1,5 @@
 CRUZKANOID DOS CLONE
-==================
+=====================
 
 A classic brick-breaking game written in C for DOS.
 
