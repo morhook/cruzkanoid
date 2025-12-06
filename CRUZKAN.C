@@ -330,8 +330,9 @@ void draw_char(int x, int y, char c, unsigned char color) {
 	for (j = 0; j < 8; j++) {
 	    if (mask & (0x80 >> j)) {
                 put_pixel(x + j, y + i, color);
+            } else {
+                put_pixel(x + j, y + i, 0)
             }
-        }
     }
 }
 
