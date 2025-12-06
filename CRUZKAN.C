@@ -333,6 +333,7 @@ void draw_char(int x, int y, char c, unsigned char color) {
 	    } else {
 		put_pixel(x + j, y + i, 0);
 	    }
+	}
     }
 }
 
