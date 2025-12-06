@@ -53,7 +53,7 @@ void put_pixel(int x, int y, unsigned char color) {
 void draw_rect(int x, int y, int width, int height, unsigned char color) {
     int i, j;
     for (i = 0; i < height; i++) {
-        for (j = 0; j < width; j++) {
+	for (j = 0; j < width; j++) {
             put_pixel(x + j, y + i, color);
         }
     }
@@ -66,7 +66,7 @@ void draw_filled_rect(int x, int y, int width, int height, unsigned char color) 
 void clear_screen(unsigned char color) {
     int i;
     for (i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-        VGA[i] = color;
+	VGA[i] = color;
     }
 }
 
@@ -79,7 +79,7 @@ void init_bricks() {
         for (j = 0; j < BRICK_COLS; j++) {
             bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
-            bricks[i][j].active = 1;
+	    bricks[i][j].active = 1;
             bricks[i][j].color = 40 + i * 10;
         }
     }
@@ -92,7 +92,7 @@ void draw_bricks() {
             if (bricks[i][j].active) {
                 draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
                                BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
-            }
+	    }
         }
     }
 }
@@ -144,7 +144,7 @@ void update_paddle() {
                 }
             }
         }
-        if (key == 27) { // ESC
+	if (key == 27) { // ESC
             exit(0);
         }
     }
@@ -157,7 +157,7 @@ int check_brick_collision(int *hit_x, int *hit_y) {
             if (bricks[i][j].active) {
                 if (ball.x + BALL_SIZE > bricks[i][j].x &&
                     ball.x < bricks[i][j].x + BRICK_WIDTH &&
-                    ball.y + BALL_SIZE > bricks[i][j].y &&
+		    ball.y + BALL_SIZE > bricks[i][j].y &&
                     ball.y < bricks[i][j].y + BRICK_HEIGHT) {
 
                     bricks[i][j].active = 0;
@@ -329,10 +329,10 @@ void draw_char(int x, int y, char c, unsigned char color) {
 	mask = font[i];
 	for (j = 0; j < 8; j++) {
 	    if (mask & (0x80 >> j)) {
-                put_pixel(x + j, y + i, color);
-            } else {
-                put_pixel(x + j, y + i, 0)
-            }
+		put_pixel(x + j, y + i, color);
+	    } else {
+		put_pixel(x + j, y + i, 0);
+	    }
     }
 }
 
