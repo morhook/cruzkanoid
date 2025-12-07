@@ -251,7 +251,7 @@ int check_win() {
 }
 
 unsigned char* get_font_char(char c) {
-    static unsigned char font_data[43][7] = {
+    static unsigned char font_data[47][7] = {
 	/* 0 */ {0x70,0x88,0x88,0x88,0x88,0x88,0x70},
 	/* 1 */ {0x20,0x60,0x20,0x20,0x20,0x20,0x70},
 	/* 2 */ {0x70,0x88,0x08,0x10,0x20,0x40,0xF8},
@@ -294,16 +294,23 @@ unsigned char* get_font_char(char c) {
 	/* x */ {0x00,0x00,0x88,0x50,0x20,0x50,0x88},
 	/* y */ {0x00,0x00,0x88,0x88,0x78,0x08,0x70},
 	/*spc*/ {0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+    /* C */ {0x70,0x88,0x80,0x80,0x80,0x88,0x70},
+    /* D */ {0xF0,0x88,0x88,0x88,0x88,0x88,0xF0},
+    /* K */ {0x88,0x98,0xA8,0xC0,0xA8,0x98,0x88},
+    /* Z */ {0xF8,0x08,0x10,0x20,0x40,0x80,0xF8},
 	/*unk*/ {0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8}
     };
 
     if (c >= '0' && c <= '9') return font_data[c - '0'];
     if (c == ':') return font_data[10];
     if (c == 'A') return font_data[11];
+    if (c == 'C') return font_data[42];
+    if (c == 'D') return font_data[43];
     if (c == 'E') return font_data[12];
     if (c == 'F') return font_data[13];
     if (c == 'G') return font_data[14];
     if (c == 'I') return font_data[15];
+    if (c == 'K') return font_data[44];
     if (c == 'L') return font_data[16];
     if (c == 'M') return font_data[17];
     if (c == 'N') return font_data[18];
@@ -315,6 +322,7 @@ unsigned char* get_font_char(char c) {
     if (c == 'V') return font_data[24];
     if (c == 'W') return font_data[25];
     if (c == 'Y') return font_data[26];
+    if (c == 'Z') return font_data[45];
     if (c == 'a') return font_data[27];
     if (c == 'c') return font_data[28];
     if (c == 'e') return font_data[29];
@@ -330,7 +338,7 @@ unsigned char* get_font_char(char c) {
     if (c == 'x') return font_data[39];
     if (c == 'y') return font_data[40];
     if (c == ' ') return font_data[41];
-    return font_data[42]; /* unknown char */
+    return font_data[46]; /* unknown char */
 }
 
 void draw_char(int x, int y, char c, unsigned char color) {
@@ -374,6 +382,69 @@ void draw_ui() {
 
     sprintf(buffer, "Lives: %d", lives);
     draw_text(200, 5, buffer);
+}
+
+void draw_char_transparent(int x, int y, char c, unsigned char color) {
+    int i, j;
+    unsigned char mask;
+    unsigned char *font;
+
+    font = get_font_char(c);
+
+    for (i = 0; i < 7; i++) {
+        mask = font[i];
+        for (j = 0; j < 8; j++) {
+            if (mask & (0x80 >> j)) {
+                put_pixel(x + j, y + i, color);
+            }
+        }
+    }
+}
+
+void draw_text_transparent(int x, int y, char *text, unsigned char color) {
+    int i = 0;
+    while (text[i] != '\0') {
+        draw_char_transparent(x + i * 8, y, text[i], color);
+        i++;
+    }
+}
+
+void draw_bordered_text(int x, int y, char *text, unsigned char border_color) {
+    // Draw border
+    draw_text_transparent(x - 1, y, text, border_color);
+    draw_text_transparent(x + 1, y, text, border_color);
+    draw_text_transparent(x, y - 1, text, border_color);
+    draw_text_transparent(x, y + 1, text, border_color);
+
+    // Draw black inner text
+    draw_text_transparent(x, y, text, 0);
+}
+
+
+void intro_scene() {
+    char title[] = "CRUZKANOID";
+    int text_width = 10 * 8; /* 10 chars * 8 pixels wide */
+    int x = (SCREEN_WIDTH - text_width) / 2;
+    int y = (SCREEN_HEIGHT - 7) / 2; /* 7 is font height */
+    unsigned char colors[] = {0, 3, 11}; /* Black, Dark Cyan, Light Cyan */
+    int i;
+
+    clear_screen(0);
+
+    /* Fade in */
+    for (i = 0; i < 3; i++) {
+        draw_bordered_text(x, y, title, colors[i]);
+        delay(200);
+    }
+
+    delay(2000); /* Hold for 2 seconds */
+
+    /* Fade out */
+    for (i = 2; i >= 0; i--) {
+        draw_bordered_text(x, y, title, colors[i]);
+        delay(200);
+    }
+    clear_screen(0);
 }
 
 void game_loop() {
@@ -439,12 +510,14 @@ void game_loop() {
 }
 
 int main() {
-    set_mode(0x13); // 320x200 256 color mode
+    set_mode(0x13); /* 320x200 256 color mode */
+
+    intro_scene();
 
     init_game();
     game_loop();
 
-    set_mode(0x03); // Back to text mode
+    set_mode(0x03); /* Back to text mode */
 
     return 0;
 }
