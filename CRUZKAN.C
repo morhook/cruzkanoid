@@ -103,7 +103,7 @@ void init_game() {
     paddle.width = PADDLE_WIDTH;
 
     ball.x = SCREEN_WIDTH / 2;
-    ball.y = paddle.y - BALL_SIZE - 1;
+    ball.y = paddle.y - (BALL_SIZE / 2) - 1;
     ball.dx = 2;
     ball.dy = -2;
 
@@ -120,12 +120,23 @@ void erase_paddle(int x) {
     draw_filled_rect(x, paddle.y, paddle.width, PADDLE_HEIGHT, 0);
 }
 
+void draw_filled_circle(int cx, int cy, int r, unsigned char color) {
+    int x, y;
+    for (y = -r; y <= r; y++) {
+        for (x = -r; x <= r; x++) {
+            if (x * x + y * y <= r * r) {
+                put_pixel(cx + x, cy + y, color);
+            }
+        }
+    }
+}
+
 void draw_ball() {
-    draw_filled_rect(ball.x, ball.y, BALL_SIZE, BALL_SIZE, 14);
+    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 14);
 }
 
 void erase_ball(int x, int y) {
-    draw_filled_rect(x, y, BALL_SIZE, BALL_SIZE, 0);
+    draw_filled_circle(x, y, BALL_SIZE / 2, 0);
 }
 
 void update_paddle() {
@@ -152,14 +163,16 @@ void update_paddle() {
 
 int check_brick_collision(int *hit_x, int *hit_y) {
     int i, j;
+    int radius = BALL_SIZE / 2;
+
     for (i = 0; i < BRICK_ROWS; i++) {
         for (j = 0; j < BRICK_COLS; j++) {
             if (bricks[i][j].active) {
-                if (ball.x + BALL_SIZE > bricks[i][j].x &&
-                    ball.x < bricks[i][j].x + BRICK_WIDTH &&
-		    ball.y + BALL_SIZE > bricks[i][j].y &&
-                    ball.y < bricks[i][j].y + BRICK_HEIGHT) {
-
+                if (ball.x + radius > bricks[i][j].x &&
+                    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
+                    ball.y + radius > bricks[i][j].y &&
+                    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT) {
+                    
                     bricks[i][j].active = 0;
                     score += 10;
                     *hit_x = bricks[i][j].x;
@@ -175,26 +188,28 @@ int check_brick_collision(int *hit_x, int *hit_y) {
 int update_ball(int *brick_hit_x, int *brick_hit_y) {
     int hit_pos;
     int brick_hit = 0;
+    int radius = BALL_SIZE / 2;
 
     ball.x += ball.dx;
     ball.y += ball.dy;
 
     // Wall collision
-    if (ball.x <= 0 || ball.x + BALL_SIZE >= SCREEN_WIDTH) {
+    if (ball.x - radius <= 0 || ball.x + radius >= SCREEN_WIDTH) {
 	ball.dx = -ball.dx;
     }
 
-    if (ball.y <= 0) {
+    if (ball.y - radius <= 0) {
 	ball.dy = -ball.dy;
     }
 
     // Paddle collision
-    if (ball.y + BALL_SIZE >= paddle.y &&
-	ball.y < paddle.y + PADDLE_HEIGHT &&
-	ball.x + BALL_SIZE > paddle.x &&
-	ball.x < paddle.x + paddle.width) {
+    if (ball.x + radius > paddle.x &&
+        ball.x - radius < paddle.x + paddle.width &&
+        ball.y + radius > paddle.y &&
+        ball.y - radius < paddle.y + PADDLE_HEIGHT) {
+
 	ball.dy = -ball.dy;
-	ball.y = paddle.y - BALL_SIZE;
+	ball.y = paddle.y - radius; // Place ball just above paddle
 
 	// Add spin based on where ball hits paddle
 	hit_pos = ball.x - paddle.x;
@@ -213,7 +228,7 @@ int update_ball(int *brick_hit_x, int *brick_hit_y) {
         lives--;
         if (lives > 0) {
             ball.x = paddle.x + paddle.width / 2;
-            ball.y = paddle.y - BALL_SIZE - 1;
+            ball.y = paddle.y - radius - 1;
             ball.dx = 2;
             ball.dy = -2;
             delay(1000);
