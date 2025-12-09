@@ -1,24 +1,31 @@
-# Makefile for DOS Cruzkanoid clone
-# Requires Turbo C or similar DOS C compiler
+# Makefile for Cruzkanoid
+# Designed for Turbo C 3.0 inside a DOS environment (like DOSBox-X)
+# This Makefile can be used for command-line compilation within DOSBox-X,
+# though the primary recommended method involves using the Turbo C IDE (TC.EXE).
 
-# For Turbo C
+# Compiler settings for Turbo C 3.0
 TC = tcc
+# -ml: large memory model
+# -O: optimize
 CFLAGS = -ml -O
-LIBS =
+LIBS = 
 
-# For DJGPP (cross-compile from Linux)
+# Default target: compile cruzkan.exe
+all: cruzkan.exe
+
+cruzkan.exe: CRUZKAN.C
+	$(TC) $(CFLAGS) CRUZKAN.C
+
+# To clean up compiled files
+clean:
+	-del cruzkan.exe
+	-del *.obj
+
+# For cross-compilation from Linux using DJGPP (alternative method)
+# Note: Code may need changes to work with DJGPP
 CC = i586-pc-msdosdjgpp-gcc
 DJGPP_CFLAGS = -Wall -O2
 DJGPP_LIBS = -lpc
 
-# Default target
-cruzkan.exe: cruzkan.c
-	$(TC) $(CFLAGS) cruzkan.c
-
-# For DJGPP compilation
-djgpp: cruzkan.c
-	$(CC) $(DJGPP_CFLAGS) -o cruzkan.exe cruzkan.c $(DJGPP_LIBS)
-
-clean:
-	del cruzkan.exe
-	del *.obj
+djgpp: CRUZKAN.C
+	$(CC) $(DJGPP_CFLAGS) -o cruzkan.exe CRUZKAN.C $(DJGPP_LIBS)
