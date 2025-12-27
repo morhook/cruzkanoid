@@ -54,7 +54,7 @@ void draw_rect(int x, int y, int width, int height, unsigned char color) {
     int i, j;
     for (i = 0; i < height; i++) {
 	for (j = 0; j < width; j++) {
-            put_pixel(x + j, y + i, color);
+	    put_pixel(x + j, y + i, color);
         }
     }
 }
@@ -64,9 +64,11 @@ void draw_filled_rect(int x, int y, int width, int height, unsigned char color) 
 }
 
 void clear_screen(unsigned char color) {
-    int i;
-    for (i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-	VGA[i] = color;
+    int i, j;
+    for (i = 0; i < SCREEN_WIDTH; i++){
+      for(j = 0; j < SCREEN_HEIGHT; j++) {
+	put_pixel(i,j, color);
+      }
     }
 }
 
@@ -77,7 +79,7 @@ void init_bricks() {
 
     for (i = 0; i < BRICK_ROWS; i++) {
         for (j = 0; j < BRICK_COLS; j++) {
-            bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
+	    bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
 	    bricks[i][j].active = 1;
             bricks[i][j].color = 40 + i * 10;
@@ -90,7 +92,7 @@ void draw_bricks() {
     for (i = 0; i < BRICK_ROWS; i++) {
         for (j = 0; j < BRICK_COLS; j++) {
             if (bricks[i][j].active) {
-                draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
+		draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
                                BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
 	    }
         }
@@ -143,21 +145,22 @@ void update_paddle() {
     if (kbhit()) {
         char key = getch();
 	if (key == 0 || key == 0xE0) {
-            key = getch();
-            if (key == 75) { // Left arrow
-                paddle.x -= 5;
-                if (paddle.x < 0) paddle.x = 0;
-            }
-            if (key == 77) { // Right arrow
-                paddle.x += 5;
-                if (paddle.x + paddle.width > SCREEN_WIDTH) {
-                    paddle.x = SCREEN_WIDTH - paddle.width;
-                }
-            }
-        }
+	    key = getch();
+	    if (key == 75) { // Left arrow
+		paddle.x -= 5;
+		if (paddle.x < 0) paddle.x = 0;
+	    }
+	    if (key == 77) { // Right arrow
+		paddle.x += 5;
+		if (paddle.x + paddle.width > SCREEN_WIDTH) {
+		    paddle.x = SCREEN_WIDTH - paddle.width;
+		}
+	    }
+	}
 	if (key == 27) { // ESC
-            exit(0);
-        }
+	    set_mode(0x03);
+	    exit(0);
+	}
     }
 }
 
@@ -166,21 +169,21 @@ int check_brick_collision(int *hit_x, int *hit_y) {
     int radius = BALL_SIZE / 2;
 
     for (i = 0; i < BRICK_ROWS; i++) {
-        for (j = 0; j < BRICK_COLS; j++) {
-            if (bricks[i][j].active) {
-                if (ball.x + radius > bricks[i][j].x &&
-                    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
-                    ball.y + radius > bricks[i][j].y &&
-                    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT) {
-                    
-                    bricks[i][j].active = 0;
-                    score += 10;
-                    *hit_x = bricks[i][j].x;
-                    *hit_y = bricks[i][j].y;
-                    return 1;
-                }
-            }
-        }
+	for (j = 0; j < BRICK_COLS; j++) {
+	    if (bricks[i][j].active) {
+		if (ball.x + radius > bricks[i][j].x &&
+		    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
+		    ball.y + radius > bricks[i][j].y &&
+		    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT) {
+
+		    bricks[i][j].active = 0;
+		    score += 10;
+		    *hit_x = bricks[i][j].x;
+		    *hit_y = bricks[i][j].y;
+		    return 1;
+		}
+	    }
+	}
     }
     return 0;
 }
@@ -204,9 +207,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y) {
 
     // Paddle collision
     if (ball.x + radius > paddle.x &&
-        ball.x - radius < paddle.x + paddle.width &&
-        ball.y + radius > paddle.y &&
-        ball.y - radius < paddle.y + PADDLE_HEIGHT) {
+	ball.x - radius < paddle.x + paddle.width &&
+	ball.y + radius > paddle.y &&
+	ball.y - radius < paddle.y + PADDLE_HEIGHT) {
 
 	ball.dy = -ball.dy;
 	ball.y = paddle.y - radius; // Place ball just above paddle
@@ -219,14 +222,14 @@ int update_ball(int *brick_hit_x, int *brick_hit_y) {
 
     // Brick collision
     if (check_brick_collision(brick_hit_x, brick_hit_y)) {
-        ball.dy = -ball.dy;
-        brick_hit = 1;
+	ball.dy = -ball.dy;
+	brick_hit = 1;
     }
 
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT) {
-        lives--;
-        if (lives > 0) {
+	lives--;
+	if (lives > 0) {
             ball.x = paddle.x + paddle.width / 2;
             ball.y = paddle.y - radius - 1;
             ball.dx = 2;
@@ -244,8 +247,8 @@ int check_win() {
         for (j = 0; j < BRICK_COLS; j++) {
             if (bricks[i][j].active) {
                 return 0;
-            }
-        }
+	    }
+	}
     }
     return 1;
 }
@@ -363,7 +366,7 @@ void draw_char(int x, int y, char c, unsigned char color) {
 void draw_text(int x, int y, char *text) {
     int i = 0;
     while (text[i] != '\0') {
-        draw_char(x + i * 6, y, text[i], 15);
+	draw_char(x + i * 6, y, text[i], 15);
         i++;
     }
 }
@@ -404,7 +407,7 @@ void draw_char_transparent(int x, int y, char c, unsigned char color) {
 void draw_text_transparent(int x, int y, char *text, unsigned char color) {
     int i = 0;
     while (text[i] != '\0') {
-        draw_char_transparent(x + i * 8, y, text[i], color);
+	draw_char_transparent(x + i * 8, y, text[i], color);
         i++;
     }
 }
@@ -441,7 +444,7 @@ void intro_scene() {
 
     /* Fade out */
     for (i = 2; i >= 0; i--) {
-        draw_bordered_text(x, y, title, colors[i]);
+	draw_bordered_text(x, y, title, colors[i]);
         delay(200);
     }
     clear_screen(0);
@@ -504,8 +507,9 @@ void game_loop() {
 
     sprintf(buffer, "Final Score: %d", score);
     draw_text(90, 105, buffer);
-    draw_text(70, 120, "Press any key to exit");
+    draw_text(70, 120, "Press any key to restart");
 
+    delay(10000);
     getch();
 }
 
@@ -514,8 +518,10 @@ int main() {
 
     intro_scene();
 
-    init_game();
-    game_loop();
+    while(1) {
+	init_game();
+	game_loop();
+    }
 
     set_mode(0x03); /* Back to text mode */
 

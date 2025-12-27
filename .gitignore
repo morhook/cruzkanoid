@@ -5,5 +5,7 @@ TURBOC3
 *.bak
 *.BAK
 *.SWP
+*.EXE
+*.OBJ
 tc
 turboc
