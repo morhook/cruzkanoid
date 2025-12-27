@@ -60,13 +60,21 @@ docker run -v $(pwd):/src -w /src dockcross/linux-x86 \
   i586-pc-msdosdjgpp-gcc -o cruzkan.exe cruzkan.c
 ```
 
-## Option 4: Build inside DOSBox-X with compiler
+### 3. Mount and Compile in DOSBox-X
 
-DOSBox-X has better compiler support than regular DOSBox.
+1.  Start `dosbox-x`.
+2.  In the DOSBox-X prompt, mount your project and compiler directories. For example, if your project is in `~/workspace/cruzkanoid` and you extracted Turbo C to `~/dos/tc3`:
 
-```bash
-sudo apt-get install dosbox-x
-```
+    ```
+    mount c ~/workspace/cruzkanoid
+    mount d ~/dos/tc3
+    ```
+
+3.  Navigate to your Turbo C 3.0 `BIN` directory (e.g., `D:\TC\BIN`).
+4.  Run `TC.EXE` to launch the Turbo C IDE.
+5.  Inside the IDE, open the `CRUZKAN.C` file from your mounted project directory (e.g., `C:\CRUZKAN.C`).
+6.  Compile and run the program from within the IDE.
+
 
 ## Testing
 
