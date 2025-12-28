@@ -122,23 +122,58 @@ void erase_paddle(int x) {
     draw_filled_rect(x, paddle.y, paddle.width, PADDLE_HEIGHT, 0);
 }
 
-void draw_filled_circle(int cx, int cy, int r, unsigned char color) {
-    int x, y;
-    for (y = -r; y <= r; y++) {
-        for (x = -r; x <= r; x++) {
-            if (x * x + y * y <= r * r) {
-                put_pixel(cx + x, cy + y, color);
+// Draw a square "ball" centered at (cx,cy).
+// Uses parameter r as half-size (so size = r*2). Draws a lighter border,
+// leaves the four corner pixels empty.
+void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned char border_color) {
+    int i, j;
+    int size = r * 2;
+    int x0 = cx - r;
+    int y0 = cy - r;
+
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            int px = x0 + j;
+            int py = y0 + i;
+
+            // Skip the four corner pixels to give the ball "missing corners".
+            if ((i == 0 && j == 0) || (i == 0 && j == size - 1) ||
+                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1)) {
+                continue;
+            }
+
+            // Border
+            if (i == 0 || j == 0 || i == size - 1 || j == size - 1) {
+                put_pixel(px, py, border_color);
+            } else {
+                // Interior
+                put_pixel(px, py, color);
             }
         }
     }
 }
 
 void draw_ball() {
-    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 14);
+    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x3f);
 }
 
 void erase_ball(int x, int y) {
-    draw_filled_circle(x, y, BALL_SIZE / 2, 0);
+    int i, j;
+    int r = BALL_SIZE / 2;
+    int size = r * 2;
+    int x0 = x - r;
+    int y0 = y - r;
+
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            // Skip the four corners (they were never drawn)
+            if ((i == 0 && j == 0) || (i == 0 && j == size - 1) ||
+                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1)) {
+                continue;
+            }
+            put_pixel(x0 + j, y0 + i, 0);
+        }
+    }
 }
 
 void update_paddle() {
