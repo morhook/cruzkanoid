@@ -2,6 +2,10 @@
 
 A classic brick-breaking game written in C for DOS.
 
+![CruzKanoid Art Box](game-box-design.png)
+
+## Screenshots
+
 ![Cruzkanoid running in DOSBox-X](cruzkanoid_on_dosbox.png)
 
 ## Features
