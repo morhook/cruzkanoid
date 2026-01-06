@@ -13,6 +13,7 @@
 #define BRICK_HEIGHT 10
 #define BRICK_ROWS 5
 #define BRICK_COLS 10
+#define BRICK_GAP 2
 
 typedef struct
 {
@@ -88,14 +89,18 @@ void clear_screen(unsigned char color)
 void init_bricks()
 {
     int i, j;
-    int start_x = 10;
     int start_y = 20;
+    int total_width = (BRICK_COLS * BRICK_WIDTH) + ((BRICK_COLS - 1) * BRICK_GAP);
+    int start_x = (SCREEN_WIDTH - total_width) / 2;
+
+    if (start_x < 0)
+        start_x = 0;
 
     for (i = 0; i < BRICK_ROWS; i++)
     {
         for (j = 0; j < BRICK_COLS; j++)
         {
-            bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
+            bricks[i][j].x = start_x + j * (BRICK_WIDTH + BRICK_GAP);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
             bricks[i][j].active = 1;
             bricks[i][j].color = 40 + i * 10;
