@@ -14,17 +14,20 @@
 #define BRICK_ROWS 5
 #define BRICK_COLS 10
 
-typedef struct {
+typedef struct
+{
     int x, y;
     int dx, dy;
 } Ball;
 
-typedef struct {
+typedef struct
+{
     int x, y;
     int width;
 } Paddle;
 
-typedef struct {
+typedef struct
+{
     int x, y;
     int active;
     int color;
@@ -37,69 +40,87 @@ Paddle paddle;
 int score = 0;
 int lives = 3;
 
-void set_mode(unsigned char mode) {
+void set_mode(unsigned char mode)
+{
     union REGS regs;
     regs.h.ah = 0x00;
     regs.h.al = mode;
     int86(0x10, &regs, &regs);
 }
 
-void put_pixel(int x, int y, unsigned char color) {
-    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+void put_pixel(int x, int y, unsigned char color)
+{
+    if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT)
+    {
         VGA[y * SCREEN_WIDTH + x] = color;
     }
 }
 
-void draw_rect(int x, int y, int width, int height, unsigned char color) {
+void draw_rect(int x, int y, int width, int height, unsigned char color)
+{
     int i, j;
-    for (i = 0; i < height; i++) {
-	for (j = 0; j < width; j++) {
-	    put_pixel(x + j, y + i, color);
+    for (i = 0; i < height; i++)
+    {
+        for (j = 0; j < width; j++)
+        {
+            put_pixel(x + j, y + i, color);
         }
     }
 }
 
-void draw_filled_rect(int x, int y, int width, int height, unsigned char color) {
+void draw_filled_rect(int x, int y, int width, int height, unsigned char color)
+{
     draw_rect(x, y, width, height, color);
 }
 
-void clear_screen(unsigned char color) {
+void clear_screen(unsigned char color)
+{
     int i, j;
-    for (i = 0; i < SCREEN_WIDTH; i++){
-      for(j = 0; j < SCREEN_HEIGHT; j++) {
-	put_pixel(i,j, color);
-      }
+    for (i = 0; i < SCREEN_WIDTH; i++)
+    {
+        for (j = 0; j < SCREEN_HEIGHT; j++)
+        {
+            put_pixel(i, j, color);
+        }
     }
 }
 
-void init_bricks() {
+void init_bricks()
+{
     int i, j;
     int start_x = 10;
     int start_y = 20;
 
-    for (i = 0; i < BRICK_ROWS; i++) {
-        for (j = 0; j < BRICK_COLS; j++) {
-	    bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
+    for (i = 0; i < BRICK_ROWS; i++)
+    {
+        for (j = 0; j < BRICK_COLS; j++)
+        {
+            bricks[i][j].x = start_x + j * (BRICK_WIDTH + 2);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
-	    bricks[i][j].active = 1;
+            bricks[i][j].active = 1;
             bricks[i][j].color = 40 + i * 10;
         }
     }
 }
 
-void draw_bricks() {
+void draw_bricks()
+{
     int i, j;
-    for (i = 0; i < BRICK_ROWS; i++) {
-        for (j = 0; j < BRICK_COLS; j++) {
-            if (bricks[i][j].active) {
-		draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
-                               BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
-	    }
+    for (i = 0; i < BRICK_ROWS; i++)
+    {
+        for (j = 0; j < BRICK_COLS; j++)
+        {
+            if (bricks[i][j].active)
+            {
+                draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
+                                 BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
+            }
         }
     }
 }
 
-void init_game() {
+void init_game()
+{
     paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
@@ -114,38 +135,47 @@ void init_game() {
     lives = 3;
 }
 
-void draw_paddle() {
+void draw_paddle()
+{
     draw_filled_rect(paddle.x, paddle.y, paddle.width, PADDLE_HEIGHT, 15);
 }
 
-void erase_paddle(int x) {
+void erase_paddle(int x)
+{
     draw_filled_rect(x, paddle.y, paddle.width, PADDLE_HEIGHT, 0);
 }
 
 // Draw a square "ball" centered at (cx,cy).
 // Uses parameter r as half-size (so size = r*2). Draws a lighter border,
 // leaves the four corner pixels empty.
-void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned char border_color) {
+void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned char border_color)
+{
     int i, j;
     int size = r * 2;
     int x0 = cx - r;
     int y0 = cy - r;
 
-    for (i = 0; i < size; i++) {
-        for (j = 0; j < size; j++) {
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < size; j++)
+        {
             int px = x0 + j;
             int py = y0 + i;
 
             // Skip the four corner pixels to give the ball "missing corners".
             if ((i == 0 && j == 0) || (i == 0 && j == size - 1) ||
-                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1)) {
+                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1))
+            {
                 continue;
             }
 
             // Border
-            if (i == 0 || j == 0 || i == size - 1 || j == size - 1) {
+            if (i == 0 || j == 0 || i == size - 1 || j == size - 1)
+            {
                 put_pixel(px, py, border_color);
-            } else {
+            }
+            else
+            {
                 // Interior
                 put_pixel(px, py, color);
             }
@@ -153,22 +183,27 @@ void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned cha
     }
 }
 
-void draw_ball() {
+void draw_ball()
+{
     draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x3f);
 }
 
-void erase_ball(int x, int y) {
+void erase_ball(int x, int y)
+{
     int i, j;
     int r = BALL_SIZE / 2;
     int size = r * 2;
     int x0 = x - r;
     int y0 = y - r;
 
-    for (i = 0; i < size; i++) {
-        for (j = 0; j < size; j++) {
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < size; j++)
+        {
             // Skip the four corners (they were never drawn)
             if ((i == 0 && j == 0) || (i == 0 && j == size - 1) ||
-                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1)) {
+                (i == size - 1 && j == 0) || (i == size - 1 && j == size - 1))
+            {
                 continue;
             }
             put_pixel(x0 + j, y0 + i, 0);
@@ -176,54 +211,68 @@ void erase_ball(int x, int y) {
     }
 }
 
-void update_paddle() {
-    if (kbhit()) {
+void update_paddle()
+{
+    if (kbhit())
+    {
         char key = getch();
-	if (key == 0 || key == 0xE0) {
-	    key = getch();
-	    if (key == 75) { // Left arrow
-		paddle.x -= 5;
-		if (paddle.x < 0) paddle.x = 0;
-	    }
-	    if (key == 77) { // Right arrow
-		paddle.x += 5;
-		if (paddle.x + paddle.width > SCREEN_WIDTH) {
-		    paddle.x = SCREEN_WIDTH - paddle.width;
-		}
-	    }
-	}
-	if (key == 27) { // ESC
-	    set_mode(0x03);
-	    exit(0);
-	}
+        if (key == 0 || key == 0xE0)
+        {
+            key = getch();
+            if (key == 75)
+            { // Left arrow
+                paddle.x -= 5;
+                if (paddle.x < 0)
+                    paddle.x = 0;
+            }
+            if (key == 77)
+            { // Right arrow
+                paddle.x += 5;
+                if (paddle.x + paddle.width > SCREEN_WIDTH)
+                {
+                    paddle.x = SCREEN_WIDTH - paddle.width;
+                }
+            }
+        }
+        if (key == 27)
+        { // ESC
+            set_mode(0x03);
+            exit(0);
+        }
     }
 }
 
-int check_brick_collision(int *hit_x, int *hit_y) {
+int check_brick_collision(int *hit_x, int *hit_y)
+{
     int i, j;
     int radius = BALL_SIZE / 2;
 
-    for (i = 0; i < BRICK_ROWS; i++) {
-	for (j = 0; j < BRICK_COLS; j++) {
-	    if (bricks[i][j].active) {
-		if (ball.x + radius > bricks[i][j].x &&
-		    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
-		    ball.y + radius > bricks[i][j].y &&
-		    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT) {
+    for (i = 0; i < BRICK_ROWS; i++)
+    {
+        for (j = 0; j < BRICK_COLS; j++)
+        {
+            if (bricks[i][j].active)
+            {
+                if (ball.x + radius > bricks[i][j].x &&
+                    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
+                    ball.y + radius > bricks[i][j].y &&
+                    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT)
+                {
 
-		    bricks[i][j].active = 0;
-		    score += 10;
-		    *hit_x = bricks[i][j].x;
-		    *hit_y = bricks[i][j].y;
-		    return 1;
-		}
-	    }
-	}
+                    bricks[i][j].active = 0;
+                    score += 10;
+                    *hit_x = bricks[i][j].x;
+                    *hit_y = bricks[i][j].y;
+                    return 1;
+                }
+            }
+        }
     }
     return 0;
 }
 
-int update_ball(int *brick_hit_x, int *brick_hit_y) {
+int update_ball(int *brick_hit_x, int *brick_hit_y)
+{
     int hit_pos;
     int brick_hit = 0;
     int radius = BALL_SIZE / 2;
@@ -232,39 +281,46 @@ int update_ball(int *brick_hit_x, int *brick_hit_y) {
     ball.y += ball.dy;
 
     // Wall collision
-    if (ball.x - radius <= 0 || ball.x + radius >= SCREEN_WIDTH) {
-	ball.dx = -ball.dx;
+    if (ball.x - radius <= 0 || ball.x + radius >= SCREEN_WIDTH)
+    {
+        ball.dx = -ball.dx;
     }
 
-    if (ball.y - radius <= 0) {
-	ball.dy = -ball.dy;
+    if (ball.y - radius <= 0)
+    {
+        ball.dy = -ball.dy;
     }
 
     // Paddle collision
     if (ball.x + radius > paddle.x &&
-	ball.x - radius < paddle.x + paddle.width &&
-	ball.y + radius > paddle.y &&
-	ball.y - radius < paddle.y + PADDLE_HEIGHT) {
+        ball.x - radius < paddle.x + paddle.width &&
+        ball.y + radius > paddle.y &&
+        ball.y - radius < paddle.y + PADDLE_HEIGHT)
+    {
 
-	ball.dy = -ball.dy;
-	ball.y = paddle.y - radius; // Place ball just above paddle
+        ball.dy = -ball.dy;
+        ball.y = paddle.y - radius; // Place ball just above paddle
 
-	// Add spin based on where ball hits paddle
-	hit_pos = ball.x - paddle.x;
-	ball.dx = (hit_pos - paddle.width / 2) / 5;
-	if (ball.dx == 0) ball.dx = 1;
+        // Add spin based on where ball hits paddle
+        hit_pos = ball.x - paddle.x;
+        ball.dx = (hit_pos - paddle.width / 2) / 5;
+        if (ball.dx == 0)
+            ball.dx = 1;
     }
 
     // Brick collision
-    if (check_brick_collision(brick_hit_x, brick_hit_y)) {
-	ball.dy = -ball.dy;
-	brick_hit = 1;
+    if (check_brick_collision(brick_hit_x, brick_hit_y))
+    {
+        ball.dy = -ball.dy;
+        brick_hit = 1;
     }
 
     // Ball lost
-    if (ball.y >= SCREEN_HEIGHT) {
-	lives--;
-	if (lives > 0) {
+    if (ball.y >= SCREEN_HEIGHT)
+    {
+        lives--;
+        if (lives > 0)
+        {
             ball.x = paddle.x + paddle.width / 2;
             ball.y = paddle.y - radius - 1;
             ball.dx = 2;
@@ -276,137 +332,187 @@ int update_ball(int *brick_hit_x, int *brick_hit_y) {
     return brick_hit;
 }
 
-int check_win() {
+int check_win()
+{
     int i, j;
-    for (i = 0; i < BRICK_ROWS; i++) {
-        for (j = 0; j < BRICK_COLS; j++) {
-            if (bricks[i][j].active) {
+    for (i = 0; i < BRICK_ROWS; i++)
+    {
+        for (j = 0; j < BRICK_COLS; j++)
+        {
+            if (bricks[i][j].active)
+            {
                 return 0;
-	    }
-	}
+            }
+        }
     }
     return 1;
 }
 
-unsigned char* get_font_char(char c) {
+unsigned char *get_font_char(char c)
+{
     static unsigned char font_data[47][7] = {
-	/* 0 */ {0x70,0x88,0x88,0x88,0x88,0x88,0x70},
-	/* 1 */ {0x20,0x60,0x20,0x20,0x20,0x20,0x70},
-	/* 2 */ {0x70,0x88,0x08,0x10,0x20,0x40,0xF8},
-	/* 3 */ {0x70,0x88,0x08,0x30,0x08,0x88,0x70},
-	/* 4 */ {0x10,0x30,0x50,0x90,0xF8,0x10,0x10},
-	/* 5 */ {0xF8,0x80,0xF0,0x08,0x08,0x88,0x70},
-	/* 6 */ {0x30,0x40,0x80,0xF0,0x88,0x88,0x70},
-	/* 7 */ {0xF8,0x08,0x10,0x20,0x40,0x40,0x40},
-	/* 8 */ {0x70,0x88,0x88,0x70,0x88,0x88,0x70},
-	/* 9 */ {0x70,0x88,0x88,0x78,0x08,0x10,0x60},
-	/* : */ {0x00,0x20,0x00,0x00,0x00,0x20,0x00},
-	/* A */ {0x20,0x50,0x88,0x88,0xF8,0x88,0x88},
-	/* E */ {0xF8,0x80,0x80,0xF0,0x80,0x80,0xF8},
-	/* F */ {0xF8,0x80,0x80,0xF0,0x80,0x80,0x80},
-	/* G */ {0x70,0x88,0x80,0xB8,0x88,0x88,0x70},
-	/* I */ {0x70,0x20,0x20,0x20,0x20,0x20,0x70},
-	/* L */ {0x80,0x80,0x80,0x80,0x80,0x80,0xF8},
-	/* M */ {0x88,0xD8,0xA8,0xA8,0x88,0x88,0x88},
-	/* N */ {0x88,0x88,0xC8,0xA8,0x98,0x88,0x88},
-	/* O */ {0x70,0x88,0x88,0x88,0x88,0x88,0x70},
-	/* P */ {0xF0,0x88,0x88,0xF0,0x80,0x80,0x80},
-	/* R */ {0xF0,0x88,0x88,0xF0,0x90,0x88,0x88},
-	/* S */ {0x70,0x88,0x80,0x70,0x08,0x88,0x70},
-	/* U */ {0x88,0x88,0x88,0x88,0x88,0x88,0x70},
-	/* V */ {0x88,0x88,0x88,0x88,0x50,0x50,0x20},
-	/* W */ {0x88,0x88,0x88,0xA8,0xA8,0xD8,0x88},
-	/* Y */ {0x88,0x88,0x50,0x20,0x20,0x20,0x20},
-	/* a */ {0x00,0x00,0x70,0x08,0x78,0x88,0x78},
-	/* c */ {0x00,0x00,0x70,0x80,0x80,0x88,0x70},
-	/* e */ {0x00,0x00,0x70,0x88,0xF8,0x80,0x70},
-	/* i */ {0x20,0x00,0x60,0x20,0x20,0x20,0x70},
-	/* k */ {0x80,0x80,0x90,0xA0,0xE0,0x90,0x88},
-	/* l */ {0x60,0x20,0x20,0x20,0x20,0x20,0x70},
-	/* n */ {0x00,0x00,0xB0,0xC8,0x88,0x88,0x88},
-	/* o */ {0x00,0x00,0x70,0x88,0x88,0x88,0x70},
-	/* r */ {0x00,0x00,0x68,0x70,0x40,0x40,0x40},
-	/* s */ {0x00,0x00,0x70,0x80,0x70,0x08,0xF0},
-	/* t */ {0x20,0x20,0x70,0x20,0x20,0x20,0x18},
-	/* v */ {0x00,0x00,0x88,0x88,0x88,0x50,0x20},
-	/* x */ {0x00,0x00,0x88,0x50,0x20,0x50,0x88},
-	/* y */ {0x00,0x00,0x88,0x88,0x78,0x08,0x70},
-	/*spc*/ {0x00,0x00,0x00,0x00,0x00,0x00,0x00},
-    /* C */ {0x70,0x88,0x80,0x80,0x80,0x88,0x70},
-    /* D */ {0xF0,0x88,0x88,0x88,0x88,0x88,0xF0},
-    /* K */ {0x88,0x98,0xA8,0xC0,0xA8,0x98,0x88},
-    /* Z */ {0xF8,0x08,0x10,0x20,0x40,0x80,0xF8},
-	/*unk*/ {0xF8,0xF8,0xF8,0xF8,0xF8,0xF8,0xF8}
-    };
+        /* 0 */ {0x70, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
+        /* 1 */ {0x20, 0x60, 0x20, 0x20, 0x20, 0x20, 0x70},
+        /* 2 */ {0x70, 0x88, 0x08, 0x10, 0x20, 0x40, 0xF8},
+        /* 3 */ {0x70, 0x88, 0x08, 0x30, 0x08, 0x88, 0x70},
+        /* 4 */ {0x10, 0x30, 0x50, 0x90, 0xF8, 0x10, 0x10},
+        /* 5 */ {0xF8, 0x80, 0xF0, 0x08, 0x08, 0x88, 0x70},
+        /* 6 */ {0x30, 0x40, 0x80, 0xF0, 0x88, 0x88, 0x70},
+        /* 7 */ {0xF8, 0x08, 0x10, 0x20, 0x40, 0x40, 0x40},
+        /* 8 */ {0x70, 0x88, 0x88, 0x70, 0x88, 0x88, 0x70},
+        /* 9 */ {0x70, 0x88, 0x88, 0x78, 0x08, 0x10, 0x60},
+        /* : */ {0x00, 0x20, 0x00, 0x00, 0x00, 0x20, 0x00},
+        /* A */ {0x20, 0x50, 0x88, 0x88, 0xF8, 0x88, 0x88},
+        /* E */ {0xF8, 0x80, 0x80, 0xF0, 0x80, 0x80, 0xF8},
+        /* F */ {0xF8, 0x80, 0x80, 0xF0, 0x80, 0x80, 0x80},
+        /* G */ {0x70, 0x88, 0x80, 0xB8, 0x88, 0x88, 0x70},
+        /* I */ {0x70, 0x20, 0x20, 0x20, 0x20, 0x20, 0x70},
+        /* L */ {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xF8},
+        /* M */ {0x88, 0xD8, 0xA8, 0xA8, 0x88, 0x88, 0x88},
+        /* N */ {0x88, 0x88, 0xC8, 0xA8, 0x98, 0x88, 0x88},
+        /* O */ {0x70, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
+        /* P */ {0xF0, 0x88, 0x88, 0xF0, 0x80, 0x80, 0x80},
+        /* R */ {0xF0, 0x88, 0x88, 0xF0, 0x90, 0x88, 0x88},
+        /* S */ {0x70, 0x88, 0x80, 0x70, 0x08, 0x88, 0x70},
+        /* U */ {0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
+        /* V */ {0x88, 0x88, 0x88, 0x88, 0x50, 0x50, 0x20},
+        /* W */ {0x88, 0x88, 0x88, 0xA8, 0xA8, 0xD8, 0x88},
+        /* Y */ {0x88, 0x88, 0x50, 0x20, 0x20, 0x20, 0x20},
+        /* a */ {0x00, 0x00, 0x70, 0x08, 0x78, 0x88, 0x78},
+        /* c */ {0x00, 0x00, 0x70, 0x80, 0x80, 0x88, 0x70},
+        /* e */ {0x00, 0x00, 0x70, 0x88, 0xF8, 0x80, 0x70},
+        /* i */ {0x20, 0x00, 0x60, 0x20, 0x20, 0x20, 0x70},
+        /* k */ {0x80, 0x80, 0x90, 0xA0, 0xE0, 0x90, 0x88},
+        /* l */ {0x60, 0x20, 0x20, 0x20, 0x20, 0x20, 0x70},
+        /* n */ {0x00, 0x00, 0xB0, 0xC8, 0x88, 0x88, 0x88},
+        /* o */ {0x00, 0x00, 0x70, 0x88, 0x88, 0x88, 0x70},
+        /* r */ {0x00, 0x00, 0x68, 0x70, 0x40, 0x40, 0x40},
+        /* s */ {0x00, 0x00, 0x70, 0x80, 0x70, 0x08, 0xF0},
+        /* t */ {0x20, 0x20, 0x70, 0x20, 0x20, 0x20, 0x18},
+        /* v */ {0x00, 0x00, 0x88, 0x88, 0x88, 0x50, 0x20},
+        /* x */ {0x00, 0x00, 0x88, 0x50, 0x20, 0x50, 0x88},
+        /* y */ {0x00, 0x00, 0x88, 0x88, 0x78, 0x08, 0x70},
+        /*spc*/ {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+        /* C */ {0x70, 0x88, 0x80, 0x80, 0x80, 0x88, 0x70},
+        /* D */ {0xF0, 0x88, 0x88, 0x88, 0x88, 0x88, 0xF0},
+        /* K */ {0x88, 0x98, 0xA8, 0xC0, 0xA8, 0x98, 0x88},
+        /* Z */ {0xF8, 0x08, 0x10, 0x20, 0x40, 0x80, 0xF8},
+        /*unk*/ {0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8}};
 
-    if (c >= '0' && c <= '9') return font_data[c - '0'];
-    if (c == ':') return font_data[10];
-    if (c == 'A') return font_data[11];
-    if (c == 'C') return font_data[42];
-    if (c == 'D') return font_data[43];
-    if (c == 'E') return font_data[12];
-    if (c == 'F') return font_data[13];
-    if (c == 'G') return font_data[14];
-    if (c == 'I') return font_data[15];
-    if (c == 'K') return font_data[44];
-    if (c == 'L') return font_data[16];
-    if (c == 'M') return font_data[17];
-    if (c == 'N') return font_data[18];
-    if (c == 'O') return font_data[19];
-    if (c == 'P') return font_data[20];
-    if (c == 'R') return font_data[21];
-    if (c == 'S') return font_data[22];
-    if (c == 'U') return font_data[23];
-    if (c == 'V') return font_data[24];
-    if (c == 'W') return font_data[25];
-    if (c == 'Y') return font_data[26];
-    if (c == 'Z') return font_data[45];
-    if (c == 'a') return font_data[27];
-    if (c == 'c') return font_data[28];
-    if (c == 'e') return font_data[29];
-    if (c == 'i') return font_data[30];
-    if (c == 'k') return font_data[31];
-    if (c == 'l') return font_data[32];
-    if (c == 'n') return font_data[33];
-    if (c == 'o') return font_data[34];
-    if (c == 'r') return font_data[35];
-    if (c == 's') return font_data[36];
-    if (c == 't') return font_data[37];
-    if (c == 'v') return font_data[38];
-    if (c == 'x') return font_data[39];
-    if (c == 'y') return font_data[40];
-    if (c == ' ') return font_data[41];
+    if (c >= '0' && c <= '9')
+        return font_data[c - '0'];
+    if (c == ':')
+        return font_data[10];
+    if (c == 'A')
+        return font_data[11];
+    if (c == 'C')
+        return font_data[42];
+    if (c == 'D')
+        return font_data[43];
+    if (c == 'E')
+        return font_data[12];
+    if (c == 'F')
+        return font_data[13];
+    if (c == 'G')
+        return font_data[14];
+    if (c == 'I')
+        return font_data[15];
+    if (c == 'K')
+        return font_data[44];
+    if (c == 'L')
+        return font_data[16];
+    if (c == 'M')
+        return font_data[17];
+    if (c == 'N')
+        return font_data[18];
+    if (c == 'O')
+        return font_data[19];
+    if (c == 'P')
+        return font_data[20];
+    if (c == 'R')
+        return font_data[21];
+    if (c == 'S')
+        return font_data[22];
+    if (c == 'U')
+        return font_data[23];
+    if (c == 'V')
+        return font_data[24];
+    if (c == 'W')
+        return font_data[25];
+    if (c == 'Y')
+        return font_data[26];
+    if (c == 'Z')
+        return font_data[45];
+    if (c == 'a')
+        return font_data[27];
+    if (c == 'c')
+        return font_data[28];
+    if (c == 'e')
+        return font_data[29];
+    if (c == 'i')
+        return font_data[30];
+    if (c == 'k')
+        return font_data[31];
+    if (c == 'l')
+        return font_data[32];
+    if (c == 'n')
+        return font_data[33];
+    if (c == 'o')
+        return font_data[34];
+    if (c == 'r')
+        return font_data[35];
+    if (c == 's')
+        return font_data[36];
+    if (c == 't')
+        return font_data[37];
+    if (c == 'v')
+        return font_data[38];
+    if (c == 'x')
+        return font_data[39];
+    if (c == 'y')
+        return font_data[40];
+    if (c == ' ')
+        return font_data[41];
     return font_data[46]; /* unknown char */
 }
 
-void draw_char(int x, int y, char c, unsigned char color) {
+void draw_char(int x, int y, char c, unsigned char color)
+{
     int i, j;
     unsigned char mask;
     unsigned char *font;
 
     font = get_font_char(c);
 
-    for (i = 0; i < 7; i++) {
-	mask = font[i];
-	for (j = 0; j < 8; j++) {
-	    if (mask & (0x80 >> j)) {
-		put_pixel(x + j, y + i, color);
-	    } else {
-		put_pixel(x + j, y + i, 0);
-	    }
-	}
+    for (i = 0; i < 7; i++)
+    {
+        mask = font[i];
+        for (j = 0; j < 8; j++)
+        {
+            if (mask & (0x80 >> j))
+            {
+                put_pixel(x + j, y + i, color);
+            }
+            else
+            {
+                put_pixel(x + j, y + i, 0);
+            }
+        }
     }
 }
 
-void draw_text(int x, int y, char *text) {
+void draw_text(int x, int y, char *text)
+{
     int i = 0;
-    while (text[i] != '\0') {
-	draw_char(x + i * 6, y, text[i], 15);
+    while (text[i] != '\0')
+    {
+        draw_char(x + i * 6, y, text[i], 15);
         i++;
     }
 }
 
-void draw_ui() {
+void draw_ui()
+{
     char buffer[50];
 
     // Draw border
@@ -422,32 +528,39 @@ void draw_ui() {
     draw_text(200, 5, buffer);
 }
 
-void draw_char_transparent(int x, int y, char c, unsigned char color) {
+void draw_char_transparent(int x, int y, char c, unsigned char color)
+{
     int i, j;
     unsigned char mask;
     unsigned char *font;
 
     font = get_font_char(c);
 
-    for (i = 0; i < 7; i++) {
+    for (i = 0; i < 7; i++)
+    {
         mask = font[i];
-        for (j = 0; j < 8; j++) {
-            if (mask & (0x80 >> j)) {
+        for (j = 0; j < 8; j++)
+        {
+            if (mask & (0x80 >> j))
+            {
                 put_pixel(x + j, y + i, color);
             }
         }
     }
 }
 
-void draw_text_transparent(int x, int y, char *text, unsigned char color) {
+void draw_text_transparent(int x, int y, char *text, unsigned char color)
+{
     int i = 0;
-    while (text[i] != '\0') {
-	draw_char_transparent(x + i * 8, y, text[i], color);
+    while (text[i] != '\0')
+    {
+        draw_char_transparent(x + i * 8, y, text[i], color);
         i++;
     }
 }
 
-void draw_bordered_text(int x, int y, char *text, unsigned char border_color) {
+void draw_bordered_text(int x, int y, char *text, unsigned char border_color)
+{
     // Draw border
     draw_text_transparent(x - 1, y, text, border_color);
     draw_text_transparent(x + 1, y, text, border_color);
@@ -458,19 +571,20 @@ void draw_bordered_text(int x, int y, char *text, unsigned char border_color) {
     draw_text_transparent(x, y, text, 0);
 }
 
-
-void intro_scene() {
+void intro_scene()
+{
     char title[] = "CRUZKANOID";
     int text_width = 10 * 8; /* 10 chars * 8 pixels wide */
     int x = (SCREEN_WIDTH - text_width) / 2;
-    int y = (SCREEN_HEIGHT - 7) / 2; /* 7 is font height */
+    int y = (SCREEN_HEIGHT - 7) / 2;     /* 7 is font height */
     unsigned char colors[] = {0, 3, 11}; /* Black, Dark Cyan, Light Cyan */
     int i;
 
     clear_screen(0);
 
     /* Fade in */
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++)
+    {
         draw_bordered_text(x, y, title, colors[i]);
         delay(200);
     }
@@ -478,14 +592,16 @@ void intro_scene() {
     delay(2000); /* Hold for 2 seconds */
 
     /* Fade out */
-    for (i = 2; i >= 0; i--) {
-	draw_bordered_text(x, y, title, colors[i]);
+    for (i = 2; i >= 0; i--)
+    {
+        draw_bordered_text(x, y, title, colors[i]);
         delay(200);
     }
     clear_screen(0);
 }
 
-void game_loop() {
+void game_loop()
+{
     char buffer[50];
     int old_ball_x, old_ball_y;
     int old_paddle_x;
@@ -493,51 +609,58 @@ void game_loop() {
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
 
-    while (lives > 0 && !check_win()) {
-	if (first_frame) {
-	    clear_screen(0);
-	    draw_bricks();
-	    draw_paddle();
-	    draw_ball();
-	    draw_ui();
-	    first_frame = 0;
-	}
+    while (lives > 0 && !check_win())
+    {
+        if (first_frame)
+        {
+            clear_screen(0);
+            draw_bricks();
+            draw_paddle();
+            draw_ball();
+            draw_ui();
+            first_frame = 0;
+        }
 
-	/* Save old positions */
-	old_ball_x = ball.x;
-	old_ball_y = ball.y;
-	old_paddle_x = paddle.x;
+        /* Save old positions */
+        old_ball_x = ball.x;
+        old_ball_y = ball.y;
+        old_paddle_x = paddle.x;
 
-	/* Update game state */
-	update_paddle();
-	brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
+        /* Update game state */
+        update_paddle();
+        brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
 
-	/* Erase old positions */
-	erase_ball(old_ball_x, old_ball_y);
-	if (old_paddle_x != paddle.x) {
-	    erase_paddle(old_paddle_x);
-	}
+        /* Erase old positions */
+        erase_ball(old_ball_x, old_ball_y);
+        if (old_paddle_x != paddle.x)
+        {
+            erase_paddle(old_paddle_x);
+        }
 
-	/* Erase destroyed brick */
-	if (brick_was_hit) {
-	    draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
-	}
+        /* Erase destroyed brick */
+        if (brick_was_hit)
+        {
+            draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+        }
 
-	/* Draw new positions */
-	draw_paddle();
-	draw_ball();
+        /* Draw new positions */
+        draw_paddle();
+        draw_ball();
 
-	/* Redraw UI (borders, score, lives) */
-	draw_ui();
+        /* Redraw UI (borders, score, lives) */
+        draw_ui();
 
-	delay(20);
+        delay(20);
     }
 
     clear_screen(0);
-    if (lives == 0) {
-	draw_text(110, 90, "GAME OVER!");
-    } else {
-	draw_text(120, 90, "YOU WIN!");
+    if (lives == 0)
+    {
+        draw_text(110, 90, "GAME OVER!");
+    }
+    else
+    {
+        draw_text(120, 90, "YOU WIN!");
     }
 
     sprintf(buffer, "Final Score: %d", score);
@@ -548,14 +671,16 @@ void game_loop() {
     getch();
 }
 
-int main() {
+int main()
+{
     set_mode(0x13); /* 320x200 256 color mode */
 
     intro_scene();
 
-    while(1) {
-	init_game();
-	game_loop();
+    while (1)
+    {
+        init_game();
+        game_loop();
     }
 
     set_mode(0x03); /* Back to text mode */
