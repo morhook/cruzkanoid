@@ -14,6 +14,8 @@
 #define BRICK_ROWS 5
 #define BRICK_COLS 10
 #define BRICK_GAP 2
+#define BRICK_PALETTE_START 32
+#define BRICK_PALETTE_STRIDE 3
 
 typedef struct
 {
@@ -40,6 +42,43 @@ Ball ball;
 Paddle paddle;
 int score = 0;
 int lives = 3;
+
+void set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
+{
+    outp(0x3C8, index);
+    outp(0x3C9, r);
+    outp(0x3C9, g);
+    outp(0x3C9, b);
+}
+
+void init_brick_palette()
+{
+    /* Each row gets 3 shades: base, light, dark (RGB values are 0-63). */
+    /* Row 0: red */
+    set_palette_color(BRICK_PALETTE_START + 0 * BRICK_PALETTE_STRIDE + 0, 50, 5, 5);
+    set_palette_color(BRICK_PALETTE_START + 0 * BRICK_PALETTE_STRIDE + 1, 63, 22, 18);
+    set_palette_color(BRICK_PALETTE_START + 0 * BRICK_PALETTE_STRIDE + 2, 28, 2, 2);
+
+    /* Row 1: green */
+    set_palette_color(BRICK_PALETTE_START + 1 * BRICK_PALETTE_STRIDE + 0, 8, 50, 10);
+    set_palette_color(BRICK_PALETTE_START + 1 * BRICK_PALETTE_STRIDE + 1, 28, 63, 26);
+    set_palette_color(BRICK_PALETTE_START + 1 * BRICK_PALETTE_STRIDE + 2, 4, 28, 5);
+
+    /* Row 2: magenta */
+    set_palette_color(BRICK_PALETTE_START + 2 * BRICK_PALETTE_STRIDE + 0, 48, 10, 48);
+    set_palette_color(BRICK_PALETTE_START + 2 * BRICK_PALETTE_STRIDE + 1, 63, 26, 63);
+    set_palette_color(BRICK_PALETTE_START + 2 * BRICK_PALETTE_STRIDE + 2, 26, 6, 26);
+
+    /* Row 3: yellow-green */
+    set_palette_color(BRICK_PALETTE_START + 3 * BRICK_PALETTE_STRIDE + 0, 42, 52, 8);
+    set_palette_color(BRICK_PALETTE_START + 3 * BRICK_PALETTE_STRIDE + 1, 60, 63, 24);
+    set_palette_color(BRICK_PALETTE_START + 3 * BRICK_PALETTE_STRIDE + 2, 22, 28, 4);
+
+    /* Row 4: blue */
+    set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 0, 10, 20, 55);
+    set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 1, 28, 40, 63);
+    set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 2, 5, 10, 30);
+}
 
 void set_mode(unsigned char mode)
 {
@@ -103,8 +142,68 @@ void init_bricks()
             bricks[i][j].x = start_x + j * (BRICK_WIDTH + BRICK_GAP);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
             bricks[i][j].active = 1;
-            bricks[i][j].color = 40 + i * 10;
+            bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
         }
+    }
+}
+
+void draw_brick(int x, int y, int width, int height, unsigned char base_color)
+{
+    int i, j;
+    unsigned char light_color = base_color + 1;
+    unsigned char dark_color = base_color + 2;
+
+    /* Fill interior with a subtle "shine" + texture. */
+    for (i = 1; i < height - 1; i++)
+    {
+        for (j = 1; j < width - 1; j++)
+        {
+            unsigned char c = base_color;
+
+            /* Shiny top half, slightly darker bottom half */
+            if (i < (height / 2))
+            {
+                if (((i + j) & 3) == 0)
+                    c = light_color;
+            }
+            else
+            {
+                if (((i + j) & 3) == 0)
+                    c = dark_color;
+            }
+
+            put_pixel(x + j, y + i, c);
+        }
+    }
+
+    /* Beveled border: light on top/left, dark on bottom/right */
+    for (j = 0; j < width; j++)
+    {
+        put_pixel(x + j, y, light_color);
+        put_pixel(x + j, y + height - 1, dark_color);
+    }
+    for (i = 0; i < height; i++)
+    {
+        put_pixel(x, y + i, light_color);
+        put_pixel(x + width - 1, y + i, dark_color);
+    }
+
+    /* Extra inner highlight stripe for a more "arcade" look */
+    if (height > 4 && width > 6)
+    {
+        for (j = 2; j < width - 2; j++)
+        {
+            if ((j & 1) == 0)
+                put_pixel(x + j, y + 2, light_color);
+        }
+    }
+
+    /* Tiny specular highlight near the top-left */
+    if (width > 8 && height > 6)
+    {
+        put_pixel(x + 2, y + 2, 15);
+        put_pixel(x + 3, y + 2, 15);
+        put_pixel(x + 2, y + 3, 15);
     }
 }
 
@@ -117,8 +216,7 @@ void draw_bricks()
         {
             if (bricks[i][j].active)
             {
-                draw_filled_rect(bricks[i][j].x, bricks[i][j].y,
-                                 BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
+                draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
             }
         }
     }
@@ -679,6 +777,7 @@ void game_loop()
 int main()
 {
     set_mode(0x13); /* 320x200 256 color mode */
+    init_brick_palette();
 
     intro_scene();
 
