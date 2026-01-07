@@ -20,6 +20,7 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
+#define MAX_LEVELS 2
 
 typedef struct
 {
@@ -47,6 +48,7 @@ Ball ball;
 Paddle paddle;
 int score = 0;
 int lives = 3;
+int current_level = 1;
 
 void set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
 {
@@ -138,7 +140,7 @@ void clear_screen(unsigned char color)
     }
 }
 
-void init_bricks()
+void init_bricks(int level)
 {
     int i, j;
     int start_y = 20;
@@ -154,10 +156,44 @@ void init_bricks()
         {
             bricks[i][j].x = start_x + j * (BRICK_WIDTH + BRICK_GAP);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
-            bricks[i][j].active = 1;
+            bricks[i][j].active = 0;
             bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
+
+            if (level == 1)
+            {
+                bricks[i][j].active = 1;
+            }
+            else if (level == 2)
+            {
+                /* Checkerboard-ish layout (fewer bricks than level 1). */
+                if (i == 0 || i == BRICK_ROWS - 1)
+                    bricks[i][j].active = 1;
+                else if (((i + j) & 1) == 0)
+                    bricks[i][j].active = 1;
+            }
+            else
+            {
+                bricks[i][j].active = 1;
+            }
         }
     }
+}
+
+void init_level(int level)
+{
+    current_level = level;
+
+    paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
+    paddle.y = SCREEN_HEIGHT - 20;
+    paddle.width = PADDLE_WIDTH;
+    paddle.vx = 0;
+
+    ball.x = SCREEN_WIDTH / 2;
+    ball.y = paddle.y - (BALL_SIZE / 2) - 1;
+    ball.dx = 2;
+    ball.dy = -2;
+
+    init_bricks(level);
 }
 
 void draw_brick(int x, int y, int width, int height, unsigned char base_color)
@@ -237,19 +273,9 @@ void draw_bricks()
 
 void init_game()
 {
-    paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
-    paddle.y = SCREEN_HEIGHT - 20;
-    paddle.width = PADDLE_WIDTH;
-    paddle.vx = 0;
-
-    ball.x = SCREEN_WIDTH / 2;
-    ball.y = paddle.y - (BALL_SIZE / 2) - 1;
-    ball.dx = 2;
-    ball.dy = -2;
-
-    init_bricks();
     score = 0;
     lives = 3;
+    init_level(1);
 }
 
 void draw_paddle()
@@ -784,6 +810,9 @@ void draw_ui()
     sprintf(buffer, "Score: %d", score);
     draw_text(5, 5, buffer);
 
+    sprintf(buffer, "Level: %d", current_level);
+    draw_text(120, 5, buffer);
+
     sprintf(buffer, "Lives: %d", lives);
     draw_text(200, 5, buffer);
 }
@@ -865,52 +894,71 @@ void game_loop()
     char buffer[50];
     int old_ball_x, old_ball_y;
     int old_paddle_x;
-    int first_frame = 1;
+    int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
 
-    while (lives > 0 && !check_win())
+    while (lives > 0)
     {
-        if (first_frame)
+        first_frame = 1;
+        while (lives > 0 && !check_win())
         {
-            clear_screen(0);
-            draw_bricks();
+            if (first_frame)
+            {
+                clear_screen(0);
+                draw_bricks();
+                draw_paddle();
+                draw_ball();
+                draw_ui();
+                first_frame = 0;
+            }
+
+            /* Save old positions */
+            old_ball_x = ball.x;
+            old_ball_y = ball.y;
+            old_paddle_x = paddle.x;
+
+            /* Update game state */
+            update_paddle();
+            brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
+
+            /* Erase old positions */
+            erase_ball(old_ball_x, old_ball_y);
+            if (old_paddle_x != paddle.x)
+            {
+                erase_paddle(old_paddle_x);
+            }
+
+            /* Erase destroyed brick */
+            if (brick_was_hit)
+            {
+                draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+            }
+
+            /* Draw new positions */
             draw_paddle();
             draw_ball();
+
+            /* Redraw UI (borders, score, lives) */
             draw_ui();
-            first_frame = 0;
+
+            delay(20);
         }
 
-        /* Save old positions */
-        old_ball_x = ball.x;
-        old_ball_y = ball.y;
-        old_paddle_x = paddle.x;
+        if (lives == 0)
+            break;
 
-        /* Update game state */
-        update_paddle();
-        brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
-
-        /* Erase old positions */
-        erase_ball(old_ball_x, old_ball_y);
-        if (old_paddle_x != paddle.x)
+        if (current_level < MAX_LEVELS)
         {
-            erase_paddle(old_paddle_x);
+            clear_screen(0);
+            draw_text(105, 90, "LEVEL CLEAR!");
+            delay(1500);
+            init_level(current_level + 1);
         }
-
-        /* Erase destroyed brick */
-        if (brick_was_hit)
+        else
         {
-            draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+            break;
         }
-
-        /* Draw new positions */
-        draw_paddle();
-        draw_ball();
-
-        /* Redraw UI (borders, score, lives) */
-        draw_ui();
-
-        delay(20);
     }
 
     clear_screen(0);
