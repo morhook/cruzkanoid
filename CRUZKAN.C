@@ -16,6 +16,7 @@
 #define BRICK_GAP 2
 #define BRICK_PALETTE_START 32
 #define BRICK_PALETTE_STRIDE 3
+#define PADDLE_PALETTE_START 48
 
 typedef struct
 {
@@ -78,6 +79,14 @@ void init_brick_palette()
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 0, 10, 20, 55);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 1, 28, 40, 63);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 2, 5, 10, 30);
+}
+
+void init_paddle_palette()
+{
+    /* Steel/cyan paddle with highlight + shadow. */
+    set_palette_color(PADDLE_PALETTE_START + 0, 18, 44, 52); /* base */
+    set_palette_color(PADDLE_PALETTE_START + 1, 38, 60, 63); /* light */
+    set_palette_color(PADDLE_PALETTE_START + 2, 8, 22, 28);  /* dark */
 }
 
 void set_mode(unsigned char mode)
@@ -240,7 +249,122 @@ void init_game()
 
 void draw_paddle()
 {
-    draw_filled_rect(paddle.x, paddle.y, paddle.width, PADDLE_HEIGHT, 15);
+    int i, j;
+    int radius = PADDLE_HEIGHT / 2;
+    int r = radius - 1;
+    int cy = r;
+    unsigned char base_color = PADDLE_PALETTE_START + 0;
+    unsigned char light_color = PADDLE_PALETTE_START + 1;
+    unsigned char dark_color = PADDLE_PALETTE_START + 2;
+
+    for (i = 0; i < PADDLE_HEIGHT; i++)
+    {
+        for (j = 0; j < paddle.width; j++)
+        {
+            int inside = 1;
+            int dx, dy;
+            unsigned char c = base_color;
+
+            /* Rounded ends */
+            if (j < radius)
+            {
+                dx = (radius - 1) - j;
+                dy = cy - i;
+                if ((dx * dx + dy * dy) > (r * r))
+                    inside = 0;
+            }
+            else if (j >= paddle.width - radius)
+            {
+                dx = j - (paddle.width - radius);
+                dy = cy - i;
+                if ((dx * dx + dy * dy) > (r * r))
+                    inside = 0;
+            }
+
+            if (!inside)
+                continue;
+
+            /* Subtle vertical gradient */
+            if (i <= 1)
+                c = light_color;
+            else if (i >= PADDLE_HEIGHT - 2)
+                c = dark_color;
+
+            /* Grip pattern in the middle band */
+            if (i >= 2 && i <= PADDLE_HEIGHT - 3)
+            {
+                int center = paddle.width / 2;
+                int dist = j - center;
+                if (dist < 0)
+                    dist = -dist;
+
+                if (dist < (paddle.width / 2 - 6) && ((j & 3) == 0))
+                {
+                    if (c == base_color)
+                        c = dark_color;
+                }
+            }
+
+            put_pixel(paddle.x + j, paddle.y + i, c);
+        }
+    }
+
+    /* Bevel outline: light top/left, dark bottom/right (only where shape exists) */
+    for (i = 0; i < PADDLE_HEIGHT; i++)
+    {
+        for (j = 0; j < paddle.width; j++)
+        {
+            int inside = 1;
+            int dx, dy;
+
+            if (j < radius)
+            {
+                dx = (radius - 1) - j;
+                dy = cy - i;
+                if ((dx * dx + dy * dy) > (r * r))
+                    inside = 0;
+            }
+            else if (j >= paddle.width - radius)
+            {
+                dx = j - (paddle.width - radius);
+                dy = cy - i;
+                if ((dx * dx + dy * dy) > (r * r))
+                    inside = 0;
+            }
+
+            if (!inside)
+                continue;
+
+            /* Top edge */
+            if (i == 0)
+                put_pixel(paddle.x + j, paddle.y + i, light_color);
+            /* Bottom edge */
+            if (i == PADDLE_HEIGHT - 1)
+                put_pixel(paddle.x + j, paddle.y + i, dark_color);
+            /* Left edge */
+            if (j == 0)
+                put_pixel(paddle.x + j, paddle.y + i, light_color);
+            /* Right edge */
+            if (j == paddle.width - 1)
+                put_pixel(paddle.x + j, paddle.y + i, dark_color);
+        }
+    }
+
+    /* Specular highlight + "core" stripe */
+    if (paddle.width > 14)
+    {
+        int hx = paddle.x + 6;
+        int hy = paddle.y + 2;
+        put_pixel(hx, hy, 15);
+        put_pixel(hx + 1, hy, 15);
+        put_pixel(hx, hy + 1, 15);
+
+        for (j = 8; j < paddle.width - 8; j++)
+        {
+            if ((j & 1) == 0)
+                put_pixel(paddle.x + j, paddle.y + 3, light_color);
+        }
+    }
 }
 
 void erase_paddle(int x)
@@ -778,6 +902,7 @@ int main()
 {
     set_mode(0x13); /* 320x200 256 color mode */
     init_brick_palette();
+    init_paddle_palette();
 
     intro_scene();
 
