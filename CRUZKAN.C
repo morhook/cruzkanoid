@@ -17,6 +17,9 @@
 #define BRICK_PALETTE_START 32
 #define BRICK_PALETTE_STRIDE 3
 #define PADDLE_PALETTE_START 48
+#define PADDLE_ACCEL 3
+#define PADDLE_MAX_SPEED 8
+#define PADDLE_FRICTION 1
 
 typedef struct
 {
@@ -28,6 +31,7 @@ typedef struct
 {
     int x, y;
     int width;
+    int vx;
 } Paddle;
 
 typedef struct
@@ -236,6 +240,7 @@ void init_game()
     paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
+    paddle.vx = 0;
 
     ball.x = SCREEN_WIDTH / 2;
     ball.y = paddle.y - (BALL_SIZE / 2) - 1;
@@ -440,7 +445,10 @@ void erase_ball(int x, int y)
 
 void update_paddle()
 {
-    if (kbhit())
+    int move_dir = 0;
+
+    /* Consume all pending keys; last direction wins. */
+    while (kbhit())
     {
         char key = getch();
         if (key == 0 || key == 0xE0)
@@ -448,17 +456,11 @@ void update_paddle()
             key = getch();
             if (key == 75)
             { // Left arrow
-                paddle.x -= 5;
-                if (paddle.x < 0)
-                    paddle.x = 0;
+                move_dir = -1;
             }
             if (key == 77)
             { // Right arrow
-                paddle.x += 5;
-                if (paddle.x + paddle.width > SCREEN_WIDTH)
-                {
-                    paddle.x = SCREEN_WIDTH - paddle.width;
-                }
+                move_dir = 1;
             }
         }
         if (key == 27)
@@ -466,6 +468,37 @@ void update_paddle()
             set_mode(0x03);
             exit(0);
         }
+    }
+
+    if (move_dir < 0)
+        paddle.vx -= PADDLE_ACCEL;
+    else if (move_dir > 0)
+        paddle.vx += PADDLE_ACCEL;
+    else
+    {
+        /* Friction toward stop when no input this frame. */
+        if (paddle.vx > 0)
+            paddle.vx -= PADDLE_FRICTION;
+        else if (paddle.vx < 0)
+            paddle.vx += PADDLE_FRICTION;
+    }
+
+    if (paddle.vx > PADDLE_MAX_SPEED)
+        paddle.vx = PADDLE_MAX_SPEED;
+    else if (paddle.vx < -PADDLE_MAX_SPEED)
+        paddle.vx = -PADDLE_MAX_SPEED;
+
+    paddle.x += paddle.vx;
+
+    if (paddle.x < 0)
+    {
+        paddle.x = 0;
+        paddle.vx = 0;
+    }
+    if (paddle.x + paddle.width > SCREEN_WIDTH)
+    {
+        paddle.x = SCREEN_WIDTH - paddle.width;
+        paddle.vx = 0;
     }
 }
 
@@ -911,8 +944,6 @@ int main()
         init_game();
         game_loop();
     }
-
-    set_mode(0x03); /* Back to text mode */
 
     return 0;
 }
