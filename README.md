@@ -20,6 +20,8 @@ A classic brick-breaking game written in C for DOS.
 ## Controls
 - Left Arrow: Move paddle left
 - Right Arrow: Move paddle right
+- Space: Launch ball
+- S: Toggle sound effects
 - Esc: Quit game
 
 ## Compilation

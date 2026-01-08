@@ -19,7 +19,7 @@
    d:
    cd tc\bin
    c:
-   tcc -ml cruzkan.c
+   tcc -ml cruzkan.c audio.c
    cruzkan.exe
    ```
 

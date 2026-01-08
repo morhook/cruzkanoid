@@ -4,6 +4,8 @@
 #include <dos.h>
 #include <time.h>
 
+#include "audio.h"
+
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 200
 #define PADDLE_WIDTH 40
@@ -487,6 +489,11 @@ void update_paddle()
     while (kbhit())
     {
         char key = getch();
+        if (key == 's' || key == 'S')
+        {
+            audio_toggle();
+            continue;
+        }
         if (key == ' ')
         {
             launch_requested = 1;
@@ -506,6 +513,7 @@ void update_paddle()
         }
         if (key == 27)
         { // ESC
+            audio_shutdown();
             set_mode(0x03);
             exit(0);
         }
@@ -543,7 +551,7 @@ void update_paddle()
     }
 }
 
-int check_brick_collision(int *hit_x, int *hit_y)
+int check_brick_collision(int *hit_x, int *hit_y, int *hit_row)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
@@ -564,6 +572,8 @@ int check_brick_collision(int *hit_x, int *hit_y)
                     score += 10;
                     *hit_x = bricks[i][j].x;
                     *hit_y = bricks[i][j].y;
+                    if (hit_row)
+                        *hit_row = i;
                     return 1;
                 }
             }
@@ -577,6 +587,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int hit_pos;
     int brick_hit = 0;
     int radius = BALL_SIZE / 2;
+    int wall_hit = 0;
+    int paddle_hit = 0;
+    int brick_hit_row = 0;
 
     ball.x += ball.dx;
     ball.y += ball.dy;
@@ -585,11 +598,13 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     if (ball.x - radius <= 0 || ball.x + radius >= SCREEN_WIDTH)
     {
         ball.dx = -ball.dx;
+        wall_hit = 1;
     }
 
     if (ball.y - radius <= 0)
     {
         ball.dy = -ball.dy;
+        wall_hit = 1;
     }
 
     // Paddle collision
@@ -601,6 +616,7 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
 
         ball.dy = -ball.dy;
         ball.y = paddle.y - radius; // Place ball just above paddle
+        paddle_hit = 1;
 
         // Add spin based on where ball hits paddle
         hit_pos = ball.x - paddle.x;
@@ -610,16 +626,24 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     }
 
     // Brick collision
-    if (check_brick_collision(brick_hit_x, brick_hit_y))
+    if (check_brick_collision(brick_hit_x, brick_hit_y, &brick_hit_row))
     {
         ball.dy = -ball.dy;
         brick_hit = 1;
     }
 
+    if (brick_hit)
+        audio_event_brick(brick_hit_row);
+    else if (paddle_hit)
+        audio_event_paddle();
+    else if (wall_hit)
+        audio_event_wall();
+
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT)
     {
         lives--;
+        audio_event_life_lost_blocking();
         if (lives > 0)
         {
             ball_stuck = 1;
@@ -985,6 +1009,7 @@ void game_loop()
             /* Redraw UI (borders, score, lives) */
             draw_ui();
 
+            audio_update();
             delay(20);
         }
 
@@ -995,6 +1020,7 @@ void game_loop()
         {
             clear_screen(0);
             draw_text(105, 90, "LEVEL CLEAR!");
+            audio_event_level_clear_blocking();
             delay(1500);
             init_level(current_level + 1);
         }
@@ -1027,6 +1053,7 @@ int main()
     set_mode(0x13); /* 320x200 256 color mode */
     init_brick_palette();
     init_paddle_palette();
+    audio_init();
 
     intro_scene();
 
