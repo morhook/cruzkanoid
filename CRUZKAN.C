@@ -53,6 +53,8 @@ int lives = 3;
 int current_level = 1;
 int ball_stuck = 1;
 int launch_requested = 0;
+int paused = 0;
+int force_redraw = 0;
 
 void reset_paddle()
 {
@@ -484,31 +486,42 @@ void erase_ball(int x, int y)
 void update_paddle()
 {
     int move_dir = 0;
+    int pause_toggle_requested = 0;
 
     /* Consume all pending keys; last direction wins. */
     while (kbhit())
     {
         char key = getch();
+        if (key == 'p' || key == 'P')
+        {
+            pause_toggle_requested = 1;
+            continue;
+        }
         if (key == 's' || key == 'S')
         {
             audio_toggle();
             continue;
         }
-        if (key == ' ')
+        if (key == ' ' && !paused)
         {
             launch_requested = 1;
             continue;
         }
         if (key == 0 || key == 0xE0)
         {
-            key = getch();
-            if (key == 75)
+            char scan = getch();
+            if (scan == 75)
             { // Left arrow
                 move_dir = -1;
             }
-            if (key == 77)
+            if (scan == 77)
             { // Right arrow
                 move_dir = 1;
+            }
+            /* Turbo C / DOS variants: Pause can show up as an extended key. */
+            if (scan == 0x45)
+            {
+                pause_toggle_requested = 1;
             }
         }
         if (key == 27)
@@ -517,6 +530,19 @@ void update_paddle()
             set_mode(0x03);
             exit(0);
         }
+    }
+
+    if (pause_toggle_requested)
+    {
+        paused = !paused;
+        force_redraw = 1;
+        paddle.vx = 0;
+        launch_requested = 0;
+    }
+
+    if (paused)
+    {
+        return;
     }
 
     if (move_dir < 0)
@@ -854,7 +880,6 @@ void draw_ui()
     sprintf(buffer, "Lives: %d", lives);
     draw_text(200, 5, buffer);
 }
-
 void draw_char_transparent(int x, int y, char c, unsigned char color)
 {
     int i, j;
@@ -896,6 +921,18 @@ void draw_bordered_text(int x, int y, char *text, unsigned char border_color)
 
     // Draw black inner text
     draw_text_transparent(x, y, text, 0);
+}
+
+void draw_pause_overlay()
+{
+    char line1[] = "PAUSED";
+    char line2[] = "P OR PAUSE";
+    int x1 = (SCREEN_WIDTH - ((sizeof(line1) - 1) * 8)) / 2;
+    int x2 = (SCREEN_WIDTH - ((sizeof(line2) - 1) * 8)) / 2;
+    int y = 90;
+
+    draw_bordered_text(x1, y, line1, 15);
+    draw_bordered_text(x2, y + 12, line2, 15);
 }
 
 void intro_scene()
@@ -943,14 +980,19 @@ void game_loop()
         first_frame = 1;
         while (lives > 0 && !check_win())
         {
-            if (first_frame)
+            if (first_frame || force_redraw)
             {
                 clear_screen(0);
                 draw_bricks();
                 draw_paddle();
                 draw_ball();
                 draw_ui();
+                if (paused)
+                {
+                    draw_pause_overlay();
+                }
                 first_frame = 0;
+                force_redraw = 0;
             }
 
             /* Save old positions */
@@ -960,6 +1002,8 @@ void game_loop()
 
             /* Update game state */
             update_paddle();
+            if (!paused)
+            {
             if (ball_stuck)
             {
                 if (launch_requested)
@@ -988,6 +1032,11 @@ void game_loop()
             {
                 brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
             }
+            }
+            else
+            {
+                brick_was_hit = 0;
+            }
 
             /* Erase old positions */
             erase_ball(old_ball_x, old_ball_y);
@@ -1008,6 +1057,11 @@ void game_loop()
 
             /* Redraw UI (borders, score, lives) */
             draw_ui();
+
+            if (paused)
+            {
+                draw_pause_overlay();
+            }
 
             audio_update();
             delay(20);
