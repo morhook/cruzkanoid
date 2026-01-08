@@ -49,6 +49,22 @@ Paddle paddle;
 int score = 0;
 int lives = 3;
 int current_level = 1;
+int ball_stuck = 1;
+int launch_requested = 0;
+
+void reset_paddle()
+{
+    int radius = BALL_SIZE / 2;
+    ball.x = paddle.x + paddle.width / 2;
+    ball.y = paddle.y - radius - 1;
+    ball.dx = 2;
+    ball.dy = -2;
+
+    paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
+    paddle.y = SCREEN_HEIGHT - 20;
+    paddle.width = PADDLE_WIDTH;
+    paddle.vx = 0;
+}
 
 void set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
 {
@@ -183,15 +199,9 @@ void init_level(int level)
 {
     current_level = level;
 
-    paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
-    paddle.y = SCREEN_HEIGHT - 20;
-    paddle.width = PADDLE_WIDTH;
-    paddle.vx = 0;
-
-    ball.x = SCREEN_WIDTH / 2;
-    ball.y = paddle.y - (BALL_SIZE / 2) - 1;
-    ball.dx = 2;
-    ball.dy = -2;
+    ball_stuck = 1;
+    launch_requested = 0;
+    reset_paddle();
 
     init_bricks(level);
 }
@@ -477,6 +487,11 @@ void update_paddle()
     while (kbhit())
     {
         char key = getch();
+        if (key == ' ')
+        {
+            launch_requested = 1;
+            continue;
+        }
         if (key == 0 || key == 0xE0)
         {
             key = getch();
@@ -607,10 +622,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         lives--;
         if (lives > 0)
         {
-            ball.x = paddle.x + paddle.width / 2;
-            ball.y = paddle.y - radius - 1;
-            ball.dx = 2;
-            ball.dy = -2;
+            ball_stuck = 1;
+            launch_requested = 0;
+            reset_paddle();
             delay(1000);
         }
     }
@@ -897,6 +911,8 @@ void game_loop()
     int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
+    int radius = BALL_SIZE / 2;
+    int launch_dx;
 
     while (lives > 0)
     {
@@ -920,7 +936,34 @@ void game_loop()
 
             /* Update game state */
             update_paddle();
-            brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
+            if (ball_stuck)
+            {
+                if (launch_requested)
+                {
+                    launch_dx = paddle.vx / 2;
+                    if (launch_dx > 3)
+                        launch_dx = 3;
+                    else if (launch_dx < -3)
+                        launch_dx = -3;
+                    if (launch_dx == 0)
+                        launch_dx = 2;
+
+                    ball_stuck = 0;
+                    launch_requested = 0;
+                    ball.dx = launch_dx;
+                    ball.dy = -2;
+                }
+                else
+                {
+                    ball.x = paddle.x + paddle.width / 2;
+                    ball.y = paddle.y - radius - 1;
+                }
+                brick_was_hit = 0;
+            }
+            else
+            {
+                brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
+            }
 
             /* Erase old positions */
             erase_ball(old_ball_x, old_ball_y);
