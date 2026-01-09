@@ -502,6 +502,11 @@ void update_paddle()
             audio_toggle();
             continue;
         }
+        if (key == 'm' || key == 'M')
+        {
+            audio_music_toggle();
+            continue;
+        }
         if (key == ' ' && !paused)
         {
             launch_requested = 1;

@@ -18,6 +18,78 @@ typedef enum
 
 static AudioBackend audio_backend = AUDIO_BACKEND_SPEAKER;
 
+typedef enum
+{
+    TONE_NONE = 0,
+    TONE_SFX = 1,
+    TONE_MUSIC = 2,
+    TONE_SILENCE = 3
+} ToneSource;
+
+static ToneSource tone_source = TONE_NONE;
+
+typedef struct
+{
+    unsigned int freq;
+    unsigned int ms;
+} MusicNote;
+
+static int music_enabled = 1;
+static int music_running = 1;
+static unsigned int music_index = 0;
+
+#define NOTE_C3 131
+#define NOTE_D3 147
+#define NOTE_E3 165
+#define NOTE_F3 175
+#define NOTE_G3 196
+#define NOTE_A3 220
+#define NOTE_B3 247
+
+#define NOTE_C4 262
+#define NOTE_D4 294
+#define NOTE_E4 330
+#define NOTE_F4 349
+#define NOTE_G4 392
+#define NOTE_A4 440
+#define NOTE_B4 494
+
+#define NOTE_C5 523
+#define NOTE_D5 587
+#define NOTE_E5 659
+#define NOTE_G5 784
+
+static const MusicNote music_track[] = {
+    /* Cruzkanoid Groove (original), looped. */
+    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
+    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
+    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
+    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {0, 110},
+
+    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
+    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
+    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
+    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {0, 110},
+
+    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
+    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {NOTE_G4, 110},
+    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
+    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {0, 110},
+
+    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
+    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110},
+    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
+    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {0, 110},
+
+    {0, 0}};
+
+static void music_advance_index(void)
+{
+    music_index++;
+    if (music_track[music_index].ms == 0U)
+        music_index = 0;
+}
+
 /* --- Sound Blaster (DSP + 8-bit DMA) backend --- */
 static int sb_present = 0;
 static unsigned int sb_base_port = 0x220;
@@ -433,9 +505,10 @@ static void audio_stop_internal(void)
     nosound();
     audio_active = 0;
     audio_end_clock = 0;
+    tone_source = TONE_NONE;
 }
 
-static void audio_start_tone(int freq, int ms)
+static void audio_start_tone_internal(int freq, int ms, ToneSource source)
 {
     clock_t now;
     clock_t ticks;
@@ -443,7 +516,7 @@ static void audio_start_tone(int freq, int ms)
     if (!audio_enabled)
         return;
 
-    if (freq <= 0 || ms <= 0)
+    if (ms <= 0)
         return;
 
     now = clock();
@@ -454,6 +527,15 @@ static void audio_start_tone(int freq, int ms)
 
     audio_end_clock = now + ticks;
     audio_active = 1;
+    tone_source = source;
+
+    if (source == TONE_SILENCE || freq <= 0)
+    {
+        if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
+            sb_stop_internal();
+        nosound();
+        return;
+    }
 
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
     {
@@ -469,12 +551,50 @@ static void audio_play_tone(int freq, int ms)
     if (!audio_enabled)
         return;
 
-    audio_start_tone(freq, ms);
+    if (music_running && (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE))
+        music_advance_index();
+
+    audio_start_tone_internal(freq, ms, TONE_SFX);
+}
+
+static void audio_play_silence(int ms, ToneSource source)
+{
+    if (!audio_enabled)
+        return;
+
+    if (ms <= 0)
+        return;
+
+    audio_start_tone_internal(0, ms, source);
+}
+
+static void music_start_next_note(void)
+{
+    MusicNote n;
+
+    if (!audio_enabled || !music_enabled || !music_running || audio_active)
+        return;
+
+    n = music_track[music_index];
+    if (n.ms == 0U)
+    {
+        music_index = 0;
+        n = music_track[music_index];
+    }
+
+    if (n.freq == 0U)
+        audio_play_silence((int)n.ms, TONE_SILENCE);
+    else
+        audio_start_tone_internal((int)n.freq, (int)n.ms, TONE_MUSIC);
 }
 
 void audio_init(void)
 {
     audio_enabled = 1;
+    music_enabled = 1;
+    music_running = 1;
+    music_index = 0;
+    tone_source = TONE_NONE;
 
     /* Try to enable Sound Blaster output; fall back to PC speaker. */
     sb_present = 0;
@@ -504,23 +624,30 @@ void audio_toggle(void)
         audio_stop_internal();
 }
 
+int audio_music_is_enabled(void)
+{
+    return music_enabled;
+}
+
+void audio_music_toggle(void)
+{
+    music_enabled = !music_enabled;
+    if (!music_enabled && (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE))
+        audio_stop_internal();
+}
+
 void audio_update(void)
 {
-    if (!audio_active)
-        return;
+    clock_t now = clock();
 
-    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    if (audio_active && now >= audio_end_clock)
     {
-        /* Failsafe: if the IRQ doesn't fire, stop after the expected duration. */
-        if (clock() >= audio_end_clock)
-            audio_stop_internal();
-        return;
+        if (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE)
+            music_advance_index();
+        audio_stop_internal();
     }
 
-    if (clock() < audio_end_clock)
-        return;
-
-    audio_stop_internal();
+    music_start_next_note();
 }
 
 void audio_event_paddle(void)
