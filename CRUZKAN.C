@@ -56,6 +56,32 @@ int launch_requested = 0;
 int paused = 0;
 int force_redraw = 0;
 
+void drain_keyboard_buffer(void)
+{
+    while (kbhit())
+        (void)getch();
+}
+
+void delay_with_audio(int ms)
+{
+    clock_t start;
+    clock_t ticks;
+
+    if (ms <= 0)
+        return;
+
+    start = clock();
+    ticks = (clock_t)(((long)ms * (long)CLK_TCK + 999L) / 1000L);
+    if (ticks <= 0)
+        ticks = 1;
+
+    while ((clock() - start) < ticks)
+    {
+        audio_update();
+        delay(10);
+    }
+}
+
 void reset_paddle()
 {
     int radius = BALL_SIZE / 2;
@@ -234,8 +260,12 @@ void draw_bricks()
 
 void init_game()
 {
+    /* Avoid the restart key auto-repeat affecting the next game (e.g. toggling music). */
+    drain_keyboard_buffer();
+
     score = 0;
     lives = 3;
+    audio_music_restart();
     init_level(1);
 }
 
@@ -627,7 +657,7 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
             ball_stuck = 1;
             launch_requested = 0;
             reset_paddle();
-            delay(1000);
+            delay_with_audio(1000);
         }
     }
 
@@ -1027,7 +1057,7 @@ void game_loop()
             clear_screen(0);
             draw_text(105, 90, "LEVEL CLEAR!");
             audio_event_level_clear_blocking();
-            delay(1500);
+            delay_with_audio(1500);
             init_level(current_level + 1);
         }
         else
@@ -1050,11 +1080,13 @@ void game_loop()
     draw_text(90, 105, buffer);
     draw_text(70, 120, "Press any key to restart");
 
-    delay(10000);
-    while (kbhit())
+    while (!kbhit())
     {
-        getch();
+        audio_update();
+        delay(20);
     }
+    getch();
+    drain_keyboard_buffer();
 }
 
 int main()

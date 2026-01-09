@@ -629,6 +629,17 @@ int audio_music_is_enabled(void)
     return music_enabled;
 }
 
+void audio_music_restart(void)
+{
+    music_index = 0;
+
+    if (!audio_enabled || !music_enabled)
+        return;
+
+    audio_stop_internal();
+    music_start_next_note();
+}
+
 void audio_music_toggle(void)
 {
     music_enabled = !music_enabled;
