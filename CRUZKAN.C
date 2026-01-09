@@ -1104,7 +1104,10 @@ void game_loop()
     draw_text(70, 120, "Press any key to restart");
 
     delay(10000);
-    getch();
+    while (kbhit())
+    {
+        getch();
+    }
 }
 
 int main()
