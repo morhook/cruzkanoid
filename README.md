@@ -15,6 +15,7 @@ A classic brick-breaking game written in C for DOS.
 - Ball physics with paddle spin
 - Score tracking
 - 3 lives
+- Sound effects (PC speaker, optional Sound Blaster)
 - Win/lose conditions
 
 ## Controls
@@ -51,3 +52,4 @@ cruzkan.exe
 - Direct VGA memory manipulation at 0xA000:0000
 - BIOS interrupts for keyboard input
 - Real-time gameplay with delay timing
+- Sound: tries Sound Blaster DSP (8-bit DMA) using the `BLASTER` env var, falls back to PC speaker

@@ -1,15 +1,435 @@
 #include "audio.h"
 
+#include <alloc.h>
 #include <conio.h>
 #include <dos.h>
+#include <stdlib.h>
 #include <time.h>
 
 static int audio_enabled = 1;
 static int audio_active = 0;
 static clock_t audio_end_clock = 0;
 
+typedef enum
+{
+    AUDIO_BACKEND_SPEAKER = 0,
+    AUDIO_BACKEND_SOUNDBLASTER = 1
+} AudioBackend;
+
+static AudioBackend audio_backend = AUDIO_BACKEND_SPEAKER;
+
+/* --- Sound Blaster (DSP + 8-bit DMA) backend --- */
+static int sb_present = 0;
+static unsigned int sb_base_port = 0x220;
+static int sb_irq = 5;
+static int sb_dma8 = 1;
+static int sb_playing = 0;
+static unsigned char sb_dsp_major = 0;
+static unsigned char sb_dsp_minor = 0;
+
+static unsigned char far *sb_dma_raw = 0;
+static unsigned char far *sb_dma_buf = 0;
+static unsigned int sb_dma_buf_size = 0;
+
+static void interrupt (*sb_old_isr)(void) = 0;
+static unsigned char sb_pic_mask_master = 0xFF;
+static unsigned char sb_pic_mask_slave = 0xFF;
+
+static unsigned int sb_irq_int_vector(void)
+{
+    if (sb_irq < 8)
+        return (unsigned int)(sb_irq + 8);
+    return (unsigned int)(sb_irq + 0x68);
+}
+
+static int sb_dma_page_port(int channel)
+{
+    switch (channel)
+    {
+    case 0:
+        return 0x87;
+    case 1:
+        return 0x83;
+    case 2:
+        return 0x81;
+    case 3:
+        return 0x82;
+    default:
+        return -1;
+    }
+}
+
+static void sb_dsp_write(unsigned char value)
+{
+    unsigned int spins = 0;
+
+    while ((inp(sb_base_port + 0x0C) & 0x80) != 0)
+    {
+        if (++spins > 200000U)
+            return;
+    }
+
+    outp(sb_base_port + 0x0C, value);
+}
+
+static int sb_dsp_can_read(void)
+{
+    return (inp(sb_base_port + 0x0E) & 0x80) != 0;
+}
+
+static unsigned char sb_dsp_read(void)
+{
+    unsigned int spins = 0;
+
+    while (!sb_dsp_can_read())
+    {
+        if (++spins > 200000U)
+            return 0;
+    }
+
+    return (unsigned char)inp(sb_base_port + 0x0A);
+}
+
+static int sb_reset_and_detect(void)
+{
+    unsigned int spins = 0;
+    unsigned int reads = 0;
+
+    outp(sb_base_port + 0x06, 1);
+    delay(3);
+    outp(sb_base_port + 0x06, 0);
+    delay(3);
+
+    while (spins < 200000U)
+    {
+        unsigned char v;
+
+        if (!sb_dsp_can_read())
+        {
+            spins++;
+            continue;
+        }
+
+        v = (unsigned char)inp(sb_base_port + 0x0A);
+        reads++;
+        if (v == 0xAA)
+            return 1;
+
+        /* Some emulators/clones may have stale bytes pending; keep draining. */
+        if (reads > 32U)
+            break;
+    }
+
+    return 0;
+}
+
+static void interrupt sb_isr(void)
+{
+    /* Acknowledge DSP 8-bit DMA interrupt. */
+    (void)inp(sb_base_port + 0x0E);
+    if (sb_dsp_can_read())
+        (void)inp(sb_base_port + 0x0A);
+
+    sb_playing = 0;
+
+    if (sb_irq >= 8)
+        outp(0xA0, 0x20);
+    outp(0x20, 0x20);
+}
+
+static void sb_pic_unmask_irq(void)
+{
+    if (sb_irq < 8)
+        outp(0x21, sb_pic_mask_master & (unsigned char)~(1U << sb_irq));
+    else
+    {
+        /* Ensure IRQ2 cascade is unmasked on the master PIC. */
+        outp(0x21, sb_pic_mask_master & (unsigned char)~(1U << 2));
+        outp(0xA1, sb_pic_mask_slave & (unsigned char)~(1U << (sb_irq - 8)));
+    }
+}
+
+static void sb_pic_restore_masks(void)
+{
+    outp(0x21, sb_pic_mask_master);
+    outp(0xA1, sb_pic_mask_slave);
+}
+
+static void sb_dma_setup_8bit(unsigned long phys_addr, unsigned int length)
+{
+    int channel = sb_dma8;
+    unsigned int addr_port;
+    unsigned int count_port;
+    int page_port;
+    unsigned int offset = (unsigned int)(phys_addr & 0xFFFFUL);
+    unsigned int page = (unsigned int)((phys_addr >> 16) & 0xFFUL);
+    unsigned int count = (length - 1U);
+
+    addr_port = (unsigned int)(channel * 2);
+    count_port = (unsigned int)(channel * 2 + 1);
+    page_port = sb_dma_page_port(channel);
+
+    /* Mask channel. */
+    outp(0x0A, 0x04 | channel);
+
+    /* Clear flip-flop. */
+    outp(0x0C, 0x00);
+
+    /* Address. */
+    outp(addr_port, (unsigned char)(offset & 0xFF));
+    outp(addr_port, (unsigned char)((offset >> 8) & 0xFF));
+
+    /* Page. */
+    if (page_port >= 0)
+        outp(page_port, (unsigned char)page);
+
+    /* Clear flip-flop. */
+    outp(0x0C, 0x00);
+
+    /* Count. */
+    outp(count_port, (unsigned char)(count & 0xFF));
+    outp(count_port, (unsigned char)((count >> 8) & 0xFF));
+
+    /* Mode: single transfer, address increment, write (memory->device). */
+    outp(0x0B, 0x48 | channel);
+
+    /* Unmask channel. */
+    outp(0x0A, channel);
+}
+
+static void sb_stop_internal(void)
+{
+    if (!sb_present)
+        return;
+
+    /* Halt 8-bit DMA. */
+    sb_dsp_write(0xD0);
+
+    /* Mask DMA channel. */
+    outp(0x0A, 0x04 | sb_dma8);
+
+    sb_playing = 0;
+}
+
+static unsigned long sb_phys_addr(void far *ptr)
+{
+    return ((unsigned long)FP_SEG(ptr) << 4) + (unsigned long)FP_OFF(ptr);
+}
+
+static void sb_fill_square_wave(unsigned char far *dst, unsigned int length, int freq_hz, int sample_rate)
+{
+    unsigned int i;
+    unsigned int period;
+    unsigned int half;
+
+    if (freq_hz <= 0)
+        freq_hz = 440;
+    if (sample_rate <= 0)
+        sample_rate = 11025;
+
+    period = (unsigned int)(sample_rate / freq_hz);
+    if (period < 2)
+        period = 2;
+
+    half = (unsigned int)(period / 2);
+    if (half == 0)
+        half = 1;
+
+    for (i = 0; i < length; i++)
+    {
+        unsigned int p = (unsigned int)(i % period);
+        dst[i] = (p < half) ? 0xE0 : 0x20;
+    }
+}
+
+static int sb_play_tone(int freq, int ms)
+{
+    const int sample_rate = 11025;
+    unsigned int length;
+    unsigned int time_constant;
+    unsigned long phys;
+
+    if (!sb_present)
+        return 0;
+
+    if (ms <= 0)
+        return 0;
+
+    length = (unsigned int)(((unsigned long)ms * (unsigned long)sample_rate) / 1000UL);
+    if (length < 32U)
+        length = 32U;
+    if (length > sb_dma_buf_size)
+        length = sb_dma_buf_size;
+
+    sb_fill_square_wave(sb_dma_buf, length, freq, sample_rate);
+    phys = sb_phys_addr(sb_dma_buf);
+
+    sb_stop_internal();
+    sb_dma_setup_8bit(phys, length);
+
+    /* Speaker on. */
+    sb_dsp_write(0xD1);
+
+    /* Time constant for SB 1.x/2.0. */
+    time_constant = (unsigned int)(256U - (1000000UL / (unsigned long)sample_rate));
+    sb_dsp_write(0x40);
+    sb_dsp_write((unsigned char)time_constant);
+
+    /* 8-bit single-cycle DMA output. */
+    sb_dsp_write(0x14);
+    sb_dsp_write((unsigned char)((length - 1U) & 0xFF));
+    sb_dsp_write((unsigned char)(((length - 1U) >> 8) & 0xFF));
+
+    sb_playing = 1;
+    return 1;
+}
+
+static int sb_parse_blaster_env(void)
+{
+    const char *env = getenv("BLASTER");
+    const char *p;
+
+    if (!env || !*env)
+        return 0;
+
+    p = env;
+    while (*p)
+    {
+        while (*p == ' ' || *p == '\t')
+            p++;
+
+        if (*p == 'A' || *p == 'a')
+        {
+            p++;
+            sb_base_port = (unsigned int)strtoul(p, (char **)&p, 16);
+            continue;
+        }
+        if (*p == 'I' || *p == 'i')
+        {
+            p++;
+            sb_irq = (int)strtoul(p, (char **)&p, 10);
+            continue;
+        }
+        if (*p == 'D' || *p == 'd')
+        {
+            p++;
+            sb_dma8 = (int)strtoul(p, (char **)&p, 10);
+            continue;
+        }
+
+        while (*p && *p != ' ' && *p != '\t')
+            p++;
+    }
+
+    return 1;
+}
+
+static int sb_init_internal(void)
+{
+    unsigned int vec;
+    unsigned int want_size = 8192U;
+    unsigned int padded;
+    unsigned long phys;
+    unsigned int low16;
+    int blaster_present;
+    static const unsigned int common_ports[] = {0x220, 0x240, 0x260, 0x280};
+    unsigned int i;
+
+    blaster_present = sb_parse_blaster_env();
+
+    if (sb_dma8 < 0 || sb_dma8 > 3)
+        sb_dma8 = 1;
+    if (sb_irq < 2 || sb_irq > 15)
+        sb_irq = 5;
+
+    if (!sb_reset_and_detect())
+    {
+        /* If BLASTER is wrong (or missing), try common SB base ports. */
+        for (i = 0; i < (unsigned int)(sizeof(common_ports) / sizeof(common_ports[0])); i++)
+        {
+            if (blaster_present && sb_base_port == common_ports[i])
+                continue;
+
+            sb_base_port = common_ports[i];
+            if (sb_reset_and_detect())
+                break;
+        }
+
+        if (!sb_reset_and_detect())
+            return 0;
+    }
+
+    /* DSP version. */
+    sb_dsp_write(0xE1);
+    sb_dsp_major = sb_dsp_read();
+    sb_dsp_minor = sb_dsp_read();
+
+    /* Allocate a small DMA buffer and ensure it won't cross a 64K boundary. */
+    padded = want_size + 32U;
+    sb_dma_raw = (unsigned char far *)farmalloc((unsigned long)padded);
+    if (!sb_dma_raw)
+        return 0;
+
+    phys = sb_phys_addr(sb_dma_raw);
+    low16 = (unsigned int)(phys & 0xFFFFUL);
+    if ((unsigned int)(low16 + want_size) < low16 || (unsigned int)(low16 + want_size) >= 0x10000U)
+    {
+        unsigned int delta = (unsigned int)(0x10000U - low16);
+        sb_dma_buf = sb_dma_raw + delta;
+    }
+    else
+    {
+        sb_dma_buf = sb_dma_raw;
+    }
+
+    sb_dma_buf_size = want_size;
+
+    /* Save PIC masks and hook IRQ handler. */
+    sb_pic_mask_master = (unsigned char)inp(0x21);
+    sb_pic_mask_slave = (unsigned char)inp(0xA1);
+
+    vec = sb_irq_int_vector();
+    disable();
+    sb_old_isr = getvect(vec);
+    setvect(vec, sb_isr);
+    sb_pic_unmask_irq();
+    enable();
+
+    sb_present = 1;
+    return 1;
+}
+
+static void sb_shutdown_internal(void)
+{
+    unsigned int vec;
+
+    if (!sb_present)
+        return;
+
+    sb_stop_internal();
+
+    vec = sb_irq_int_vector();
+    disable();
+    if (sb_old_isr)
+        setvect(vec, sb_old_isr);
+    sb_pic_restore_masks();
+    enable();
+
+    if (sb_dma_raw)
+    {
+        farfree(sb_dma_raw);
+        sb_dma_raw = 0;
+        sb_dma_buf = 0;
+        sb_dma_buf_size = 0;
+    }
+
+    sb_present = 0;
+}
+
 static void audio_stop_internal(void)
 {
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
+        sb_stop_internal();
     nosound();
     audio_active = 0;
     audio_end_clock = 0;
@@ -26,7 +446,6 @@ static void audio_start_tone(int freq, int ms)
     if (freq <= 0 || ms <= 0)
         return;
 
-    sound(freq);
     now = clock();
 
     ticks = (clock_t)(((long)ms * (long)CLK_TCK + 999L) / 1000L);
@@ -35,6 +454,14 @@ static void audio_start_tone(int freq, int ms)
 
     audio_end_clock = now + ticks;
     audio_active = 1;
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        (void)sb_play_tone(freq, ms);
+        return;
+    }
+
+    sound(freq);
 }
 
 static void audio_play_tone(int freq, int ms)
@@ -48,12 +475,21 @@ static void audio_play_tone(int freq, int ms)
 void audio_init(void)
 {
     audio_enabled = 1;
+
+    /* Try to enable Sound Blaster output; fall back to PC speaker. */
+    sb_present = 0;
+    audio_backend = AUDIO_BACKEND_SPEAKER;
+    if (sb_init_internal()) {
+	audio_backend = AUDIO_BACKEND_SOUNDBLASTER;
+    }
+
     audio_stop_internal();
 }
 
 void audio_shutdown(void)
 {
     audio_stop_internal();
+    sb_shutdown_internal();
 }
 
 int audio_is_enabled(void)
@@ -72,6 +508,14 @@ void audio_update(void)
 {
     if (!audio_active)
         return;
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        /* Failsafe: if the IRQ doesn't fire, stop after the expected duration. */
+        if (clock() >= audio_end_clock)
+            audio_stop_internal();
+        return;
+    }
 
     if (clock() < audio_end_clock)
         return;
@@ -103,6 +547,19 @@ void audio_event_life_lost_blocking(void)
         return;
 
     audio_stop_internal();
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        (void)sb_play_tone(900, 110);
+        delay(120);
+        (void)sb_play_tone(650, 120);
+        delay(130);
+        (void)sb_play_tone(450, 170);
+        delay(180);
+        sb_stop_internal();
+        return;
+    }
+
     sound(900);
     delay(110);
     sound(650);
@@ -118,6 +575,21 @@ void audio_event_level_clear_blocking(void)
         return;
 
     audio_stop_internal();
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        (void)sb_play_tone(660, 90);
+        delay(100);
+        (void)sb_play_tone(880, 90);
+        delay(100);
+        (void)sb_play_tone(990, 110);
+        delay(120);
+        (void)sb_play_tone(1320, 140);
+        delay(150);
+        sb_stop_internal();
+        return;
+    }
+
     sound(660);
     delay(90);
     sound(880);

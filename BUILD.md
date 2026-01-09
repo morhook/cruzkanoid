@@ -23,6 +23,17 @@
    cruzkan.exe
    ```
 
+## Sound Blaster (optional)
+
+The game will try to use Sound Blaster digital audio if it can reset the DSP. It reads the standard `BLASTER` environment variable (for example: `A220 I5 D1`).
+
+In DOSBox-X, ensure Sound Blaster is enabled and the base/IRQ/DMA match `BLASTER` (common defaults are `A220 I7 D1`, depending on config).
+
+If you need to set it manually inside DOSBox-X:
+```bat
+SET BLASTER=A220 I7 D1
+```
+
 ## Testing
 
 After compilation, run in DOSBox-x:
