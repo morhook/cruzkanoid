@@ -23,6 +23,7 @@ A classic brick-breaking game written in C for DOS.
 - Right Arrow: Move paddle right
 - Space: Launch ball
 - S: Toggle sound effects
+- M: Toggle soundtrack
 - Esc: Quit game
 
 ## Compilation
