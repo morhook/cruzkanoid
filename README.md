@@ -33,7 +33,7 @@ This project is intended to be compiled with Turbo C 3.0 inside DOSBox-X.
 1.  Start DOSBox-X and mount your project directory and the directory containing Turbo C 3.0.
 2.  Navigate to your Turbo C 3.0 directory (e.g., `D:\TC\BIN`).
 3.  Run `TC.EXE` to launch the Turbo C IDE.
-4.  Inside the IDE, open the `CRUZKAN.C` file from your mounted project directory.
+4.  Inside the IDE, open the `CRUZKAN.PRJ` project from your mounted project directory.
 5.  Compile and run the program from within the IDE.
 
 ## Running
