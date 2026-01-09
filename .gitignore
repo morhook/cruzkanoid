@@ -7,5 +7,6 @@ TURBOC3
 *.SWP
 *.EXE
 *.OBJ
+*.DSK
 tc
 turboc
