@@ -632,7 +632,7 @@ static void sb_shutdown_internal(void)
     sb_present = 0;
 }
 
-static void audio_stop_internal(void)
+void audio_stop_internal(void)
 {
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
         sb_stop_internal();

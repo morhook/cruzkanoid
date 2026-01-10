@@ -650,6 +650,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT)
     {
+        if (audio_music_is_enabled())
+            audio_stop_internal();
+        delay(1000);
         lives--;
         audio_event_life_lost_blocking();
         if (lives > 0)
@@ -657,8 +660,11 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
             ball_stuck = 1;
             launch_requested = 0;
             reset_paddle();
-            delay_with_audio(1000);
         }
+        delay(3000);
+        if (audio_music_is_enabled())
+            audio_music_restart();
+
     }
 
     return brick_hit;
