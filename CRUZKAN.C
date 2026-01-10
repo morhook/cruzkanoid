@@ -17,7 +17,22 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
-#define MAX_LEVELS 2
+#define MAX_LEVELS 10
+
+static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
+{
+    /* Each row uses 10 bits (bit j => column j). */
+    /*  1 */ { 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF },
+    /*  2 */ { 0x3FF, 0x2AA, 0x155, 0x2AA, 0x3FF },
+    /*  3 */ { 0x3FF, 0x201, 0x201, 0x201, 0x3FF },
+    /*  4 */ { 0x155, 0x155, 0x155, 0x155, 0x155 },
+    /*  5 */ { 0x303, 0x0CC, 0x030, 0x0CC, 0x303 },
+    /*  6 */ { 0x030, 0x078, 0x0FC, 0x1FE, 0x3FF },
+    /*  7 */ { 0x3CF, 0x3CF, 0x201, 0x3CF, 0x3CF },
+    /*  8 */ { 0x01F, 0x03F, 0x07F, 0x0FF, 0x1FF },
+    /*  9 */ { 0x2DB, 0x36D, 0x1B6, 0x36D, 0x2DB },
+    /* 10 */ { 0x0FC, 0x3CF, 0x2AA, 0x3CF, 0x0FC }
+};
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
 Ball ball;
@@ -113,35 +128,25 @@ void init_bricks(int level)
     int start_y = 20;
     int total_width = (BRICK_COLS * BRICK_WIDTH) + ((BRICK_COLS - 1) * BRICK_GAP);
     int start_x = (SCREEN_WIDTH - total_width) / 2;
+    int level_index = level - 1;
+    unsigned int row_mask;
 
     if (start_x < 0)
         start_x = 0;
 
+    if (level_index < 0 || level_index >= MAX_LEVELS)
+        level_index = 0;
+
     for (i = 0; i < BRICK_ROWS; i++)
     {
+        row_mask = level_layouts[level_index][i];
+
         for (j = 0; j < BRICK_COLS; j++)
         {
             bricks[i][j].x = start_x + j * (BRICK_WIDTH + BRICK_GAP);
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
-            bricks[i][j].active = 0;
+            bricks[i][j].active = (row_mask & (1U << j)) ? 1 : 0;
             bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
-
-            if (level == 1)
-            {
-                bricks[i][j].active = 1;
-            }
-            else if (level == 2)
-            {
-                /* Checkerboard-ish layout (fewer bricks than level 1). */
-                if (i == 0 || i == BRICK_ROWS - 1)
-                    bricks[i][j].active = 1;
-                else if (((i + j) & 1) == 0)
-                    bricks[i][j].active = 1;
-            }
-            else
-            {
-                bricks[i][j].active = 1;
-            }
         }
     }
 }
