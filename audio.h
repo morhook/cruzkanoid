@@ -13,8 +13,6 @@ int audio_music_is_enabled(void);
 void audio_music_restart(void);
 void audio_music_stop(void);
 
-void audio_stop_internal(void);
-
 void audio_event_paddle(void);
 void audio_event_wall(void);
 void audio_event_brick(int row);
