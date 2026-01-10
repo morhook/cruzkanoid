@@ -243,7 +243,6 @@ void init_game()
     init_level(1);
 }
 
-
 void update_paddle()
 {
     int move_dir = 0;
@@ -466,79 +465,6 @@ int check_win()
     return 1;
 }
 
-void draw_ui()
-{
-    char buffer[50];
-
-    // Draw border
-    draw_rect(0, 0, SCREEN_WIDTH, 1, 15);
-    draw_rect(0, 0, 1, SCREEN_HEIGHT, 15);
-    draw_rect(SCREEN_WIDTH - 1, 0, 1, SCREEN_HEIGHT, 15);
-
-    // Score and lives at top (pixel coordinates now)
-    sprintf(buffer, "Score: %d", score);
-    draw_text(5, 5, buffer);
-
-    sprintf(buffer, "Level: %d", current_level);
-    draw_text(120, 5, buffer);
-
-    sprintf(buffer, "Lives: %d", lives);
-    draw_text(200, 5, buffer);
-}
-void draw_char_transparent(int x, int y, char c, unsigned char color)
-{
-    int i, j;
-    unsigned char mask;
-    unsigned char *font;
-
-    font = get_font_char(c);
-
-    for (i = 0; i < 7; i++)
-    {
-        mask = font[i];
-        for (j = 0; j < 8; j++)
-        {
-            if (mask & (0x80 >> j))
-            {
-                put_pixel(x + j, y + i, color);
-            }
-        }
-    }
-}
-
-void draw_text_transparent(int x, int y, char *text, unsigned char color)
-{
-    int i = 0;
-    while (text[i] != '\0')
-    {
-        draw_char_transparent(x + i * 8, y, text[i], color);
-        i++;
-    }
-}
-
-void draw_bordered_text(int x, int y, char *text, unsigned char border_color)
-{
-    // Draw border
-    draw_text_transparent(x - 1, y, text, border_color);
-    draw_text_transparent(x + 1, y, text, border_color);
-    draw_text_transparent(x, y - 1, text, border_color);
-    draw_text_transparent(x, y + 1, text, border_color);
-
-    // Draw black inner text
-    draw_text_transparent(x, y, text, 0);
-}
-
-void draw_pause_overlay()
-{
-    char line1[] = "PAUSED";
-    char line2[] = "P OR PAUSE";
-    int x1 = (SCREEN_WIDTH - ((sizeof(line1) - 1) * 8)) / 2;
-    int x2 = (SCREEN_WIDTH - ((sizeof(line2) - 1) * 8)) / 2;
-    int y = 90;
-
-    draw_bordered_text(x1, y, line1, 15);
-    draw_bordered_text(x2, y + 12, line2, 15);
-}
 
 void intro_scene()
 {
@@ -591,7 +517,7 @@ void game_loop()
                 draw_bricks();
                 draw_paddle(paddle);
 		draw_ball(ball);
-		draw_ui();
+		draw_ui(score, lives, current_level);
 		if (paused)
 		{
 		    draw_pause_overlay();
@@ -661,7 +587,7 @@ void game_loop()
 	    draw_ball(ball);
 
 	    /* Redraw UI (borders, score, lives) */
-	    draw_ui();
+	    draw_ui(score, lives, current_level);
 
 	    if (paused)
 	    {

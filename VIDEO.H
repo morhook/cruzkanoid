@@ -1,4 +1,5 @@
 #ifndef VIDEO_H
+#define VIDEO_H
 
 #include "cruzkan.h"
 
@@ -29,5 +30,15 @@ unsigned char *get_font_char(char c);
 void draw_char(int x, int y, char c, unsigned char color);
 
 void draw_text(int x, int y, char *text);
+
+void draw_pause_overlay();
+
+void draw_ui(int score, int lives, int current_level);
+
+void draw_char_transparent(int x, int y, char c, unsigned char color);
+
+void draw_text_transparent(int x, int y, char *text, unsigned char color);
+
+void draw_bordered_text(int x, int y, char *text, unsigned char border_color);
 
 #endif /* VIDEO_H */
