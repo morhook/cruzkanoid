@@ -650,21 +650,17 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT)
     {
-        if (audio_music_is_enabled())
-            audio_stop_internal();
-        delay(1000);
         lives--;
+        audio_music_stop();
         audio_event_life_lost_blocking();
         if (lives > 0)
         {
             ball_stuck = 1;
             launch_requested = 0;
             reset_paddle();
-        }
-        delay(3000);
-        if (audio_music_is_enabled())
+            delay_with_audio(1000);
             audio_music_restart();
-
+        }
     }
 
     return brick_hit;
@@ -909,6 +905,8 @@ void game_loop()
         }
     }
 
+    audio_music_stop();
+
     clear_screen(0);
     if (lives == 0)
     {
@@ -922,6 +920,7 @@ void game_loop()
     sprintf(buffer, "Final Score: %d", score);
     draw_text(90, 105, buffer);
     draw_text(70, 120, "Press any key to restart");
+    delay(2000);
 
     while (!kbhit())
     {

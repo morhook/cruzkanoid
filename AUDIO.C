@@ -766,12 +766,21 @@ int audio_music_is_enabled(void)
 void audio_music_restart(void)
 {
     music_index = 0;
+    music_running = 1;
 
     if (!audio_enabled || !music_enabled)
         return;
 
     audio_stop_internal();
     music_start_next_note();
+}
+
+void audio_music_stop(void)
+{
+    music_running = 0;
+
+    if (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE)
+        audio_stop_internal();
 }
 
 void audio_music_toggle(void)

@@ -11,6 +11,7 @@ int audio_is_enabled(void);
 void audio_music_toggle(void);
 int audio_music_is_enabled(void);
 void audio_music_restart(void);
+void audio_music_stop(void);
 
 void audio_stop_internal(void);
 
