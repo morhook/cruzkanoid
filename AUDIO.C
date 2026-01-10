@@ -395,8 +395,8 @@ static void sb_fill_tone_pcm(unsigned char far *dst, unsigned int length, int fr
     }
     else
     {
-        amp_main = 32U;
-        amp_sub = 20U;
+        amp_main = 20U;
+        amp_sub = 12U;
     }
 
     /* Turbo C friendly: use a 16-bit phase accumulator (wraps at 65536).
