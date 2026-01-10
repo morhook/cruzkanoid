@@ -7,9 +7,11 @@ void audio_shutdown(void);
 void audio_update(void);
 void audio_toggle(void);
 int audio_is_enabled(void);
+
 void audio_music_toggle(void);
 int audio_music_is_enabled(void);
 void audio_music_restart(void);
+void audio_music_stop(void);
 
 void audio_event_paddle(void);
 void audio_event_wall(void);

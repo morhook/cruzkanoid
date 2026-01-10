@@ -57,10 +57,12 @@ static unsigned int music_index = 0;
 #define NOTE_C5 523
 #define NOTE_D5 587
 #define NOTE_E5 659
+#define NOTE_F5 698
 #define NOTE_G5 784
+#define NOTE_A5 880
 
 static const MusicNote music_track[] = {
-    /* Cruzkanoid Groove (original), looped. */
+    /* Cruzkanoid Groove (extended), looped. */
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
     {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
@@ -80,6 +82,39 @@ static const MusicNote music_track[] = {
     {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110},
     {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
     {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {0, 110},
+
+    /* Variation A (keeps the bass feel, adds a lead). */
+    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_E5, 110},
+    {NOTE_D5, 110}, {NOTE_C5, 110}, {NOTE_B4, 110}, {NOTE_A4, 110},
+    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
+    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {0, 110},
+
+    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_C5, 110},
+    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_E5, 110},
+    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
+    {NOTE_A4, 110}, {NOTE_F4, 110}, {NOTE_C4, 110}, {0, 110},
+
+    /* Bridge (more motion, a short "climb" then reset). */
+    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_G4, 110},
+    {NOTE_E4, 110}, {NOTE_G4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
+    {NOTE_G3, 110}, {NOTE_B3, 110}, {NOTE_D4, 110}, {NOTE_F4, 110},
+    {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110}, {0, 110},
+
+    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_D5, 110},
+    {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_G5, 110}, {NOTE_A5, 110},
+    {NOTE_G5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {NOTE_A4, 110},
+    {NOTE_G4, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {0, 110},
+
+    /* Variation B (alternating bass + lead to highlight mixed waveforms). */
+    {NOTE_A3, 110}, {NOTE_C5, 110}, {NOTE_A3, 110}, {NOTE_E5, 110},
+    {NOTE_A3, 110}, {NOTE_D5, 110}, {NOTE_A3, 110}, {NOTE_C5, 110},
+    {NOTE_F3, 110}, {NOTE_C5, 110}, {NOTE_F3, 110}, {NOTE_F5, 110},
+    {NOTE_F3, 110}, {NOTE_E5, 110}, {NOTE_F3, 110}, {NOTE_C5, 110},
+
+    {NOTE_C3, 110}, {NOTE_G4, 110}, {NOTE_C3, 110}, {NOTE_E5, 110},
+    {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
+    {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
+    {NOTE_G3, 110}, {NOTE_A4, 110}, {NOTE_G3, 110}, {0, 110},
 
     {0, 0}};
 
@@ -288,29 +323,128 @@ static unsigned long sb_phys_addr(void far *ptr)
     return ((unsigned long)FP_SEG(ptr) << 4) + (unsigned long)FP_OFF(ptr);
 }
 
-static void sb_fill_square_wave(unsigned char far *dst, unsigned int length, int freq_hz, int sample_rate)
+static unsigned char sb_triangle_u8_from_phase(unsigned int phase)
+{
+    /* phase is 0..65535. Use the top 8 bits as the triangle index. */
+    unsigned char t = (unsigned char)(phase >> 8); /* 0..255 */
+
+    if (t < 128U)
+        return (unsigned char)(t << 1); /* 0..254 */
+
+    return (unsigned char)((255U - t) << 1); /* 254..0 */
+}
+
+static int sb_triangle_s_from_phase(unsigned int phase)
+{
+    return (int)sb_triangle_u8_from_phase(phase) - 127;
+}
+
+static int sb_square_s_from_phase(unsigned int phase, unsigned char duty)
+{
+    /* duty is 0..255 (~0%..~100%). */
+    unsigned char p = (unsigned char)(phase >> 8); /* 0..255 */
+    return (p < duty) ? 127 : -127;
+}
+
+static unsigned int sb_env_scale(unsigned int i, unsigned int length)
+{
+    /* Simple linear attack/release to reduce clicks/harshness. Range: 0..256. */
+    const unsigned int env_len = 96U;
+
+    if (length == 0U)
+        return 256U;
+
+    if (i < env_len)
+        return (unsigned int)((i * 256U) / env_len);
+
+    if (i + env_len >= length)
+    {
+        unsigned int rem = (unsigned int)(length - 1U - i);
+        return (unsigned int)((rem * 256U) / env_len);
+    }
+
+    return 256U;
+}
+
+static void sb_fill_tone_pcm(unsigned char far *dst, unsigned int length, int freq_hz, int sample_rate)
 {
     unsigned int i;
-    unsigned int period;
-    unsigned int half;
+    unsigned int phase;
+    unsigned int phase_step;
+    unsigned int phase_sub;
+    unsigned int phase_step_sub;
+    unsigned int amp_main;
+    unsigned int amp_sub;
+    unsigned int sub_freq;
+    int use_bass_triangle;
 
     if (freq_hz <= 0)
         freq_hz = 440;
     if (sample_rate <= 0)
         sample_rate = 11025;
 
-    period = (unsigned int)(sample_rate / freq_hz);
-    if (period < 2)
-        period = 2;
+    /* Softer-than-square synth:
+       - Bass notes: triangle (rounder)
+       - Melody notes: square (brighter) + triangle sub at 1/2 freq
+       - Lower overall amplitude + simple envelope */
+    use_bass_triangle = (freq_hz < 260);
+    if (use_bass_triangle)
+    {
+        amp_main = 48U;
+        amp_sub = 0U;
+    }
+    else
+    {
+        amp_main = 20U;
+        amp_sub = 12U;
+    }
 
-    half = (unsigned int)(period / 2);
-    if (half == 0)
-        half = 1;
+    /* Turbo C friendly: use a 16-bit phase accumulator (wraps at 65536).
+       One full cycle is 65536 phase units. */
+    phase = 0U;
+    phase_sub = 0U;
+
+    phase_step = (unsigned int)(((unsigned long)freq_hz * 65536UL) / (unsigned long)sample_rate);
+
+    sub_freq = (unsigned int)(freq_hz / 2);
+    if (sub_freq == 0U)
+        sub_freq = (unsigned int)freq_hz;
+    phase_step_sub = (unsigned int)(((unsigned long)sub_freq * 65536UL) / (unsigned long)sample_rate);
+
+    if (phase_step == 0U)
+        phase_step = 1U;
+    if (phase_step_sub == 0U)
+        phase_step_sub = 1U;
 
     for (i = 0; i < length; i++)
     {
-        unsigned int p = (unsigned int)(i % period);
-        dst[i] = (p < half) ? 0xE0 : 0x20;
+        unsigned int env = sb_env_scale(i, length);
+        int main_s;
+        int sub_s;
+        long mixed;
+        int sample;
+
+        if (use_bass_triangle)
+            main_s = sb_triangle_s_from_phase(phase);
+        else
+            main_s = sb_square_s_from_phase(phase, 96); /* ~37.5% duty to reduce buzzy edge */
+
+        sub_s = (amp_sub != 0U) ? sb_triangle_s_from_phase(phase_sub) : 0;
+
+        mixed = (long)main_s * (long)amp_main + (long)sub_s * (long)amp_sub;
+        mixed = (mixed * (long)env) / (long)256;
+        mixed = mixed / 64L; /* scale back down to sane range */
+
+        sample = 128 + (int)mixed;
+        if (sample < 0)
+            sample = 0;
+        if (sample > 255)
+            sample = 255;
+
+        dst[i] = (unsigned char)sample;
+
+        phase = (unsigned int)(phase + phase_step);
+        phase_sub = (unsigned int)(phase_sub + phase_step_sub);
     }
 }
 
@@ -333,7 +467,7 @@ static int sb_play_tone(int freq, int ms)
     if (length > sb_dma_buf_size)
         length = sb_dma_buf_size;
 
-    sb_fill_square_wave(sb_dma_buf, length, freq, sample_rate);
+    sb_fill_tone_pcm(sb_dma_buf, length, freq, sample_rate);
     phys = sb_phys_addr(sb_dma_buf);
 
     sb_stop_internal();
@@ -498,7 +632,7 @@ static void sb_shutdown_internal(void)
     sb_present = 0;
 }
 
-static void audio_stop_internal(void)
+void audio_stop_internal(void)
 {
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
         sb_stop_internal();
@@ -632,12 +766,21 @@ int audio_music_is_enabled(void)
 void audio_music_restart(void)
 {
     music_index = 0;
+    music_running = 1;
 
     if (!audio_enabled || !music_enabled)
         return;
 
     audio_stop_internal();
     music_start_next_note();
+}
+
+void audio_music_stop(void)
+{
+    music_running = 0;
+
+    if (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE)
+        audio_stop_internal();
 }
 
 void audio_music_toggle(void)

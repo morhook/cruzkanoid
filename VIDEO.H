@@ -24,4 +24,10 @@ void draw_ball(Ball ball);
 
 void erase_ball(int x, int y, Ball ball);
 
+unsigned char *get_font_char(char c);
+
+void draw_char(int x, int y, char c, unsigned char color);
+
+void draw_text(int x, int y, char *text);
+
 #endif /* VIDEO_H */
