@@ -125,6 +125,212 @@ static void music_advance_index(void)
         music_index = 0;
 }
 
+/* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
+static int opl_present = 0;
+static unsigned int opl_addr0 = 0x388;
+static unsigned int opl_data0 = 0x389;
+
+static unsigned char opl_last_b0_ch0 = 0;
+static unsigned char opl_last_b0_ch1 = 0;
+
+static void opl_io_delay(void)
+{
+    /* Short wait for OPL register timing. */
+    (void)inp(opl_addr0);
+    (void)inp(opl_addr0);
+    (void)inp(opl_addr0);
+    (void)inp(opl_addr0);
+    (void)inp(opl_addr0);
+    (void)inp(opl_addr0);
+}
+
+static void opl_write(unsigned char reg, unsigned char value)
+{
+    outp(opl_addr0, reg);
+    opl_io_delay();
+    outp(opl_data0, value);
+    opl_io_delay();
+}
+
+static unsigned char opl_read_status(void)
+{
+    return (unsigned char)inp(opl_addr0);
+}
+
+static int opl_detect(void)
+{
+    unsigned char s1;
+    unsigned char s2;
+
+    /* Standard AdLib/OPL2 detect via timers. */
+    opl_write(0x01, 0x00);
+    opl_write(0x04, 0x60);
+    opl_write(0x04, 0x80);
+    s1 = (unsigned char)(opl_read_status() & 0xE0);
+
+    opl_write(0x02, 0xFF);
+    opl_write(0x04, 0x21);
+    delay(1);
+    s2 = (unsigned char)(opl_read_status() & 0xE0);
+
+    opl_write(0x04, 0x60);
+    opl_write(0x04, 0x80);
+
+    return (s1 == 0x00) && (s2 == 0xC0);
+}
+
+static void opl_note_off(int ch)
+{
+    if (ch == 0)
+    {
+        opl_last_b0_ch0 = (unsigned char)(opl_last_b0_ch0 & (unsigned char)~0x20);
+        opl_write((unsigned char)(0xB0 + ch), opl_last_b0_ch0);
+        return;
+    }
+
+    opl_last_b0_ch1 = (unsigned char)(opl_last_b0_ch1 & (unsigned char)~0x20);
+    opl_write((unsigned char)(0xB0 + ch), opl_last_b0_ch1);
+}
+
+static void opl_stop_internal(void)
+{
+    if (!opl_present)
+        return;
+
+    opl_note_off(0);
+    opl_note_off(1);
+}
+
+static void opl_calc_fnum_block(unsigned int freq_hz, unsigned int *out_fnum, unsigned char *out_block)
+{
+    unsigned char b;
+
+    if (freq_hz < 32U)
+        freq_hz = 32U;
+    if (freq_hz > 5000U)
+        freq_hz = 5000U;
+
+    for (b = 0; b < 8; b++)
+    {
+        unsigned long fnum = ((unsigned long)freq_hz << (20 - b)) / 49716UL;
+        if (fnum > 0UL && fnum <= 1023UL)
+        {
+            *out_fnum = (unsigned int)fnum;
+            *out_block = b;
+            return;
+        }
+    }
+
+    *out_fnum = 1023U;
+    *out_block = 7;
+}
+
+static void opl_note_on(int ch, unsigned int freq_hz)
+{
+    unsigned int fnum = 0;
+    unsigned char block = 0;
+    unsigned char b0;
+
+    opl_calc_fnum_block(freq_hz, &fnum, &block);
+
+    b0 = (unsigned char)(((fnum >> 8) & 0x03U) | (unsigned char)(block << 2));
+
+    opl_write((unsigned char)(0xA0 + ch), (unsigned char)(fnum & 0xFFU));
+    opl_write((unsigned char)(0xB0 + ch), b0);
+
+    b0 = (unsigned char)(b0 | 0x20);
+    opl_write((unsigned char)(0xB0 + ch), b0);
+
+    if (ch == 0)
+        opl_last_b0_ch0 = b0;
+    else
+        opl_last_b0_ch1 = b0;
+}
+
+static void opl_program_channel(int ch, unsigned char carrier_tl)
+{
+    static const unsigned char mod_op[9] = {0, 1, 2, 8, 9, 10, 16, 17, 18};
+    static const unsigned char car_op[9] = {3, 4, 5, 11, 12, 13, 19, 20, 21};
+    unsigned char mod;
+    unsigned char car;
+
+    if (ch < 0 || ch > 8)
+        return;
+
+    mod = mod_op[ch];
+    car = car_op[ch];
+
+    /* Simple sine-ish voice. */
+    opl_write((unsigned char)(0x20 + mod), 0x01);
+    opl_write((unsigned char)(0x20 + car), 0x01);
+
+    /* TL: higher = quieter. */
+    opl_write((unsigned char)(0x40 + mod), 0x20);
+    opl_write((unsigned char)(0x40 + car), (unsigned char)(carrier_tl & 0x3F));
+
+    /* Attack/Decay, Sustain/Release. */
+    opl_write((unsigned char)(0x60 + mod), 0xF3);
+    opl_write((unsigned char)(0x60 + car), 0xF3);
+    opl_write((unsigned char)(0x80 + mod), 0x74);
+    opl_write((unsigned char)(0x80 + car), 0x74);
+
+    /* Waveform select (sine). */
+    opl_write((unsigned char)(0xE0 + mod), 0x00);
+    opl_write((unsigned char)(0xE0 + car), 0x00);
+
+    /* Feedback and algorithm: mild FM. */
+    opl_write((unsigned char)(0xC0 + ch), 0x04);
+}
+
+static int opl_init_internal(void)
+{
+    if (!opl_detect())
+        return 0;
+
+    /* Enable waveform select. */
+    opl_write(0x01, 0x20);
+
+    /* Melodic mode (no rhythm). */
+    opl_write(0xBD, 0x00);
+
+    /* Two channels: ch0 (bass), ch1 (lead). */
+    opl_program_channel(0, 0x18);
+    opl_program_channel(1, 0x10);
+
+    opl_last_b0_ch0 = 0;
+    opl_last_b0_ch1 = 0;
+    opl_note_off(0);
+    opl_note_off(1);
+
+    return 1;
+}
+
+static void opl_play_music_note_two_voice(unsigned int freq_hz)
+{
+    unsigned int other;
+
+    if (!opl_present)
+        return;
+
+    if (freq_hz == 0U)
+    {
+        opl_stop_internal();
+        return;
+    }
+
+    /* Keep the original note as-is, add an octave companion note. */
+    if (freq_hz < 260U)
+        other = (unsigned int)(freq_hz * 2U);
+    else
+        other = (unsigned int)(freq_hz / 2U);
+
+    if (other == 0U)
+        other = freq_hz;
+
+    opl_note_on(0, freq_hz);
+    opl_note_on(1, other);
+}
+
 /* --- Sound Blaster (DSP + 8-bit DMA) backend --- */
 static int sb_present = 0;
 static unsigned int sb_base_port = 0x220;
@@ -636,6 +842,7 @@ void audio_stop_internal(void)
 {
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
         sb_stop_internal();
+    opl_stop_internal();
     nosound();
     audio_active = 0;
     audio_end_clock = 0;
@@ -646,12 +853,16 @@ static void audio_start_tone_internal(int freq, int ms, ToneSource source)
 {
     clock_t now;
     clock_t ticks;
+    ToneSource prev_source = tone_source;
 
     if (!audio_enabled)
         return;
 
     if (ms <= 0)
         return;
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && opl_present && prev_source == TONE_MUSIC && source != TONE_MUSIC)
+        opl_stop_internal();
 
     now = clock();
 
@@ -667,13 +878,17 @@ static void audio_start_tone_internal(int freq, int ms, ToneSource source)
     {
         if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER)
             sb_stop_internal();
+        opl_stop_internal();
         nosound();
         return;
     }
 
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
     {
-        (void)sb_play_tone(freq, ms);
+        if (source == TONE_MUSIC && opl_present)
+            opl_play_music_note_two_voice((unsigned int)freq);
+        else
+            (void)sb_play_tone(freq, ms);
         return;
     }
 
@@ -732,9 +947,11 @@ void audio_init(void)
 
     /* Try to enable Sound Blaster output; fall back to PC speaker. */
     sb_present = 0;
+    opl_present = 0;
     audio_backend = AUDIO_BACKEND_SPEAKER;
     if (sb_init_internal()) {
 	audio_backend = AUDIO_BACKEND_SOUNDBLASTER;
+        opl_present = opl_init_internal();
     }
 
     audio_stop_internal();
@@ -743,6 +960,7 @@ void audio_init(void)
 void audio_shutdown(void)
 {
     audio_stop_internal();
+    opl_present = 0;
     sb_shutdown_internal();
 }
 
