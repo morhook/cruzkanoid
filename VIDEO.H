@@ -41,4 +41,11 @@ void draw_text_transparent(int x, int y, char *text, unsigned char color);
 
 void draw_bordered_text(int x, int y, char *text, unsigned char border_color);
 
+void wait_vblank(void);
+
+void fade_palette_color(unsigned char index,
+                        unsigned char from_r, unsigned char from_g, unsigned char from_b,
+                        unsigned char to_r, unsigned char to_g, unsigned char to_b,
+                        int steps, int delay_ms);
+
 #endif /* VIDEO_H */

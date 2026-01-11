@@ -477,26 +477,29 @@ void intro_scene()
     int text_width = 10 * 8; /* 10 chars * 8 pixels wide */
     int x = (SCREEN_WIDTH - text_width) / 2;
     int y = (SCREEN_HEIGHT - 7) / 2;     /* 7 is font height */
-    unsigned char colors[] = {0, 3, 11}; /* Black, Dark Cyan, Light Cyan */
-    int i;
+    unsigned char intro_border_index = 16;
+    unsigned char intro_border_r = 0;
+    unsigned char intro_border_g = 60;
+    unsigned char intro_border_b = 63;
+    int fade_steps = 30;
+    int fade_delay_ms = 20;
 
     clear_screen(0);
 
-    /* Fade in */
-    for (i = 0; i < 3; i++)
-    {
-        draw_bordered_text(x, y, title, colors[i]);
-        delay(200);
-    }
+    /* Draw once, then fade by changing the palette (no redraw). */
+    set_palette_color(intro_border_index, 0, 0, 0);
+    draw_bordered_text(x, y, title, intro_border_index);
+    fade_palette_color(intro_border_index,
+                       0, 0, 0,
+                       intro_border_r, intro_border_g, intro_border_b,
+                       fade_steps, fade_delay_ms);
 
     delay(2000); /* Hold for 2 seconds */
 
-    /* Fade out */
-    for (i = 2; i >= 0; i--)
-    {
-        draw_bordered_text(x, y, title, colors[i]);
-        delay(200);
-    }
+    fade_palette_color(intro_border_index,
+                       intro_border_r, intro_border_g, intro_border_b,
+                       0, 0, 0,
+                       fade_steps, fade_delay_ms);
     clear_screen(0);
 }
 

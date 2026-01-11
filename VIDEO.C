@@ -13,6 +13,38 @@ void set_palette_color(unsigned char index, unsigned char r, unsigned char g, un
     outp(0x3C9, b);
 }
 
+void wait_vblank(void)
+{
+    /* VGA status register: bit 3 is vertical retrace. */
+    while (inp(0x3DA) & 0x08)
+        ;
+    while (!(inp(0x3DA) & 0x08))
+        ;
+}
+
+void fade_palette_color(unsigned char index,
+                        unsigned char from_r, unsigned char from_g, unsigned char from_b,
+                        unsigned char to_r, unsigned char to_g, unsigned char to_b,
+                        int steps, int delay_ms)
+{
+    int i;
+
+    if (steps <= 0)
+        steps = 1;
+
+    for (i = 1; i <= steps; i++)
+    {
+        int r = (int)from_r + (((int)to_r - (int)from_r) * i) / steps;
+        int g = (int)from_g + (((int)to_g - (int)from_g) * i) / steps;
+        int b = (int)from_b + (((int)to_b - (int)from_b) * i) / steps;
+
+        set_palette_color(index, (unsigned char)r, (unsigned char)g, (unsigned char)b);
+        wait_vblank();
+        if (delay_ms > 0)
+            delay(delay_ms);
+    }
+}
+
 void set_mode(unsigned char mode)
 {
     union REGS regs;
