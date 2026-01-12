@@ -1165,7 +1165,7 @@ static void music_start_next_note(void)
         audio_start_tone_internal((int)n.freq, (int)n.ms, TONE_MUSIC);
 }
 
-void audio_init(void)
+void far audio_init(void)
 {
     audio_enabled = 1;
     music_enabled = 1;
@@ -1185,31 +1185,31 @@ void audio_init(void)
     audio_stop_internal();
 }
 
-void audio_shutdown(void)
+void far audio_shutdown(void)
 {
     audio_stop_internal();
     opl_present = 0;
     sb_shutdown_internal();
 }
 
-int audio_is_enabled(void)
+int far audio_is_enabled(void)
 {
     return audio_enabled;
 }
 
-void audio_toggle(void)
+void far audio_toggle(void)
 {
     audio_enabled = !audio_enabled;
     if (!audio_enabled)
         audio_stop_internal();
 }
 
-int audio_music_is_enabled(void)
+int far audio_music_is_enabled(void)
 {
     return music_enabled;
 }
 
-void audio_music_restart(void)
+void far audio_music_restart(void)
 {
     music_index = 0;
     music_running = 1;
@@ -1221,7 +1221,7 @@ void audio_music_restart(void)
     music_start_next_note();
 }
 
-void audio_music_stop(void)
+void far audio_music_stop(void)
 {
     music_running = 0;
 
@@ -1229,14 +1229,14 @@ void audio_music_stop(void)
         audio_stop_internal();
 }
 
-void audio_music_toggle(void)
+void far audio_music_toggle(void)
 {
     music_enabled = !music_enabled;
     if (!music_enabled && (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE))
         audio_stop_internal();
 }
 
-void audio_update(void)
+void far audio_update(void)
 {
     clock_t now = clock();
 
@@ -1250,17 +1250,17 @@ void audio_update(void)
     music_start_next_note();
 }
 
-void audio_event_paddle(void)
+void far audio_event_paddle(void)
 {
     audio_play_tone(1200, 45);
 }
 
-void audio_event_wall(void)
+void far audio_event_wall(void)
 {
     audio_play_tone(800, 35);
 }
 
-void audio_event_brick(int row)
+void far audio_event_brick(int row)
 {
     int freq = 1500 - row * 140;
     if (freq < 400)
@@ -1268,7 +1268,7 @@ void audio_event_brick(int row)
     audio_play_tone(freq, 55);
 }
 
-void audio_event_life_lost_blocking(void)
+void far audio_event_life_lost_blocking(void)
 {
     if (!audio_enabled)
         return;
@@ -1296,7 +1296,7 @@ void audio_event_life_lost_blocking(void)
     nosound();
 }
 
-void audio_event_level_clear_blocking(void)
+void far audio_event_level_clear_blocking(void)
 {
     if (!audio_enabled)
         return;

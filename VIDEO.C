@@ -5,7 +5,7 @@
 
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
 
-void set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
+void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
 {
     outp(0x3C8, index);
     outp(0x3C9, r);
@@ -13,7 +13,7 @@ void set_palette_color(unsigned char index, unsigned char r, unsigned char g, un
     outp(0x3C9, b);
 }
 
-void wait_vblank(void)
+void far wait_vblank(void)
 {
     /* VGA status register: bit 3 is vertical retrace. */
     while (inp(0x3DA) & 0x08)
@@ -22,7 +22,7 @@ void wait_vblank(void)
         ;
 }
 
-void fade_palette_color(unsigned char index,
+void far fade_palette_color(unsigned char index,
                         unsigned char from_r, unsigned char from_g, unsigned char from_b,
                         unsigned char to_r, unsigned char to_g, unsigned char to_b,
                         int steps, int delay_ms)
@@ -45,14 +45,14 @@ void fade_palette_color(unsigned char index,
     }
 }
 
-void set_mode(unsigned char mode)
+void far set_mode(unsigned char mode)
 {
     union REGS regs;
     regs.h.ah = 0x00;
     regs.h.al = mode;
     int86(0x10, &regs, &regs);
 }
-void put_pixel(int x, int y, unsigned char color)
+void far put_pixel(int x, int y, unsigned char color)
 {
     if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT)
     {
@@ -60,7 +60,7 @@ void put_pixel(int x, int y, unsigned char color)
     }
 }
 
-void draw_rect(int x, int y, int width, int height, unsigned char color)
+void far draw_rect(int x, int y, int width, int height, unsigned char color)
 {
     int i, j;
     for (i = 0; i < height; i++)
@@ -72,12 +72,12 @@ void draw_rect(int x, int y, int width, int height, unsigned char color)
     }
 }
 
-void draw_filled_rect(int x, int y, int width, int height, unsigned char color)
+void far draw_filled_rect(int x, int y, int width, int height, unsigned char color)
 {
     draw_rect(x, y, width, height, color);
 }
 
-void clear_screen(unsigned char color)
+void far clear_screen(unsigned char color)
 {
     int i, j;
     for (i = 0; i < SCREEN_WIDTH; i++)
@@ -88,7 +88,7 @@ void clear_screen(unsigned char color)
         }
     }
 }
-void draw_paddle(Paddle paddle)
+void far draw_paddle(Paddle paddle)
 {
     int i, j;
     int radius = PADDLE_HEIGHT / 2;
@@ -208,13 +208,13 @@ void draw_paddle(Paddle paddle)
     }
 }
 
-void erase_paddle(int x, Paddle paddle)
+void far erase_paddle(int x, Paddle paddle)
 {
     draw_filled_rect(x, paddle.y, paddle.width, PADDLE_HEIGHT, 0);
 }
 
 
-unsigned char *get_font_char(char c)
+static unsigned char *get_font_char(char c)
 {
     static unsigned char font_data[47][7] = {
         /* 0 */ {0x70, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
@@ -342,7 +342,7 @@ unsigned char *get_font_char(char c)
     return font_data[46]; /* unknown char */
 }
 
-void draw_char(int x, int y, char c, unsigned char color)
+void far draw_char(int x, int y, char c, unsigned char color)
 {
     int i, j;
     unsigned char mask;
@@ -367,7 +367,7 @@ void draw_char(int x, int y, char c, unsigned char color)
     }
 }
 
-void draw_text(int x, int y, char *text)
+void far draw_text(int x, int y, char *text)
 {
     int i = 0;
     while (text[i] != '\0')
@@ -379,7 +379,7 @@ void draw_text(int x, int y, char *text)
 // Draw a square "ball" centered at (cx,cy).
 // Uses parameter r as half-size (so size = r*2). Draws a lighter border,
 // leaves the four corner pixels empty.
-void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned char border_color)
+void far draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned char border_color)
 {
     int i, j;
     int size = r * 2;
@@ -414,12 +414,12 @@ void draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned cha
     }
 }
 
-void draw_ball(Ball ball)
+void far draw_ball(Ball ball)
 {
     draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x3f);
 }
 
-void erase_ball(int x, int y, Ball ball)
+void far erase_ball(int x, int y, Ball ball)
 {
     int i, j;
     int r = BALL_SIZE / 2;
@@ -442,7 +442,7 @@ void erase_ball(int x, int y, Ball ball)
     }
 }
 
-void draw_ui(int score, int lives, int current_level)
+void far draw_ui(int score, int lives, int current_level)
 {
     char buffer[50];
 
@@ -461,7 +461,7 @@ void draw_ui(int score, int lives, int current_level)
     sprintf(buffer, "Lives: %d", lives);
     draw_text(200, 5, buffer);
 }
-void draw_char_transparent(int x, int y, char c, unsigned char color)
+void far draw_char_transparent(int x, int y, char c, unsigned char color)
 {
     int i, j;
     unsigned char mask;
@@ -482,7 +482,7 @@ void draw_char_transparent(int x, int y, char c, unsigned char color)
     }
 }
 
-void draw_text_transparent(int x, int y, char *text, unsigned char color)
+void far draw_text_transparent(int x, int y, char *text, unsigned char color)
 {
     int i = 0;
     while (text[i] != '\0')
@@ -492,7 +492,7 @@ void draw_text_transparent(int x, int y, char *text, unsigned char color)
     }
 }
 
-void draw_bordered_text(int x, int y, char *text, unsigned char border_color)
+void far draw_bordered_text(int x, int y, char *text, unsigned char border_color)
 {
     // Draw border
     draw_text_transparent(x - 1, y, text, border_color);
@@ -504,7 +504,7 @@ void draw_bordered_text(int x, int y, char *text, unsigned char border_color)
     draw_text_transparent(x, y, text, 0);
 }
 
-void draw_pause_overlay()
+void far draw_pause_overlay()
 {
     char line1[] = "PAUSED";
     char line2[] = "P OR PAUSE";

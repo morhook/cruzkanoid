@@ -1,22 +1,22 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-void audio_init(void);
-void audio_shutdown(void);
+void far audio_init(void);
+void far audio_shutdown(void);
 
-void audio_update(void);
-void audio_toggle(void);
-int audio_is_enabled(void);
+void far audio_update(void);
+void far audio_toggle(void);
+int far audio_is_enabled(void);
 
-void audio_music_toggle(void);
-int audio_music_is_enabled(void);
-void audio_music_restart(void);
-void audio_music_stop(void);
+void far audio_music_toggle(void);
+int far audio_music_is_enabled(void);
+void far audio_music_restart(void);
+void far audio_music_stop(void);
 
-void audio_event_paddle(void);
-void audio_event_wall(void);
-void audio_event_brick(int row);
-void audio_event_life_lost_blocking(void);
-void audio_event_level_clear_blocking(void);
+void far audio_event_paddle(void);
+void far audio_event_wall(void);
+void far audio_event_brick(int row);
+void far audio_event_life_lost_blocking(void);
+void far audio_event_level_clear_blocking(void);
 
 #endif

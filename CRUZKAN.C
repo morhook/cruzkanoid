@@ -50,6 +50,8 @@ static int mouse_buttons = 0;
 static int mouse_prev_buttons = 0;
 static int mouse_x = 0;
 static int mouse_y = 0;
+static int key_vx = 0;
+static int key_offset = 0;
 
 static int mouse_init(void)
 {
@@ -170,6 +172,8 @@ void reset_paddle()
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
     paddle.vx = 0;
+    key_vx = 0;
+    key_offset = 0;
 
     /* Prevent a big "jump" when mouse control is active. */
     mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
@@ -415,6 +419,7 @@ void update_paddle()
         paused = !paused;
         force_redraw = 1;
         paddle.vx = 0;
+        key_vx = 0;
         launch_requested = 0;
     }
 
@@ -428,16 +433,43 @@ void update_paddle()
 
     if (use_mouse)
     {
+        if (move_dir < 0)
+            key_vx -= PADDLE_ACCEL;
+        else if (move_dir > 0)
+            key_vx += PADDLE_ACCEL;
+        else
+        {
+            if (key_vx > 0)
+                key_vx -= PADDLE_FRICTION;
+            else if (key_vx < 0)
+                key_vx += PADDLE_FRICTION;
+        }
+
+        if (key_vx > PADDLE_MAX_SPEED)
+            key_vx = PADDLE_MAX_SPEED;
+        else if (key_vx < -PADDLE_MAX_SPEED)
+            key_vx = -PADDLE_MAX_SPEED;
+
+        key_offset += key_vx;
+        if (key_offset > SCREEN_WIDTH)
+            key_offset = SCREEN_WIDTH;
+        else if (key_offset < -SCREEN_WIDTH)
+            key_offset = -SCREEN_WIDTH;
+
         paddle.x = target_x;
+        paddle.x += key_offset;
         if (paddle.x < 0)
             paddle.x = 0;
         if (paddle.x + paddle.width > SCREEN_WIDTH)
             paddle.x = SCREEN_WIDTH - paddle.width;
 
         paddle.vx = paddle.x - old_x;
+        key_offset = paddle.x - target_x;
     }
     else
     {
+        key_vx = 0;
+        key_offset = 0;
         if (move_dir < 0)
             paddle.vx -= PADDLE_ACCEL;
         else if (move_dir > 0)

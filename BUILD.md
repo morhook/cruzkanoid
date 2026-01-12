@@ -49,6 +49,8 @@ After compilation, run in DOSBox-x:
 dosbox-x CRUZKAN.EXE
 ```
 
+If you get Turbo C linker errors like “Fixup overflow”, rebuild after these changes: the exported APIs in `VIDEO.H` and `audio.h` now use `far` so the linker can place code in multiple segments without changing the project memory model.
+
 ## Troubleshooting
 
 **Issue:** Game runs too fast/slow in DOSBox
