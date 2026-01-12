@@ -56,4 +56,4 @@ or else you'll hear the PC Speaker version (protect your ears!)
 
 # Development
 
-Read (BUILD.md)[BUILD.md] for more info
+Read (BUILD.md)[BUILD.md] for more info on building, running and contributing
