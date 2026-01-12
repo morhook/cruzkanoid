@@ -27,21 +27,19 @@ A classic brick-breaking game written in C for DOS. The home page is in [morhook
 - M: Toggle soundtrack
 - Esc: Quit game
 
-## Compilation
-
-This project is intended to be compiled with Turbo C 3.0 inside DOSBox-X.
-
-1.  Start DOSBox-X and mount your project directory and the directory containing Turbo C 3.0.
-2.  Navigate to your Turbo C 3.0 directory (e.g., `D:\TC\BIN`).
-3.  Run `TC.EXE` to launch the Turbo C IDE.
-4.  Inside the IDE, open the `CRUZKAN.PRJ` project from your mounted project directory.
-5.  Compile and run the program from within the IDE.
-
 ## Running
-Run the game in DOS or DOSBox:
+Run the game in a real DOS machine, DOSBox or Dosbox-x:
 ```sh
 cruzkan.exe
 ```
+
+Remember to configure your SoundBlaster with something like:
+```
+set BLASTER=A220 D1 H5 P330 T6
+  
+```
+
+or else you'll hear the PC Speaker version (protect your ears!)
 
 ## Game Rules
 - Destroy all bricks to win
@@ -55,3 +53,7 @@ cruzkan.exe
 - BIOS interrupts for keyboard input
 - Real-time gameplay with delay timing
 - Sound: tries Sound Blaster DSP (8-bit DMA) using the `BLASTER` env var, falls back to PC speaker
+
+# Development
+
+Read (BUILD.md)[BUILD.md] for more info

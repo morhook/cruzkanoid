@@ -10,26 +10,33 @@
 2. Download Turbo C 2.01 (free from Borland):
    - Get it from: https://archive.org/details/turboc201
 
-3. Mount and compile:
+3. Mount and open IDE:
    ```bash
-   dosbox
+   dosbox-x
    # Inside DOSBox-x:
    mount c ~/workspace/cruzkanoid
    mount d ~/downloads/tc
-   d:
-   cd tc\bin
+   SET PATH=%PATH%;d:\tc\bin
    c:
-   tcc -ml cruzkan.c audio.c
-   cruzkan.exe
+   tc
    ```
 
-## Sound Blaster (optional)
+### Niceties
+
+To ease opening TC.EXE, using compilers, linking, etc, from commandline, you can use our ADDPATH.BAT script
+
+```
+dosbox-x -c "mount c $HOME/workspace/cruzkanoid/" -c "c:" -c "call addpath.bat"
+```
+
+## Sound Blaster (optional, but mandatory to take care of your ears)
 
 The game will try to use Sound Blaster digital audio if it can reset the DSP. It reads the standard `BLASTER` environment variable (for example: `A220 I5 D1`).
 
 In DOSBox-X, ensure Sound Blaster is enabled and the base/IRQ/DMA match `BLASTER` (common defaults are `A220 I7 D1`, depending on config).
 
-If you need to set it manually inside DOSBox-X:
+Depending your Address/IRQ port/DMA, you might need to set it manually inside DOSBox-X with something like:
+
 ```bat
 SET BLASTER=A220 I7 D1
 ```
@@ -39,13 +46,7 @@ SET BLASTER=A220 I7 D1
 After compilation, run in DOSBox-x:
 
 ```bash
-dosbox-x cruzkan.exe
-```
-
-Or configure DOSBox-x to auto-run:
-
-```bash
-dosbox -c "mount c ." -c "c:" -c "cruzkan.exe"
+dosbox-x CRUZKAN.EXE
 ```
 
 ## Troubleshooting
@@ -57,3 +58,9 @@ dosbox -c "mount c ." -c "c:" -c "cruzkan.exe"
 **Issue:** No keyboard response
 - Make sure DOSBox-x window has focus
 - Try different DOSBox-x versions
+
+## Contributions
+
+Contributions are welcome and never granted! If you want to know more about DOS programming it's a topic I'm passionate about!
+
+Respect the CRLF code convention and we are good to go!
