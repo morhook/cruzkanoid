@@ -1,12 +1,13 @@
 # CRUZKANOID DOS CLONE
 
-A classic brick-breaking game written in C for DOS.
+A classic brick-breaking game written in C for DOS. The home page is in [morhook.itch.io/cruzkanoid](https://morhook.itch.io/cruzkanoid). For downloading compiled versions, go there.
 
 ![CruzKanoid Art Box](game-box-design.png)
 
 ## Screenshots
 
 ![Cruzkanoid running in DOSBox-X](cruzkanoid_on_dosbox.png)
+
 
 ## Features
 - 320x200 VGA graphics (Mode 13h)
