@@ -45,6 +45,93 @@ int launch_requested = 0;
 int paused = 0;
 int force_redraw = 0;
 
+static int mouse_available = 0;
+static int mouse_buttons = 0;
+static int mouse_prev_buttons = 0;
+static int mouse_x = 0;
+static int mouse_y = 0;
+
+static int mouse_init(void)
+{
+    union REGS regs;
+
+    regs.x.ax = 0x0000; /* Reset / get installed status */
+    int86(0x33, &regs, &regs);
+    mouse_available = (regs.x.ax != 0);
+    mouse_buttons = regs.x.bx;
+    mouse_prev_buttons = 0;
+    mouse_x = 0;
+    mouse_y = 0;
+
+    if (!mouse_available)
+        return 0;
+
+    /* Clamp mouse coordinates to our mode 13h screen. */
+    regs.x.ax = 0x0007; /* Set horizontal range */
+    regs.x.cx = 0;
+    regs.x.dx = SCREEN_WIDTH - 1;
+    int86(0x33, &regs, &regs);
+
+    regs.x.ax = 0x0008; /* Set vertical range */
+    regs.x.cx = 0;
+    regs.x.dx = SCREEN_HEIGHT - 1;
+    int86(0x33, &regs, &regs);
+
+    regs.x.ax = 0x0002; /* Hide cursor */
+    int86(0x33, &regs, &regs);
+
+    return 1;
+}
+
+static void mouse_shutdown(void)
+{
+    union REGS regs;
+
+    if (!mouse_available)
+        return;
+
+    regs.x.ax = 0x0001; /* Show cursor */
+    int86(0x33, &regs, &regs);
+}
+
+static void mouse_update(void)
+{
+    union REGS regs;
+
+    if (!mouse_available)
+        return;
+
+    regs.x.ax = 0x0003; /* Get position + buttons */
+    int86(0x33, &regs, &regs);
+    mouse_buttons = regs.x.bx;
+    mouse_x = regs.x.cx;
+    mouse_y = regs.x.dx;
+}
+
+static void mouse_set_pos(int x, int y)
+{
+    union REGS regs;
+
+    if (!mouse_available)
+        return;
+
+    if (x < 0)
+        x = 0;
+    if (x >= SCREEN_WIDTH)
+        x = SCREEN_WIDTH - 1;
+    if (y < 0)
+        y = 0;
+    if (y >= SCREEN_HEIGHT)
+        y = SCREEN_HEIGHT - 1;
+
+    regs.x.ax = 0x0004; /* Set position */
+    regs.x.cx = x;
+    regs.x.dx = y;
+    int86(0x33, &regs, &regs);
+    mouse_x = x;
+    mouse_y = y;
+}
+
 void drain_keyboard_buffer(void)
 {
     while (kbhit())
@@ -83,6 +170,9 @@ void reset_paddle()
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
     paddle.vx = 0;
+
+    /* Prevent a big "jump" when mouse control is active. */
+    mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
 }
 
 void init_brick_palette()
@@ -252,6 +342,20 @@ void update_paddle()
 {
     int move_dir = 0;
     int pause_toggle_requested = 0;
+    int old_x = paddle.x;
+    int use_mouse = mouse_available;
+    int target_x = paddle.x;
+    int left_clicked = 0;
+    int right_clicked = 0;
+
+    if (use_mouse)
+    {
+        mouse_update();
+        left_clicked = ((mouse_buttons & 1) != 0) && ((mouse_prev_buttons & 1) == 0);
+        right_clicked = ((mouse_buttons & 2) != 0) && ((mouse_prev_buttons & 2) == 0);
+        mouse_prev_buttons = mouse_buttons;
+        target_x = mouse_x - (paddle.width / 2);
+    }
 
     /* Consume all pending keys; last direction wins. */
     while (kbhit())
@@ -296,11 +400,15 @@ void update_paddle()
         }
         if (key == 27)
         { // ESC
+            mouse_shutdown();
             audio_shutdown();
             set_mode(0x03);
             exit(0);
         }
     }
+
+    if (right_clicked)
+        pause_toggle_requested = 1;
 
     if (pause_toggle_requested)
     {
@@ -315,25 +423,41 @@ void update_paddle()
         return;
     }
 
-    if (move_dir < 0)
-        paddle.vx -= PADDLE_ACCEL;
-    else if (move_dir > 0)
-        paddle.vx += PADDLE_ACCEL;
+    if (left_clicked)
+        launch_requested = 1;
+
+    if (use_mouse)
+    {
+        paddle.x = target_x;
+        if (paddle.x < 0)
+            paddle.x = 0;
+        if (paddle.x + paddle.width > SCREEN_WIDTH)
+            paddle.x = SCREEN_WIDTH - paddle.width;
+
+        paddle.vx = paddle.x - old_x;
+    }
     else
     {
-        /* Friction toward stop when no input this frame. */
-        if (paddle.vx > 0)
-            paddle.vx -= PADDLE_FRICTION;
-        else if (paddle.vx < 0)
-            paddle.vx += PADDLE_FRICTION;
+        if (move_dir < 0)
+            paddle.vx -= PADDLE_ACCEL;
+        else if (move_dir > 0)
+            paddle.vx += PADDLE_ACCEL;
+        else
+        {
+            /* Friction toward stop when no input this frame. */
+            if (paddle.vx > 0)
+                paddle.vx -= PADDLE_FRICTION;
+            else if (paddle.vx < 0)
+                paddle.vx += PADDLE_FRICTION;
+        }
+
+        if (paddle.vx > PADDLE_MAX_SPEED)
+            paddle.vx = PADDLE_MAX_SPEED;
+        else if (paddle.vx < -PADDLE_MAX_SPEED)
+            paddle.vx = -PADDLE_MAX_SPEED;
+
+        paddle.x += paddle.vx;
     }
-
-    if (paddle.vx > PADDLE_MAX_SPEED)
-        paddle.vx = PADDLE_MAX_SPEED;
-    else if (paddle.vx < -PADDLE_MAX_SPEED)
-        paddle.vx = -PADDLE_MAX_SPEED;
-
-    paddle.x += paddle.vx;
 
     if (paddle.x < 0)
     {
@@ -655,6 +779,7 @@ int main()
     init_brick_palette();
     init_paddle_palette();
     audio_init();
+    mouse_init();
 
     intro_scene();
 
