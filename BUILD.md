@@ -26,7 +26,19 @@
 To ease opening TC.EXE, using compilers, linking, etc, from commandline, you can use our ADDPATH.BAT script
 
 ```
-dosbox-x -c "mount c $HOME/workspace/cruzkanoid/" -c "c:" -c "call addpath.bat"
+dosbox-x -c "mount c $HOME/workspace/cruzkanoid/" -c "c:" -c "addpath.bat"
+```
+
+Also you can compile directly from commandline with the following command inside DOS
+
+```
+tcc -ml CRUZKAN.C AUDIO.C VIDEO.C
+```
+
+So putting everthing together you can run
+
+```
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml CRUZKAN.C AUDIO.C VIDEO.C" -c "cruzkan" -fs -exit
 ```
 
 ## Sound Blaster (optional, but mandatory to take care of your ears)

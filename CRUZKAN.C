@@ -20,19 +20,18 @@
 #define MAX_LEVELS 10
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
-{
-    /* Each row uses 10 bits (bit j => column j). */
-    /*  1 */ { 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF },
-    /*  2 */ { 0x3FF, 0x2AA, 0x155, 0x2AA, 0x3FF },
-    /*  3 */ { 0x3FF, 0x201, 0x201, 0x201, 0x3FF },
-    /*  4 */ { 0x155, 0x155, 0x155, 0x155, 0x155 },
-    /*  5 */ { 0x303, 0x0CC, 0x030, 0x0CC, 0x303 },
-    /*  6 */ { 0x030, 0x078, 0x0FC, 0x1FE, 0x3FF },
-    /*  7 */ { 0x3CF, 0x3CF, 0x201, 0x3CF, 0x3CF },
-    /*  8 */ { 0x01F, 0x03F, 0x07F, 0x0FF, 0x1FF },
-    /*  9 */ { 0x2DB, 0x36D, 0x1B6, 0x36D, 0x2DB },
-    /* 10 */ { 0x0FC, 0x3CF, 0x2AA, 0x3CF, 0x0FC }
-};
+    {
+        /* Each row uses 10 bits (bit j => column j). */
+        /*  1 */ {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF},
+        /*  2 */ {0x3FF, 0x2AA, 0x155, 0x2AA, 0x3FF},
+        /*  3 */ {0x3FF, 0x201, 0x201, 0x201, 0x3FF},
+        /*  4 */ {0x155, 0x155, 0x155, 0x155, 0x155},
+        /*  5 */ {0x303, 0x0CC, 0x030, 0x0CC, 0x303},
+        /*  6 */ {0x030, 0x078, 0x0FC, 0x1FE, 0x3FF},
+        /*  7 */ {0x3CF, 0x3CF, 0x201, 0x3CF, 0x3CF},
+        /*  8 */ {0x01F, 0x03F, 0x07F, 0x0FF, 0x1FF},
+        /*  9 */ {0x2DB, 0x36D, 0x1B6, 0x36D, 0x2DB},
+        /* 10 */ {0x0FC, 0x3CF, 0x2AA, 0x3CF, 0x0FC}};
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
 Ball ball;
@@ -146,7 +145,7 @@ void delay_with_audio(int ms)
     clock_t ticks;
 
     if (ms <= 0)
-	return;
+        return;
 
     start = clock();
     ticks = (clock_t)(((long)ms * (long)CLK_TCK + 999L) / 1000L);
@@ -402,7 +401,7 @@ void update_paddle()
                 pause_toggle_requested = 1;
             }
         }
-        if (key == 27)
+        if (key == 27 || key == 'q' || key =='Q')
         { // ESC
             mouse_shutdown();
             audio_shutdown();
@@ -626,13 +625,12 @@ int check_win()
     return 1;
 }
 
-
 void intro_scene()
 {
     char title[] = "CRUZKANOID";
     int text_width = 10 * 8; /* 10 chars * 8 pixels wide */
     int x = (SCREEN_WIDTH - text_width) / 2;
-    int y = (SCREEN_HEIGHT - 7) / 2;     /* 7 is font height */
+    int y = (SCREEN_HEIGHT - 7) / 2; /* 7 is font height */
     unsigned char intro_border_index = 16;
     unsigned char intro_border_r = 0;
     unsigned char intro_border_g = 60;
@@ -680,82 +678,82 @@ void game_loop()
                 clear_screen(0);
                 draw_bricks();
                 draw_paddle(paddle);
-		draw_ball(ball);
-		draw_ui(score, lives, current_level);
-		if (paused)
-		{
-		    draw_pause_overlay();
-		}
-		first_frame = 0;
-		force_redraw = 0;
-	    }
+                draw_ball(ball);
+                draw_ui(score, lives, current_level);
+                if (paused)
+                {
+                    draw_pause_overlay();
+                }
+                first_frame = 0;
+                force_redraw = 0;
+            }
 
-	    /* Save old positions */
-	    old_ball_x = ball.x;
-	    old_ball_y = ball.y;
-	    old_paddle_x = paddle.x;
+            /* Save old positions */
+            old_ball_x = ball.x;
+            old_ball_y = ball.y;
+            old_paddle_x = paddle.x;
 
-	    /* Update game state */
-	    update_paddle();
-	    if (!paused)
-	    {
-	    if (ball_stuck)
-	    {
-		if (launch_requested)
-		{
-		    launch_dx = paddle.vx / 2;
-		    if (launch_dx > 3)
-			launch_dx = 3;
-		    else if (launch_dx < -3)
-			launch_dx = -3;
-		    if (launch_dx == 0)
-			launch_dx = 2;
+            /* Update game state */
+            update_paddle();
+            if (!paused)
+            {
+                if (ball_stuck)
+                {
+                    if (launch_requested)
+                    {
+                        launch_dx = paddle.vx / 2;
+                        if (launch_dx > 3)
+                            launch_dx = 3;
+                        else if (launch_dx < -3)
+                            launch_dx = -3;
+                        if (launch_dx == 0)
+                            launch_dx = 2;
 
-		    ball_stuck = 0;
-		    launch_requested = 0;
-		    ball.dx = launch_dx;
-		    ball.dy = -2;
-		}
-		else
-		{
-		    ball.x = paddle.x + paddle.width / 2;
-		    ball.y = paddle.y - radius - 1;
-		}
-		brick_was_hit = 0;
-	    }
-	    else
-	    {
-		brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
-	    }
-	    }
-	    else
-	    {
-		brick_was_hit = 0;
-	    }
+                        ball_stuck = 0;
+                        launch_requested = 0;
+                        ball.dx = launch_dx;
+                        ball.dy = -2;
+                    }
+                    else
+                    {
+                        ball.x = paddle.x + paddle.width / 2;
+                        ball.y = paddle.y - radius - 1;
+                    }
+                    brick_was_hit = 0;
+                }
+                else
+                {
+                    brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
+                }
+            }
+            else
+            {
+                brick_was_hit = 0;
+            }
 
-	    /* Erase old positions */
-	    erase_ball(old_ball_x, old_ball_y, ball);
-	    if (old_paddle_x != paddle.x)
-	    {
-		erase_paddle(old_paddle_x, paddle);
-	    }
+            /* Erase old positions */
+            erase_ball(old_ball_x, old_ball_y, ball);
+            if (old_paddle_x != paddle.x)
+            {
+                erase_paddle(old_paddle_x, paddle);
+            }
 
-	    /* Erase destroyed brick */
-	    if (brick_was_hit)
-	    {
-		draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
-	    }
+            /* Erase destroyed brick */
+            if (brick_was_hit)
+            {
+                draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+            }
 
-	    /* Draw new positions */
-	    draw_paddle(paddle);
-	    draw_ball(ball);
+            /* Draw new positions */
+            draw_paddle(paddle);
+            draw_ball(ball);
 
-	    /* Redraw UI (borders, score, lives) */
-	    draw_ui(score, lives, current_level);
+            /* Redraw UI (borders, score, lives) */
+            draw_ui(score, lives, current_level);
 
-	    if (paused)
-	    {
-		draw_pause_overlay();
+            if (paused)
+            {
+                draw_pause_overlay();
             }
 
             audio_update();
