@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "audio.h"
+#include "mouse.h"
 #include "video.h"
 
 #define BRICK_WIDTH 30
@@ -44,94 +45,8 @@ int launch_requested = 0;
 int paused = 0;
 int force_redraw = 0;
 
-static int mouse_available = 0;
-static int mouse_buttons = 0;
-static int mouse_prev_buttons = 0;
-static int mouse_x = 0;
-static int mouse_y = 0;
 static int key_vx = 0;
 static int key_offset = 0;
-
-static int mouse_init(void)
-{
-    union REGS regs;
-
-    regs.x.ax = 0x0000; /* Reset / get installed status */
-    int86(0x33, &regs, &regs);
-    mouse_available = (regs.x.ax != 0);
-    mouse_buttons = regs.x.bx;
-    mouse_prev_buttons = 0;
-    mouse_x = 0;
-    mouse_y = 0;
-
-    if (!mouse_available)
-        return 0;
-
-    /* Clamp mouse coordinates to our mode 13h screen. */
-    regs.x.ax = 0x0007; /* Set horizontal range */
-    regs.x.cx = 0;
-    regs.x.dx = SCREEN_WIDTH - 1;
-    int86(0x33, &regs, &regs);
-
-    regs.x.ax = 0x0008; /* Set vertical range */
-    regs.x.cx = 0;
-    regs.x.dx = SCREEN_HEIGHT - 1;
-    int86(0x33, &regs, &regs);
-
-    regs.x.ax = 0x0002; /* Hide cursor */
-    int86(0x33, &regs, &regs);
-
-    return 1;
-}
-
-static void mouse_shutdown(void)
-{
-    union REGS regs;
-
-    if (!mouse_available)
-        return;
-
-    regs.x.ax = 0x0001; /* Show cursor */
-    int86(0x33, &regs, &regs);
-}
-
-static void mouse_update(void)
-{
-    union REGS regs;
-
-    if (!mouse_available)
-        return;
-
-    regs.x.ax = 0x0003; /* Get position + buttons */
-    int86(0x33, &regs, &regs);
-    mouse_buttons = regs.x.bx;
-    mouse_x = regs.x.cx;
-    mouse_y = regs.x.dx;
-}
-
-static void mouse_set_pos(int x, int y)
-{
-    union REGS regs;
-
-    if (!mouse_available)
-        return;
-
-    if (x < 0)
-        x = 0;
-    if (x >= SCREEN_WIDTH)
-        x = SCREEN_WIDTH - 1;
-    if (y < 0)
-        y = 0;
-    if (y >= SCREEN_HEIGHT)
-        y = SCREEN_HEIGHT - 1;
-
-    regs.x.ax = 0x0004; /* Set position */
-    regs.x.cx = x;
-    regs.x.dx = y;
-    int86(0x33, &regs, &regs);
-    mouse_x = x;
-    mouse_y = y;
-}
 
 void drain_keyboard_buffer(void)
 {
