@@ -32,13 +32,13 @@ dosbox-x -c "mount c $HOME/workspace/cruzkanoid/" -c "c:" -c "addpath.bat"
 Also you can compile directly from commandline with the following command inside DOS
 
 ```
-tcc -ml CRUZKAN.C AUDIO.C VIDEO.C
+tcc -ml -Ic:\tc\include -Lc:\tc\lib CRUZKAN.C AUDIO.C VIDEO.C
 ```
 
 So putting everthing together you can run
 
 ```
-dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml CRUZKAN.C AUDIO.C VIDEO.C" -c "cruzkan" -fs -exit
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml -Ic:\\tc\\include -Lc:\\tc\\lib CRUZKAN.C AUDIO.C VIDEO.C" -c "cruzkan" -fs -exit
 ```
 
 Or even better we have a .BAT that automates most of it
