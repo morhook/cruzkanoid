@@ -4,4 +4,4 @@ Always use CRLF on the C code files to ease integration and editing with Turbo C
 
 # Testing convention
 
-Let the user build and test manually with TurboC on dosbox-x.
+For building you can use bash `make_and_run.sh` and let the user test the game.
