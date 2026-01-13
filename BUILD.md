@@ -41,6 +41,11 @@ So putting everthing together you can run
 dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml CRUZKAN.C AUDIO.C VIDEO.C" -c "cruzkan" -fs -exit
 ```
 
+Or even better we have a .BAT that automates most of it
+```
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "BUILD.BAT" -fs -exit
+```
+
 ## Sound Blaster (optional, but mandatory to take care of your ears)
 
 The game will try to use Sound Blaster digital audio if it can reset the DSP. It reads the standard `BLASTER` environment variable (for example: `A220 I5 D1`).
