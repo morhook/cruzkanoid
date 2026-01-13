@@ -417,7 +417,7 @@ void update_paddle()
     }
 }
 
-int check_brick_collision(int *hit_x, int *hit_y, int *hit_row)
+int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
@@ -433,6 +433,32 @@ int check_brick_collision(int *hit_x, int *hit_y, int *hit_row)
                     ball.y + radius > bricks[i][j].y &&
                     ball.y - radius < bricks[i][j].y + BRICK_HEIGHT)
                 {
+                    int from_left = (prev_ball_x + radius <= bricks[i][j].x) &&
+                                    (ball.x + radius > bricks[i][j].x);
+                    int from_right = (prev_ball_x - radius >= bricks[i][j].x + BRICK_WIDTH) &&
+                                     (ball.x - radius < bricks[i][j].x + BRICK_WIDTH);
+                    int from_top = (prev_ball_y + radius <= bricks[i][j].y) &&
+                                   (ball.y + radius > bricks[i][j].y);
+                    int from_bottom = (prev_ball_y - radius >= bricks[i][j].y + BRICK_HEIGHT) &&
+                                      (ball.y - radius < bricks[i][j].y + BRICK_HEIGHT);
+
+                    if (hit_axis)
+                    {
+                        if (from_left || from_right)
+                            *hit_axis = 1; /* horizontal: flip dx */
+                        else if (from_top || from_bottom)
+                            *hit_axis = 0; /* vertical: flip dy */
+                        else
+                        {
+                            int overlap_left = (ball.x + radius) - bricks[i][j].x;
+                            int overlap_right = (bricks[i][j].x + BRICK_WIDTH) - (ball.x - radius);
+                            int overlap_top = (ball.y + radius) - bricks[i][j].y;
+                            int overlap_bottom = (bricks[i][j].y + BRICK_HEIGHT) - (ball.y - radius);
+                            int min_x = (overlap_left < overlap_right) ? overlap_left : overlap_right;
+                            int min_y = (overlap_top < overlap_bottom) ? overlap_top : overlap_bottom;
+                            *hit_axis = (min_x < min_y) ? 1 : 0;
+                        }
+                    }
 
                     bricks[i][j].active = 0;
                     score += 10;
@@ -453,9 +479,12 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int hit_pos;
     int brick_hit = 0;
     int radius = BALL_SIZE / 2;
+    int prev_ball_x = ball.x;
+    int prev_ball_y = ball.y;
     int wall_hit = 0;
     int paddle_hit = 0;
     int brick_hit_row = 0;
+    int brick_hit_axis = 0;
 
     ball.x += ball.dx;
     ball.y += ball.dy;
@@ -492,9 +521,24 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     }
 
     // Brick collision
-    if (check_brick_collision(brick_hit_x, brick_hit_y, &brick_hit_row))
+    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis))
     {
-        ball.dy = -ball.dy;
+        if (brick_hit_axis)
+        {
+            ball.dx = -ball.dx;
+            if (prev_ball_x < *brick_hit_x)
+                ball.x = *brick_hit_x - radius;
+            else if (prev_ball_x > *brick_hit_x + BRICK_WIDTH)
+                ball.x = *brick_hit_x + BRICK_WIDTH + radius;
+        }
+        else
+        {
+            ball.dy = -ball.dy;
+            if (prev_ball_y < *brick_hit_y)
+                ball.y = *brick_hit_y - radius;
+            else if (prev_ball_y > *brick_hit_y + BRICK_HEIGHT)
+                ball.y = *brick_hit_y + BRICK_HEIGHT + radius;
+        }
         brick_hit = 1;
     }
 
