@@ -9,6 +9,8 @@ int mouse_prev_buttons = 0;
 int mouse_x = 0;
 int mouse_y = 0;
 
+static int mouse_x_scale = 2;
+
 int far mouse_init(void)
 {
     union REGS regs;
@@ -24,10 +26,18 @@ int far mouse_init(void)
     if (!mouse_available)
         return 0;
 
-    /* Clamp mouse coordinates to our mode 13h screen. */
+    /*
+        Clamp mouse coordinates to our mode 13h screen.
+
+        Many DOS mouse drivers use a 0..639 X range in 320x200 modes (i.e. 2 mouse
+        units per pixel). If we clamp to 0..319 and use CX directly, the paddle
+        ends up moving in 2-pixel steps on those drivers.
+
+        Use a 2x horizontal range and scale back to pixels when reading.
+    */
     regs.x.ax = 0x0007; /* Set horizontal range */
     regs.x.cx = 0;
-    regs.x.dx = SCREEN_WIDTH - 1;
+    regs.x.dx = (SCREEN_WIDTH * mouse_x_scale) - 1;
     int86(0x33, &regs, &regs);
 
     regs.x.ax = 0x0008; /* Set vertical range */
@@ -62,7 +72,7 @@ void far mouse_update(void)
     regs.x.ax = 0x0003; /* Get position + buttons */
     int86(0x33, &regs, &regs);
     mouse_buttons = regs.x.bx;
-    mouse_x = regs.x.cx;
+    mouse_x = regs.x.cx / mouse_x_scale;
     mouse_y = regs.x.dx;
 }
 
@@ -83,7 +93,7 @@ void far mouse_set_pos(int x, int y)
         y = SCREEN_HEIGHT - 1;
 
     regs.x.ax = 0x0004; /* Set position */
-    regs.x.cx = x;
+    regs.x.cx = x * mouse_x_scale;
     regs.x.dx = y;
     int86(0x33, &regs, &regs);
     mouse_x = x;
