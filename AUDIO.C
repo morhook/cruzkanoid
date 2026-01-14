@@ -37,6 +37,8 @@ typedef struct
 static int music_enabled = 1;
 static int music_running = 1;
 static unsigned int music_index = 0;
+static unsigned int music_len = 0;
+static unsigned int music_drum_mute_start = 0;
 
 #define NOTE_C3 131
 #define NOTE_D3 147
@@ -172,7 +174,7 @@ static const MusicNote music_track[] = {
     {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
     {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
     {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
-    {NOTE_A3, 220}, {0, 110},
+    {NOTE_A3, 220}, {0, 3000},
 
     {0, 0}};
 
@@ -449,6 +451,9 @@ static unsigned char opl_drums_for_step(unsigned int step)
     unsigned int s = (unsigned int)(step & 15U);
     unsigned int phrase = (unsigned int)((step >> 4) & 3U);
     unsigned char bits = 0;
+
+    if (music_drum_mute_start != 0U && step >= music_drum_mute_start)
+        return 0;
 
     /* Hi-hat on 8ths. */
     if ((s & 1U) == 0U)
@@ -1168,10 +1173,29 @@ static void music_start_next_note(void)
 
 void far audio_init(void)
 {
+    unsigned int i;
+    unsigned int acc_ms;
+
     audio_enabled = 1;
     music_enabled = 1;
     music_running = 1;
     music_index = 0;
+
+    music_len = 0;
+    while (music_track[music_len].ms != 0U)
+        music_len++;
+
+    /* Mute drums for ~3000ms at the very end of the loop. */
+    music_drum_mute_start = 0;
+    acc_ms = 0;
+    i = music_len;
+    while (i > 0U && acc_ms < 3000U)
+    {
+        i--;
+        acc_ms += music_track[i].ms;
+    }
+    if (i > 0U)
+        music_drum_mute_start = i;
     tone_source = TONE_NONE;
 
     /* Try to enable Sound Blaster output; fall back to PC speaker. */
