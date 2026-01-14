@@ -1321,6 +1321,46 @@ void far audio_event_life_lost_blocking(void)
     nosound();
 }
 
+void far audio_event_life_up_blocking(void)
+{
+    if (!audio_enabled)
+        return;
+
+    audio_stop_internal();
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        (void)sb_play_tone(659, 70);  /* E */
+        delay(80);
+        (void)sb_play_tone(784, 70);  /* G */
+        delay(80);
+        (void)sb_play_tone(880, 70);  /* A */
+        delay(80);
+        (void)sb_play_tone(1047, 80); /* C */
+        delay(90);
+        (void)sb_play_tone(1175, 80); /* D */
+        delay(90);
+        (void)sb_play_tone(1568, 120); /* G */
+        delay(130);
+        sb_stop_internal();
+        return;
+    }
+
+    sound(659);
+    delay(70);
+    sound(784);
+    delay(70);
+    sound(880);
+    delay(70);
+    sound(1047);
+    delay(80);
+    sound(1175);
+    delay(80);
+    sound(1568);
+    delay(120);
+    nosound();
+}
+
 void far audio_event_level_clear_blocking(void)
 {
     if (!audio_enabled)

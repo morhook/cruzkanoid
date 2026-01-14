@@ -26,6 +26,8 @@ typedef struct
     int x, y;
     int active;
     int color;
+    int hp;
+    int gives_life;
 } Brick;
 
 #endif /* CRUZKAN_H */

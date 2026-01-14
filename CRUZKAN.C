@@ -47,6 +47,7 @@ int force_redraw = 0;
 
 static int key_vx = 0;
 static int key_offset = 0;
+static int rng_seeded = 0;
 
 void drain_keyboard_buffer(void)
 {
@@ -138,6 +139,8 @@ void init_bricks(int level)
     int start_x = (SCREEN_WIDTH - total_width) / 2;
     int level_index = level - 1;
     unsigned int row_mask;
+    int active_count = 0;
+    int hidden_index = -1;
 
     if (start_x < 0)
         start_x = 0;
@@ -155,6 +158,30 @@ void init_bricks(int level)
             bricks[i][j].y = start_y + i * (BRICK_HEIGHT + 2);
             bricks[i][j].active = (row_mask & (1U << j)) ? 1 : 0;
             bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
+            bricks[i][j].hp = 1;
+            bricks[i][j].gives_life = 0;
+            if (bricks[i][j].active)
+                active_count++;
+        }
+    }
+
+    if (active_count > 0)
+    {
+        hidden_index = rand() % active_count;
+        for (i = 0; i < BRICK_ROWS; i++)
+        {
+            for (j = 0; j < BRICK_COLS; j++)
+            {
+                if (!bricks[i][j].active)
+                    continue;
+                if (hidden_index == 0)
+                {
+                    bricks[i][j].hp = 2;
+                    bricks[i][j].gives_life = 1;
+                    return;
+                }
+                hidden_index--;
+            }
         }
     }
 }
@@ -230,6 +257,41 @@ void draw_brick(int x, int y, int width, int height, unsigned char base_color)
     }
 }
 
+void draw_life_brick(int x, int y, int hp, unsigned char base_color)
+{
+    int cx = x + (BRICK_WIDTH / 2);
+    int cy = y + (BRICK_HEIGHT / 2);
+    unsigned char light_color = base_color + 1;
+    unsigned char dark_color = base_color + 2;
+
+    draw_brick(x, y, BRICK_WIDTH, BRICK_HEIGHT, base_color);
+
+    /* Small "+" mark to hint it grants something. */
+    put_pixel(cx, cy - 2, light_color);
+    put_pixel(cx, cy - 1, light_color);
+    put_pixel(cx, cy, light_color);
+    put_pixel(cx, cy + 1, light_color);
+    put_pixel(cx, cy + 2, light_color);
+    put_pixel(cx - 2, cy, light_color);
+    put_pixel(cx - 1, cy, light_color);
+    put_pixel(cx + 1, cy, light_color);
+    put_pixel(cx + 2, cy, light_color);
+
+    /* After the first hit, add some "cracks". */
+    if (hp == 1)
+    {
+        put_pixel(x + 6, y + 3, dark_color);
+        put_pixel(x + 8, y + 4, dark_color);
+        put_pixel(x + 10, y + 5, dark_color);
+        put_pixel(x + 12, y + 6, dark_color);
+
+        put_pixel(x + BRICK_WIDTH - 8, y + 3, dark_color);
+        put_pixel(x + BRICK_WIDTH - 10, y + 4, dark_color);
+        put_pixel(x + BRICK_WIDTH - 12, y + 5, dark_color);
+        put_pixel(x + BRICK_WIDTH - 14, y + 6, dark_color);
+    }
+}
+
 void draw_bricks()
 {
     int i, j;
@@ -239,7 +301,10 @@ void draw_bricks()
         {
             if (bricks[i][j].active)
             {
-                draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
+                if (bricks[i][j].gives_life)
+                    draw_life_brick(bricks[i][j].x, bricks[i][j].y, bricks[i][j].hp, bricks[i][j].color);
+                else
+                    draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
             }
         }
     }
@@ -417,10 +482,17 @@ void update_paddle()
     }
 }
 
-int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis)
+int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_damaged, int *hit_life_up)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
+
+    if (hit_destroyed)
+        *hit_destroyed = 0;
+    if (hit_damaged)
+        *hit_damaged = 0;
+    if (hit_life_up)
+        *hit_life_up = 0;
 
     for (i = 0; i < BRICK_ROWS; i++)
     {
@@ -460,8 +532,28 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
                         }
                     }
 
-                    bricks[i][j].active = 0;
-                    score += 10;
+                    {
+                        int prev_hp = bricks[i][j].hp;
+                        if (bricks[i][j].hp > 0)
+                            bricks[i][j].hp--;
+                        if (hit_damaged && bricks[i][j].gives_life && prev_hp == 2 && bricks[i][j].hp == 1)
+                            *hit_damaged = 1;
+                    }
+
+                    if (bricks[i][j].hp <= 0)
+                    {
+                        bricks[i][j].active = 0;
+                        score += 10;
+                        if (hit_destroyed)
+                            *hit_destroyed = 1;
+                        if (bricks[i][j].gives_life)
+                        {
+                            lives++;
+                            bricks[i][j].gives_life = 0;
+                            if (hit_life_up)
+                                *hit_life_up = 1;
+                        }
+                    }
                     *hit_x = bricks[i][j].x;
                     *hit_y = bricks[i][j].y;
                     if (hit_row)
@@ -478,27 +570,45 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
 {
     int hit_pos;
     int brick_hit = 0;
+    int brick_collided = 0;
+    int brick_damaged = 0;
+    int brick_life_up = 0;
     int radius = BALL_SIZE / 2;
+    int min_x = radius + 1;
+    int max_x = (SCREEN_WIDTH - 2) - radius;
+    int min_y = radius + 1;
     int prev_ball_x = ball.x;
     int prev_ball_y = ball.y;
     int wall_hit = 0;
     int paddle_hit = 0;
     int brick_hit_row = 0;
     int brick_hit_axis = 0;
+    int brick_destroyed = 0;
 
     ball.x += ball.dx;
     ball.y += ball.dy;
 
     // Wall collision
-    if (ball.x - radius <= 0 || ball.x + radius >= SCREEN_WIDTH)
+    if (ball.x < min_x)
     {
-        ball.dx = -ball.dx;
+        ball.x = min_x;
+        if (ball.dx < 0)
+            ball.dx = -ball.dx;
+        wall_hit = 1;
+    }
+    else if (ball.x > max_x)
+    {
+        ball.x = max_x;
+        if (ball.dx > 0)
+            ball.dx = -ball.dx;
         wall_hit = 1;
     }
 
-    if (ball.y - radius <= 0)
+    if (ball.y < min_y)
     {
-        ball.dy = -ball.dy;
+        ball.y = min_y;
+        if (ball.dy < 0)
+            ball.dy = -ball.dy;
         wall_hit = 1;
     }
 
@@ -521,8 +631,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     }
 
     // Brick collision
-    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis))
+    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_damaged, &brick_life_up))
     {
+        brick_collided = 1;
         if (brick_hit_axis)
         {
             ball.dx = -ball.dx;
@@ -539,10 +650,12 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
             else if (prev_ball_y > *brick_hit_y + BRICK_HEIGHT)
                 ball.y = *brick_hit_y + BRICK_HEIGHT + radius;
         }
-        brick_hit = 1;
+        brick_hit = brick_destroyed ? 1 : 0;
     }
 
-    if (brick_hit)
+    if (brick_life_up)
+        audio_event_life_up_blocking();
+    else if (brick_collided)
         audio_event_brick(brick_hit_row);
     else if (paddle_hit)
         audio_event_paddle();
@@ -565,7 +678,11 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         }
     }
 
-    return brick_hit;
+    if (brick_hit)
+        return 1;
+    if (brick_damaged)
+        return 2;
+    return 0;
 }
 
 int check_win()
@@ -698,9 +815,13 @@ void game_loop()
             }
 
             /* Erase destroyed brick */
-            if (brick_was_hit)
+            if (brick_was_hit == 1)
             {
                 draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+            }
+            else if (brick_was_hit == 2)
+            {
+                force_redraw = 1;
             }
 
             /* Draw new positions */
@@ -769,6 +890,12 @@ int main()
     init_paddle_palette();
     audio_init();
     mouse_init();
+
+    if (!rng_seeded)
+    {
+        srand((unsigned int)time(NULL));
+        rng_seeded = 1;
+    }
 
     intro_scene();
 
