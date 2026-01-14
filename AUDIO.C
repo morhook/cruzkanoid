@@ -171,7 +171,8 @@ static const MusicNote music_track[] = {
     {NOTE_C3, 110}, {NOTE_G4, 110}, {NOTE_C3, 110}, {NOTE_E5, 110},
     {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
     {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
-    {NOTE_G3, 110}, {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C3, 110},
+    {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
+    {NOTE_A3, 220}, {0, 110},
 
     {0, 0}};
 
