@@ -27,6 +27,10 @@ A classic brick-breaking game written in C for DOS. The home page is in [morhook
 - M: Toggle soundtrack
 - Esc: Quit game
 
+With the mouse you can control it too:
+- Left click: Fire the ball
+- Right click: Pause the game
+
 ## Running
 Run the game in a real DOS machine, DOSBox or Dosbox-x:
 ```sh
