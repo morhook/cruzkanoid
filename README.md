@@ -31,7 +31,12 @@ With the mouse you can control it too:
 - Left click: Fire the ball
 - Right click: Pause the game
 
-## Running
+## Running on our web
+
+Just enter [morhook.github.io/cruzkanoid](https://morhook.github.io/cruzkanoid) and enjoy it! 
+
+## Running on your machine
+
 Run the game in a real DOS machine, DOSBox or Dosbox-x:
 ```sh
 cruzkan.exe
