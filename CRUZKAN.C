@@ -165,7 +165,7 @@ void init_bricks(int level)
         }
     }
 
-    if (active_count > 0)
+if (active_count > 0 && (level == 1 || level == 2))
     {
         hidden_index = rand() % active_count;
         for (i = 0; i < BRICK_ROWS; i++)
