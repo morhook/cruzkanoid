@@ -174,9 +174,9 @@ void init_bricks(int level)
             {
                 if (!bricks[i][j].active)
                     continue;
-                if (hidden_index == 0)
+if (hidden_index == 0)
                 {
-                    bricks[i][j].hp = 2;
+                    bricks[i][j].hp = 1;
                     bricks[i][j].gives_life = 1;
                     return;
                 }
@@ -257,40 +257,7 @@ void draw_brick(int x, int y, int width, int height, unsigned char base_color)
     }
 }
 
-void draw_life_brick(int x, int y, int hp, unsigned char base_color)
-{
-    int cx = x + (BRICK_WIDTH / 2);
-    int cy = y + (BRICK_HEIGHT / 2);
-    unsigned char light_color = base_color + 1;
-    unsigned char dark_color = base_color + 2;
 
-    draw_brick(x, y, BRICK_WIDTH, BRICK_HEIGHT, base_color);
-
-    /* Small "+" mark to hint it grants something. */
-    put_pixel(cx, cy - 2, light_color);
-    put_pixel(cx, cy - 1, light_color);
-    put_pixel(cx, cy, light_color);
-    put_pixel(cx, cy + 1, light_color);
-    put_pixel(cx, cy + 2, light_color);
-    put_pixel(cx - 2, cy, light_color);
-    put_pixel(cx - 1, cy, light_color);
-    put_pixel(cx + 1, cy, light_color);
-    put_pixel(cx + 2, cy, light_color);
-
-    /* After the first hit, add some "cracks". */
-    if (hp == 1)
-    {
-        put_pixel(x + 6, y + 3, dark_color);
-        put_pixel(x + 8, y + 4, dark_color);
-        put_pixel(x + 10, y + 5, dark_color);
-        put_pixel(x + 12, y + 6, dark_color);
-
-        put_pixel(x + BRICK_WIDTH - 8, y + 3, dark_color);
-        put_pixel(x + BRICK_WIDTH - 10, y + 4, dark_color);
-        put_pixel(x + BRICK_WIDTH - 12, y + 5, dark_color);
-        put_pixel(x + BRICK_WIDTH - 14, y + 6, dark_color);
-    }
-}
 
 void draw_bricks()
 {
@@ -299,12 +266,9 @@ void draw_bricks()
     {
         for (j = 0; j < BRICK_COLS; j++)
         {
-            if (bricks[i][j].active)
+if (bricks[i][j].active)
             {
-                if (bricks[i][j].gives_life)
-                    draw_life_brick(bricks[i][j].x, bricks[i][j].y, bricks[i][j].hp, bricks[i][j].color);
-                else
-                    draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
+                draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
             }
         }
     }
@@ -482,15 +446,13 @@ void update_paddle()
     }
 }
 
-int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_damaged, int *hit_life_up)
+int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_life_up)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
 
-    if (hit_destroyed)
+if (hit_destroyed)
         *hit_destroyed = 0;
-    if (hit_damaged)
-        *hit_damaged = 0;
     if (hit_life_up)
         *hit_life_up = 0;
 
@@ -532,12 +494,9 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
                         }
                     }
 
-                    {
-                        int prev_hp = bricks[i][j].hp;
+{
                         if (bricks[i][j].hp > 0)
                             bricks[i][j].hp--;
-                        if (hit_damaged && bricks[i][j].gives_life && prev_hp == 2 && bricks[i][j].hp == 1)
-                            *hit_damaged = 1;
                     }
 
                     if (bricks[i][j].hp <= 0)
@@ -569,9 +528,8 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
 int update_ball(int *brick_hit_x, int *brick_hit_y)
 {
     int hit_pos;
-    int brick_hit = 0;
+int brick_hit = 0;
     int brick_collided = 0;
-    int brick_damaged = 0;
     int brick_life_up = 0;
     int radius = BALL_SIZE / 2;
     int min_x = radius + 1;
@@ -630,8 +588,8 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
             ball.dx = 1;
     }
 
-    // Brick collision
-    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_damaged, &brick_life_up))
+// Brick collision
+    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_life_up))
     {
         brick_collided = 1;
         if (brick_hit_axis)
@@ -678,10 +636,8 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         }
     }
 
-    if (brick_hit)
+if (brick_hit)
         return 1;
-    if (brick_damaged)
-        return 2;
     return 0;
 }
 
