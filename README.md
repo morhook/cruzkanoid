@@ -1,6 +1,7 @@
 # CRUZKANOID DOS CLONE
 
-A classic brick-breaking game written in C for DOS. The home page is in [morhook.itch.io/cruzkanoid](https://morhook.itch.io/cruzkanoid). For downloading compiled versions, go there.
+A classic brick-breaking game written in C for DOS. The home page is in [morhook.itch.io/cruzkanoid](https://morhook.itch.io/cruzkanoid). For downloading compiled versions, go there. For running on your browser thanks to the magic of `js-dos` (dosbox on the web) go to [morhook.github.io/cruzkanoid](https://morhook.github.io/cruzkanoid). 
+
 
 ![CruzKanoid Art Box](game-box-design.png)
 
@@ -30,10 +31,6 @@ A classic brick-breaking game written in C for DOS. The home page is in [morhook
 With the mouse you can control it too:
 - Left click: Fire the ball
 - Right click: Pause the game
-
-## Running on our web
-
-Just enter [morhook.github.io/cruzkanoid](https://morhook.github.io/cruzkanoid) and enjoy it! 
 
 ## Running on your machine
 
