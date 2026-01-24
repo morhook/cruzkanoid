@@ -49,6 +49,8 @@ static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
 
+int play_wav(char *filename);
+
 void drain_keyboard_buffer(void)
 {
     while (kbhit())
@@ -680,7 +682,7 @@ void intro_scene()
                        intro_border_r, intro_border_g, intro_border_b,
                        fade_steps, fade_delay_ms);
 
-    delay(2000); /* Hold for 2 seconds */
+    play_wav("e2.wav");
 
     fade_palette_color(intro_border_index,
                        intro_border_r, intro_border_g, intro_border_b,
@@ -853,6 +855,9 @@ int main()
         rng_seeded = 1;
     }
 
+    play_wav("e2-pmute.wav");
+    play_wav("e2-pmute.wav");
+    play_wav("e2-pmute.wav");
     intro_scene();
 
     while (1)
