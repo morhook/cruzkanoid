@@ -46,4 +46,16 @@ void far fade_palette_color(unsigned char index,
                         unsigned char to_r, unsigned char to_g, unsigned char to_b,
                         int steps, int delay_ms);
 
+void far draw_heart(int cx, int cy, int size, unsigned char color);
+
+void far draw_background();
+
+void far draw_background_area(int x1, int y1, int x2, int y2);
+
+void far erase_ball_with_background(int x, int y, Ball ball);
+
+void far erase_paddle_with_background(int x, Paddle paddle);
+
+void far erase_rect_with_background(int x, int y, int width, int height);
+
 #endif /* VIDEO_H */

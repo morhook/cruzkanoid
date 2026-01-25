@@ -133,6 +133,14 @@ void init_paddle_palette()
     set_palette_color(PADDLE_PALETTE_START + 2, 8, 22, 28);  /* dark */
 }
 
+void init_pink_palette()
+{
+    /* Pink colors for heart background (indices 52-54). RGB values are 0-63. */
+    set_palette_color(52, 63, 32, 48); /* Light pink */
+    set_palette_color(53, 55, 15, 35); /* Medium pink */
+    set_palette_color(54, 40, 8, 20);  /* Dark pink */
+}
+
 void init_bricks(int level)
 {
     int i, j;
@@ -710,6 +718,7 @@ void game_loop()
             if (first_frame || force_redraw)
             {
                 clear_screen(0);
+                draw_background();
                 draw_bricks();
                 draw_paddle(paddle);
                 draw_ball(ball);
@@ -766,16 +775,16 @@ void game_loop()
             }
 
             /* Erase old positions */
-            erase_ball(old_ball_x, old_ball_y, ball);
+            erase_ball_with_background(old_ball_x, old_ball_y, ball);
             if (old_paddle_x != paddle.x)
             {
-                erase_paddle(old_paddle_x, paddle);
+                erase_paddle_with_background(old_paddle_x, paddle);
             }
 
             /* Erase destroyed brick */
             if (brick_was_hit == 1)
             {
-                draw_filled_rect(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT, 0);
+                erase_rect_with_background(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT);
             }
             else if (brick_was_hit == 2)
             {
@@ -804,6 +813,7 @@ void game_loop()
         if (current_level < MAX_LEVELS)
         {
             clear_screen(0);
+            draw_background();
             draw_text(105, 90, "LEVEL CLEAR!");
             audio_event_level_clear_blocking();
             delay_with_audio(1500);
@@ -818,6 +828,7 @@ void game_loop()
     audio_music_stop();
 
     clear_screen(0);
+    draw_background();
     if (lives == 0)
     {
         draw_text(110, 90, "GAME OVER!");
@@ -846,6 +857,7 @@ int main()
     set_mode(0x13); /* 320x200 256 color mode */
     init_brick_palette();
     init_paddle_palette();
+    init_pink_palette();
     audio_init();
     mouse_init();
 

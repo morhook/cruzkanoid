@@ -1,9 +1,29 @@
 #include <dos.h>
+#include <alloc.h>
 
 #include "cruzkan.h"
 #include "video.h" 
 
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
+static unsigned char far *background_buffer = 0;
+
+static void capture_background(void)
+{
+    int x, y;
+    unsigned long row;
+
+    if (!background_buffer)
+        return;
+
+    for (y = 0; y < SCREEN_HEIGHT; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        for (x = 0; x < SCREEN_WIDTH; x++)
+        {
+            background_buffer[row + x] = VGA[row + x];
+        }
+    }
+}
 
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
 {
@@ -416,7 +436,7 @@ void far draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned
 
 void far draw_ball(Ball ball)
 {
-    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x3f);
+    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x22);
 }
 
 void far erase_ball(int x, int y, Ball ball)
@@ -514,4 +534,141 @@ void far draw_pause_overlay()
 
     draw_bordered_text(x1, y, line1, 15);
     draw_bordered_text(x2, y + 12, line2, 15);
+}
+
+void far draw_heart(int cx, int cy, int size, unsigned char color)
+{
+    int x, y;
+    int start_x = cx - 4;
+    int start_y = cy - 4;
+    static const char *heart[9] = {
+        "001001000",
+        "011111100",
+        "111111110",
+        "111111110",
+        "011111100",
+        "001111000",
+        "000110000",
+        "000010000",
+        "000000000"
+    };
+
+    (void)size;
+
+    for (y = 0; y < 9; y++)
+    {
+        for (x = 0; x < 9; x++)
+        {
+            if (heart[y][x] == '1')
+            {
+                put_pixel(start_x + x, start_y + y, color);
+            }
+        }
+    }
+}
+
+void far draw_background()
+{
+    int x, y;
+    int heart_size = 9;
+    int spacing = heart_size + 1;
+    int offset = heart_size / 2;
+    unsigned char base_color = 52;
+
+    /* Clear to base color so hearts don't stack or leave artifacts. */
+    draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
+    
+    if (!background_buffer)
+    {
+        background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
+    }
+
+    for (y = offset; y + heart_size - 1 < SCREEN_HEIGHT; y += spacing)
+    {
+        for (x = offset; x + heart_size - 1 < SCREEN_WIDTH; x += spacing)
+        {
+            /* Vary heart colors for visual interest */
+            unsigned char color = 52 + ((x + y) / spacing) % 3;
+            draw_heart(x, y, heart_size, color);
+        }
+    }
+
+    capture_background();
+}
+
+/* Helper function to determine the exact color a heart should have */
+unsigned char get_heart_color(int x, int y)
+{
+    int heart_size = 8;
+    int spacing = heart_size - 2;
+    
+    /* Use the same formula as the original background */
+    return 52 + ((x + y) / spacing) % 3;
+}
+
+void far draw_background_area(int x1, int y1, int x2, int y2)
+{
+    /* Ensure coordinates are within bounds and x1 < x2, y1 < y2 */
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 >= SCREEN_WIDTH) x2 = SCREEN_WIDTH - 1;
+    if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
+    if (x1 > x2 || y1 > y2) return;
+    
+    if (x1 > x2 || y1 > y2) return;
+
+    if (!background_buffer)
+    {
+        draw_background();
+    }
+    else
+    {
+        int x, y;
+        unsigned long row;
+
+        for (y = y1; y <= y2; y++)
+        {
+            row = (unsigned long)y * SCREEN_WIDTH;
+            for (x = x1; x <= x2; x++)
+            {
+                VGA[row + x] = background_buffer[row + x];
+            }
+        }
+    }
+}
+
+void far erase_ball_with_background(int x, int y, Ball ball)
+{
+    int r = BALL_SIZE / 2;
+    int size = r * 2;
+    int x1 = x - r - 1;
+    int y1 = y - r - 1;
+    int x2 = x + r + 1;
+    int y2 = y + r + 1;
+    
+    /* Restore background in the ball's previous area */
+    draw_background_area(x1, y1, x2, y2);
+}
+
+void far erase_paddle_with_background(int x, Paddle paddle)
+{
+    int radius = PADDLE_HEIGHT / 2;
+    int x1 = x - 1;
+    int y1 = paddle.y - 1;
+    int x2 = x + paddle.width + 1;
+    int y2 = paddle.y + PADDLE_HEIGHT + 1;
+    
+    /* Restore background in the paddle's previous area */
+    draw_background_area(x1, y1, x2, y2);
+}
+
+void far erase_rect_with_background(int x, int y, int width, int height)
+{
+    int x1 = x - 2;
+    int y1 = y - 2;
+    int x2 = x + width + 2;
+    int y2 = y + height + 2;
+    
+    /* Restore background in the rectangle area - expanded to catch all hearts */
+    draw_background_area(x1, y1, x2, y2);
 }
