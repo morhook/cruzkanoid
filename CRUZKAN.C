@@ -719,24 +719,11 @@ void intro_scene()
         }
     }
 
-    for (i = 1; i <= fade_steps; i++)
-    {
-        int r = (int)intro_border_r - (int)(((long)intro_border_r * (long)i) / (long)fade_steps);
-        int g = (int)intro_border_g - (int)(((long)intro_border_g * (long)i) / (long)fade_steps);
-        int b = (int)intro_border_b - (int)(((long)intro_border_b * (long)i) / (long)fade_steps);
+    fade_palette_color(intro_border_index,
+                       intro_border_r, intro_border_g, intro_border_b,
+                       0, 0, 0,
+                       fade_steps, fade_delay_ms);
 
-        if (r < 0)
-            r = 0;
-        if (g < 0)
-            g = 0;
-        if (b < 0)
-            b = 0;
-
-        set_palette_color(intro_border_index, (unsigned char)r, (unsigned char)g, (unsigned char)b);
-        wait_vblank();
-        if (fade_delay_ms > 0)
-            delay(fade_delay_ms);
-    }
 
     if (wav_active)
         stop_wav_file(&intro_wav);
