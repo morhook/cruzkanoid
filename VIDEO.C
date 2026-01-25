@@ -539,23 +539,29 @@ void far draw_pause_overlay()
 void far draw_heart(int cx, int cy, int size, unsigned char color)
 {
     int x, y;
-    int offset = size / 2;
-    
-    /* Heart shape using pixel drawing */
-    for (y = -offset; y <= offset; y++)
+    int start_x = cx - 4;
+    int start_y = cy - 4;
+    static const char *heart[9] = {
+        "001001000",
+        "011111100",
+        "111111110",
+        "111111110",
+        "011111100",
+        "001111000",
+        "000110000",
+        "000010000",
+        "000000000"
+    };
+
+    (void)size;
+
+    for (y = 0; y < 9; y++)
     {
-        for (x = -offset; x <= offset; x++)
+        for (x = 0; x < 9; x++)
         {
-            int dx = x * 2;
-            int dy = y * 2;
-            
-            /* Heart equation approximation */
-            int heart_val = (dx * dx + dy * dy - size * size) * 
-                           ((dx - offset) * (dx - offset) + (dy + offset) * (dy + offset) - size * size / 4);
-            
-            if (heart_val < 0 || (y > 0 && (x * x + (y - offset/2) * (y - offset/2) < (offset * offset) / 4)))
+            if (heart[y][x] == '1')
             {
-                put_pixel(cx + x, cy + y, color);
+                put_pixel(start_x + x, start_y + y, color);
             }
         }
     }
