@@ -515,3 +515,159 @@ void far draw_pause_overlay()
     draw_bordered_text(x1, y, line1, 15);
     draw_bordered_text(x2, y + 12, line2, 15);
 }
+
+void far draw_heart(int cx, int cy, int size, unsigned char color)
+{
+    int x, y;
+    int offset = size / 2;
+    
+    /* Heart shape using pixel drawing */
+    for (y = -offset; y <= offset; y++)
+    {
+        for (x = -offset; x <= offset; x++)
+        {
+            int dx = x * 2;
+            int dy = y * 2;
+            
+            /* Heart equation approximation */
+            int heart_val = (dx * dx + dy * dy - size * size) * 
+                           ((dx - offset) * (dx - offset) + (dy + offset) * (dy + offset) - size * size / 4);
+            
+            if (heart_val < 0 || (y > 0 && (x * x + (y - offset/2) * (y - offset/2) < (offset * offset) / 4)))
+            {
+                put_pixel(cx + x, cy + y, color);
+            }
+        }
+    }
+}
+
+void far draw_background()
+{
+    int x, y;
+    int heart_size = 8;
+    int spacing = heart_size - 2; /* Tight packing with slight overlap */
+    
+    for (y = 0; y < SCREEN_HEIGHT; y += spacing)
+    {
+        for (x = 0; x < SCREEN_WIDTH; x += spacing)
+        {
+            /* Vary heart colors for visual interest */
+            unsigned char color = 52 + ((x + y) / spacing) % 3;
+            draw_heart(x, y, heart_size, color);
+        }
+    }
+}
+
+/* Helper function to determine the exact color a heart should have */
+unsigned char get_heart_color(int x, int y)
+{
+    int heart_size = 8;
+    int spacing = heart_size - 2;
+    
+    /* Use the same formula as the original background */
+    return 52 + ((x + y) / spacing) % 3;
+}
+
+void far draw_background_area(int x1, int y1, int x2, int y2)
+{
+    int x, y;
+    int heart_size = 8;
+    int spacing = heart_size - 2; /* Tight packing with slight overlap */
+    int expanded_x1;
+    int expanded_y1;
+    int expanded_x2;
+    int expanded_y2;
+    int start_x;
+    int start_y;
+    
+    /* Ensure coordinates are within bounds and x1 < x2, y1 < y2 */
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 >= SCREEN_WIDTH) x2 = SCREEN_WIDTH - 1;
+    if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
+    if (x1 > x2 || y1 > y2) return;
+    
+    /* Calculate the area that needs to be restored */
+    area_width = x2 - x1 + 1;
+    area_height = y2 - y1 + 1;
+    
+    /* If the area is large, always restore full background to avoid misalignment issues */
+    if (area_width > 32 || area_height > 32 || 
+        (x1 == 0 && y1 == 0) ||
+        (x2 == SCREEN_WIDTH - 1 && y2 == SCREEN_HEIGHT - 1))
+    {
+        /* Large area or touching edges - restore full background */
+        draw_background();
+        return;
+    }
+    
+    /* Ensure coordinates are within bounds */
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 >= SCREEN_WIDTH) x2 = SCREEN_WIDTH - 1;
+    if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
+    if (x1 > x2 || y1 > y2) return;
+    
+    /* Expand area slightly to ensure we catch all hearts that might be needed */
+    expanded_x1 = x1 - heart_size;
+    expanded_y1 = y1 - heart_size;
+    expanded_x2 = x2 + heart_size;
+    expanded_y2 = y2 + heart_size;
+    
+    /* Start from the first heart that could affect this area */
+    start_x = (expanded_x1 / spacing) * spacing;
+    start_y = (expanded_y1 / spacing) * spacing;
+    if (start_x < 0) start_x = 0;
+    if (start_y < 0) start_y = 0;
+    
+    for (y = start_y; y <= expanded_y2 && y < SCREEN_HEIGHT; y += spacing)
+    {
+        for (x = start_x; x <= expanded_x2 && x < SCREEN_WIDTH; x += spacing)
+        {
+            /* Only draw hearts that could intersect with original area */
+            if (x + heart_size >= x1 && x <= x2 &&
+                y + heart_size >= y1 && y <= y2)
+            {
+                /* Use the exact same color calculation as original background */
+                unsigned char color = get_heart_color(x, y);
+                draw_heart(x, y, heart_size, color);
+            }
+        }
+    }
+}
+
+void far erase_ball_with_background(int x, int y, Ball ball)
+{
+    int r = BALL_SIZE / 2;
+    int size = r * 2;
+    int x1 = x - r - 1;
+    int y1 = y - r - 1;
+    int x2 = x + r + 1;
+    int y2 = y + r + 1;
+    
+    /* Restore background in the ball's previous area */
+    draw_background_area(x1, y1, x2, y2);
+}
+
+void far erase_paddle_with_background(int x, Paddle paddle)
+{
+    int radius = PADDLE_HEIGHT / 2;
+    int x1 = x - 1;
+    int y1 = paddle.y - 1;
+    int x2 = x + paddle.width + 1;
+    int y2 = paddle.y + PADDLE_HEIGHT + 1;
+    
+    /* Restore background in the paddle's previous area */
+    draw_background_area(x1, y1, x2, y2);
+}
+
+void far erase_rect_with_background(int x, int y, int width, int height)
+{
+    int x1 = x - 2;
+    int y1 = y - 2;
+    int x2 = x + width + 2;
+    int y2 = y + height + 2;
+    
+    /* Restore background in the rectangle area - expanded to catch all hearts */
+    draw_background_area(x1, y1, x2, y2);
+}
