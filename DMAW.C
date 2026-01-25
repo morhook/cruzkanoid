@@ -146,9 +146,7 @@ unsigned long gNoOfBytesLeftInFile;
 /*----------------------------------------------------------------*/
 int play_wav(char *filename)
 {
-  char  Filename[80],
-    Filetype[44],
-    RetValue;
+  char RetValue;
 
   FILE *FileToPlay;
 
