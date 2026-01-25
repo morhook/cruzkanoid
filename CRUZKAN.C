@@ -130,7 +130,7 @@ void init_paddle_palette()
     /* Steel/cyan paddle with highlight + shadow. */
     set_palette_color(PADDLE_PALETTE_START + 0, 18, 44, 52); /* base */
     set_palette_color(PADDLE_PALETTE_START + 1, 38, 60, 63); /* light */
-    set_palette_color(PADDLE_PALETTE_START + 2, 8, 22, 28);  /* dark */
+    set_palette_color(PADDLE_PALETTE_START + 2, 0, 0, 63);  /* dark */
 }
 
 void init_pink_palette()
@@ -680,6 +680,10 @@ void intro_scene()
     int fade_steps = 30;
     int fade_delay_ms = 20;
 
+    play_wav("e2-pmute.wav");
+    play_wav("e2-pmute.wav");
+    play_wav("e2-pmute.wav");
+
     clear_screen(0);
 
     /* Draw once, then fade by changing the palette (no redraw). */
@@ -867,9 +871,6 @@ int main()
         rng_seeded = 1;
     }
 
-    play_wav("e2-pmute.wav");
-    play_wav("e2-pmute.wav");
-    play_wav("e2-pmute.wav");
     intro_scene();
 
     while (1)
