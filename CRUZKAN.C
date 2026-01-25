@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "audio.h"
+#include "DMAW.H"
 #include "mouse.h"
 #include "video.h"
 
@@ -48,8 +49,6 @@ int force_redraw = 0;
 static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
-
-int play_wav(char *filename);
 
 void drain_keyboard_buffer(void)
 {
@@ -661,6 +660,7 @@ int check_win()
 
 void intro_scene()
 {
+    struct WavFilePlay intro_wav;
     char title[] = "CRUZKANOID";
     int text_width = 10 * 8; /* 10 chars * 8 pixels wide */
     int x = (SCREEN_WIDTH - text_width) / 2;
@@ -671,23 +671,63 @@ void intro_scene()
     unsigned char intro_border_b = 63;
     int fade_steps = 30;
     int fade_delay_ms = 20;
+    int wav_active = 0;
+    int wav_done = 0;
+    int i;
 
     clear_screen(0);
 
     /* Draw once, then fade by changing the palette (no redraw). */
     set_palette_color(intro_border_index, 0, 0, 0);
     draw_bordered_text(x, y, title, intro_border_index);
-    fade_palette_color(intro_border_index,
-                       0, 0, 0,
-                       intro_border_r, intro_border_g, intro_border_b,
-                       fade_steps, fade_delay_ms);
 
-    play_wav("e2.wav");
+    if (start_wav_file(&intro_wav, "e2.wav") != 0)
+        wav_active = 1;
 
-    fade_palette_color(intro_border_index,
-                       intro_border_r, intro_border_g, intro_border_b,
-                       0, 0, 0,
-                       fade_steps, fade_delay_ms);
+    for (i = 1; i <= fade_steps; i++)
+    {
+        int r = (int)(((long)intro_border_r * (long)i) / (long)fade_steps);
+        int g = (int)(((long)intro_border_g * (long)i) / (long)fade_steps);
+        int b = (int)(((long)intro_border_b * (long)i) / (long)fade_steps);
+
+        set_palette_color(intro_border_index, (unsigned char)r, (unsigned char)g, (unsigned char)b);
+        wait_vblank();
+        if (fade_delay_ms > 0)
+            delay(fade_delay_ms);
+        if (wav_active && !wav_done)
+            wav_done = update_wav_file(&intro_wav);
+    }
+
+    if (wav_active && !wav_done)
+    {
+        while (!wav_done)
+        {
+            wav_done = update_wav_file(&intro_wav);
+            delay(10);
+        }
+    }
+
+    for (i = 1; i <= fade_steps; i++)
+    {
+        int r = (int)intro_border_r - (int)(((long)intro_border_r * (long)i) / (long)fade_steps);
+        int g = (int)intro_border_g - (int)(((long)intro_border_g * (long)i) / (long)fade_steps);
+        int b = (int)intro_border_b - (int)(((long)intro_border_b * (long)i) / (long)fade_steps);
+
+        if (r < 0)
+            r = 0;
+        if (g < 0)
+            g = 0;
+        if (b < 0)
+            b = 0;
+
+        set_palette_color(intro_border_index, (unsigned char)r, (unsigned char)g, (unsigned char)b);
+        wait_vblank();
+        if (fade_delay_ms > 0)
+            delay(fade_delay_ms);
+    }
+
+    if (wav_active)
+        stop_wav_file(&intro_wav);
     clear_screen(0);
 }
 

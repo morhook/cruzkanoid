@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "DMAW.H"
 
 #define DMA_BUF_SIZE    8192
 #define DMA8_FF_REG      0xC
@@ -118,12 +119,15 @@ unsigned long  AllocateDMABuffer(unsigned char **),
 
 void           Play(unsigned int, char),
                DSPOut(int, int),
-	             Fill_play_buf(unsigned char *, int *, FILE *),
+ 	             Fill_play_buf(unsigned char *, int *, FILE *),
                SetMixer(void);
 
 void interrupt DMAOutputISR(void);   // Interrupt Service Routine
 
 int            Chk_hdr(FILE *);
+int            start_wav_file(struct WavFilePlay *, char *);
+int            update_wav_file(struct WavFilePlay *);
+void           stop_wav_file(struct WavFilePlay *);
 /*----------------------------------------------------------------*/
 
 /*---------  GLOBAL DECLARATIONS  --------------------------------*/
@@ -141,71 +145,51 @@ unsigned long gNoOfBytesLeftInFile;
 
 /*----------------------------------------------------------------*/
 
-struct WavFilePlay {
-  char RetValue;
-
-  FILE *FileToPlay;
-
-  int BufToFill,
-      DMAChan8Bit,
-      DMAChan16Bit,
-      IRQNumber,
-      IRQMask,
-      MaskSave;
-
-  unsigned char *DMABuffer;
-  unsigned int   BytesLeftToPlay;
-  unsigned long  BufPhysAddr;
-
-  void interrupt (*IRQSave)(void);
-};
-
-int play_wav(char *filename)
+int start_wav_file(struct WavFilePlay *waveFilePlay, char *filename)
 {
-  struct WavFilePlay waveFilePlay;
-
   /*--- OPEN FILE TO BE PLAYED -------------------------------*/
   /*----------------------------------------------------------*/
-  if ((waveFilePlay.FileToPlay = fopen(filename, "rb")) == NULL) {
+  if ((waveFilePlay->FileToPlay = fopen(filename, "rb")) == NULL) {
     printf("%s Error opening file--PROGRAM TERMINATED!\n",
     filename);
-    exit(0);
+    return(FAIL);
   }
 
   /*--- VERIFY FILE IS .WAV FORMAT---------------------------*/
   /*---------------------------------------------------------*/
-  if(Chk_hdr(waveFilePlay.FileToPlay))
+  if(Chk_hdr(waveFilePlay->FileToPlay))
   {
      printf("Header check error - PROGRAM ABORTED");
-     exit(0);
+     fclose(waveFilePlay->FileToPlay);
+     return(FAIL);
   }
 
   Mode = (wavehdr.channel == 1) ? MONO : STEREO;
 
   /*--- ALLOCATE BUFFERS -----------------------------------------*/
   /*--------------------------------------------------------------*/
-  waveFilePlay.BufPhysAddr = AllocateDMABuffer(&waveFilePlay.DMABuffer);
-  if (waveFilePlay.BufPhysAddr == FAIL)
+  waveFilePlay->BufPhysAddr = AllocateDMABuffer(&waveFilePlay->DMABuffer);
+  if (waveFilePlay->BufPhysAddr == FAIL)
   {
     puts("DMA Buffer allocation failed!--PROGRAM ABORTED");
-    fclose(waveFilePlay.FileToPlay);
-    exit(0);
+    fclose(waveFilePlay->FileToPlay);
+    return(FAIL);
   }
 
 
   /*--- GET ENVIRONMENT VALUES -----------------------------------*/
   /*--------------------------------------------------------------*/
-  waveFilePlay.RetValue = GetBlasterEnv(&waveFilePlay.DMAChan8Bit, &waveFilePlay.DMAChan16Bit, &waveFilePlay.IRQNumber);
+  waveFilePlay->RetValue = GetBlasterEnv(&waveFilePlay->DMAChan8Bit, &waveFilePlay->DMAChan16Bit, &waveFilePlay->IRQNumber);
 
 
   /*--- ARE ENVIRONMENT VALUES VALID? --------------------------*/
   /*------------------------------------------------------------*/
-  if (waveFilePlay.RetValue == FAIL)
+  if (waveFilePlay->RetValue == FAIL)
   {
     puts("BLASTER env. string or parameter(s) missing--PROGRAM ABORTED!");
-    free(waveFilePlay.DMABuffer);
-    fclose(waveFilePlay.FileToPlay);
-    exit(0);
+    free(waveFilePlay->DMABuffer);
+    fclose(waveFilePlay->FileToPlay);
+    return(FAIL);
   }
 
   /*--- RESET THE DSP ----------------------------------------*/
@@ -213,79 +197,137 @@ int play_wav(char *filename)
   if(ResetDSP(Base) == FAIL)
   {
     puts("Unable to reset DSP chip--PROGRAM TERMINATED!");
-    free(waveFilePlay.DMABuffer);
-    fclose(waveFilePlay.FileToPlay);
-    exit(0);
+    free(waveFilePlay->DMABuffer);
+    fclose(waveFilePlay->FileToPlay);
+    return(FAIL);
   }
 
   if((DSP_Ver < 4) && (wavehdr.bits_per_sample == 16))
   {
     printf("\n** DSP version %d.xx does not support 16bit files.\n", DSP_Ver);
-    free(waveFilePlay.DMABuffer);
-    fclose(waveFilePlay.FileToPlay);
-    exit(0);
+    free(waveFilePlay->DMABuffer);
+    fclose(waveFilePlay->FileToPlay);
+    return(FAIL);
   }
 
 
   /*--- SAVE CURRENT ISR FOR IRQNumber, THEN GIVE IRQNumber NEW ISR ---*/
   /*-------------------------------------------------------------------*/
-  waveFilePlay.IRQSave = getvect(waveFilePlay.IRQNumber + 8);
-  setvect(waveFilePlay.IRQNumber + 8, DMAOutputISR);
+  waveFilePlay->IRQSave = getvect(waveFilePlay->IRQNumber + 8);
+  setvect(waveFilePlay->IRQNumber + 8, DMAOutputISR);
 
 
   /*--- SAVE CURRENT INTERRUPT MASK AND SET NEW INTERRUPT MASK -------*/
   /*------------------------------------------------------------------*/
-  waveFilePlay.MaskSave = inp((int) PIC_MASK);
-  waveFilePlay.IRQMask = ((int) 1 << waveFilePlay.IRQNumber); // Shift a 1 left IRQNumber of bits
-  outp(PIC_MASK, (waveFilePlay.MaskSave & ~waveFilePlay.IRQMask)); // Enable previous AND new interrupts
+  waveFilePlay->MaskSave = inp((int) PIC_MASK);
+  waveFilePlay->IRQMask = ((int) 1 << waveFilePlay->IRQNumber); // Shift a 1 left IRQNumber of bits
+  outp(PIC_MASK, (waveFilePlay->MaskSave & ~waveFilePlay->IRQMask)); // Enable previous AND new interrupts
 
 
   /*--- PROGRAM THE DMA, DSP CHIPS -----------------------------------*/
   /*------------------------------------------------------------------*/
-  if (InitDMADSP(waveFilePlay.BufPhysAddr, waveFilePlay.DMAChan8Bit, waveFilePlay.DMAChan16Bit) == FAIL)
+  if (InitDMADSP(waveFilePlay->BufPhysAddr, waveFilePlay->DMAChan8Bit, waveFilePlay->DMAChan16Bit) == FAIL)
   {
     puts("InitDMADSP() fails--PROGRAM ABORTED!");
-    free(waveFilePlay.DMABuffer);
-    fclose(waveFilePlay.FileToPlay);
-    exit(0);
+    outp(PIC_MASK, waveFilePlay->MaskSave);
+    setvect(waveFilePlay->IRQNumber + 8, waveFilePlay->IRQSave);
+    free(waveFilePlay->DMABuffer);
+    fclose(waveFilePlay->FileToPlay);
+    return(FAIL);
   }
 
 
   /*--- FILL THE FIRST 1/2 OF DMA BUFFER BEFORE PLAYING BEGINS -------*/
   /*------------------------------------------------------------------*/
-  waveFilePlay.BufToFill              = 0;      // Altered by FillHalfOfBuffer()
+  waveFilePlay->BufToFill              = 0;      // Altered by FillHalfOfBuffer()
   gEndOfFile             = FALSE;  // Altered by FillHalfOfBuffer()
   gBufNowPlaying         = 0;      // Altered by ISR
   gLastBufferDonePlaying = FALSE;  // Set in ISR
   gNoOfBytesLeftInFile     = wavehdr.data_len;
+  waveFilePlay->LastBufNowPlaying = gBufNowPlaying;
+  waveFilePlay->EofStarted = FALSE;
+  waveFilePlay->Done = FALSE;
   SetMixer();
 
-  waveFilePlay.BytesLeftToPlay = FillHalfOfBuffer(&waveFilePlay.BufToFill, waveFilePlay.FileToPlay, waveFilePlay.DMABuffer);
+  waveFilePlay->BytesLeftToPlay = FillHalfOfBuffer(&waveFilePlay->BufToFill, waveFilePlay->FileToPlay, waveFilePlay->DMABuffer);
 
   /*--- BEGIN PLAYING THE FILE ---------------------------------------*/
   /*------------------------------------------------------------------*/
   if (wavehdr.data_len < DMA_BUF_SIZE / 2)  // File size is < 1/2 buffer size.
   {
-    Play(waveFilePlay.BytesLeftToPlay, SINGLE_CYCLE);
+    Play(waveFilePlay->BytesLeftToPlay, SINGLE_CYCLE);
     while (gBufNowPlaying == 0);  // Wait for playing to finish (ISR called)
+    gLastBufferDonePlaying = TRUE;
+    waveFilePlay->Done = TRUE;
   }
   else  // File size >= 1/2 buffer size
   {
-    Play(waveFilePlay.BytesLeftToPlay, AUTO_INIT);
-    Fill_play_buf(waveFilePlay.DMABuffer, &waveFilePlay.BufToFill, waveFilePlay.FileToPlay);
+    Play(waveFilePlay->BytesLeftToPlay, AUTO_INIT);
   }
 
+  return(SUCCESS);
+}
+
+int update_wav_file(struct WavFilePlay *waveFilePlay)
+{
+  unsigned int NumberOfAudioBytesInBuffer;
+
+  if (waveFilePlay->Done)
+    return(TRUE);
+
+  if (waveFilePlay->EofStarted)
+  {
+    if (gBufNowPlaying != waveFilePlay->LastBufNowPlaying)
+    {
+      waveFilePlay->Done = TRUE;
+      return(TRUE);
+    }
+    return(FALSE);
+  }
+
+  if (waveFilePlay->BufToFill == gBufNowPlaying)
+    return(FALSE);
+
+  NumberOfAudioBytesInBuffer = FillHalfOfBuffer(&waveFilePlay->BufToFill,
+                                                waveFilePlay->FileToPlay,
+                                                waveFilePlay->DMABuffer);
+  if (NumberOfAudioBytesInBuffer < DMA_BUF_SIZE / 2)
+  {
+    Play(NumberOfAudioBytesInBuffer, SINGLE_CYCLE);
+    waveFilePlay->EofStarted = TRUE;
+    waveFilePlay->LastBufNowPlaying = gBufNowPlaying;
+  }
+
+  return(FALSE);
+}
+
+void stop_wav_file(struct WavFilePlay *waveFilePlay)
+{
   DSPOut(Base, DSP_HALT_SINGLE_CYCLE_DMA);  // Done playing, halt DMA
 
 
   /*--- RESTORE ISR AND ORIGINAL IRQ VECTOR -------------------------*/
   /*-----------------------------------------------------------------*/
-  outp(PIC_MASK, waveFilePlay.MaskSave);
-  setvect(waveFilePlay.IRQNumber + 8, waveFilePlay.IRQSave);
+  outp(PIC_MASK, waveFilePlay->MaskSave);
+  setvect(waveFilePlay->IRQNumber + 8, waveFilePlay->IRQSave);
 
-  free(waveFilePlay.DMABuffer);
-  fclose(waveFilePlay.FileToPlay);
-  return(0);
+  free(waveFilePlay->DMABuffer);
+  fclose(waveFilePlay->FileToPlay);
+  return;
+}
+
+int play_wav(char *filename)
+{
+  struct WavFilePlay waveFilePlay;
+
+  if (start_wav_file(&waveFilePlay, filename) == FAIL)
+    return(FAIL);
+
+  if (wavehdr.data_len >= DMA_BUF_SIZE / 2)
+    Fill_play_buf(waveFilePlay.DMABuffer, &waveFilePlay.BufToFill, waveFilePlay.FileToPlay);
+
+  stop_wav_file(&waveFilePlay);
+  return(SUCCESS);
 }
 
 
