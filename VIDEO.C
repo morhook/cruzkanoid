@@ -1,9 +1,29 @@
 #include <dos.h>
+#include <alloc.h>
 
 #include "cruzkan.h"
 #include "video.h" 
 
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
+static unsigned char far *background_buffer = 0;
+
+static void capture_background(void)
+{
+    int x, y;
+    unsigned long row;
+
+    if (!background_buffer)
+        return;
+
+    for (y = 0; y < SCREEN_HEIGHT; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        for (x = 0; x < SCREEN_WIDTH; x++)
+        {
+            background_buffer[row + x] = VGA[row + x];
+        }
+    }
+}
 
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
 {
@@ -546,7 +566,16 @@ void far draw_background()
     int x, y;
     int heart_size = 8;
     int spacing = heart_size - 2; /* Tight packing with slight overlap */
+    unsigned char base_color = 52;
+
+    /* Clear to base color so hearts don't stack or leave artifacts. */
+    draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
     
+    if (!background_buffer)
+    {
+        background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
+    }
+
     for (y = 0; y < SCREEN_HEIGHT; y += spacing)
     {
         for (x = 0; x < SCREEN_WIDTH; x += spacing)
@@ -556,6 +585,8 @@ void far draw_background()
             draw_heart(x, y, heart_size, color);
         }
     }
+
+    capture_background();
 }
 
 /* Helper function to determine the exact color a heart should have */
@@ -570,16 +601,6 @@ unsigned char get_heart_color(int x, int y)
 
 void far draw_background_area(int x1, int y1, int x2, int y2)
 {
-    int x, y;
-    int heart_size = 8;
-    int spacing = heart_size - 2; /* Tight packing with slight overlap */
-    int expanded_x1;
-    int expanded_y1;
-    int expanded_x2;
-    int expanded_y2;
-    int start_x;
-    int start_y;
-    
     /* Ensure coordinates are within bounds and x1 < x2, y1 < y2 */
     if (x1 < 0) x1 = 0;
     if (y1 < 0) y1 = 0;
@@ -587,50 +608,23 @@ void far draw_background_area(int x1, int y1, int x2, int y2)
     if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
     if (x1 > x2 || y1 > y2) return;
     
-    /* Calculate the area that needs to be restored */
-    area_width = x2 - x1 + 1;
-    area_height = y2 - y1 + 1;
-    
-    /* If the area is large, always restore full background to avoid misalignment issues */
-    if (area_width > 32 || area_height > 32 || 
-        (x1 == 0 && y1 == 0) ||
-        (x2 == SCREEN_WIDTH - 1 && y2 == SCREEN_HEIGHT - 1))
-    {
-        /* Large area or touching edges - restore full background */
-        draw_background();
-        return;
-    }
-    
-    /* Ensure coordinates are within bounds */
-    if (x1 < 0) x1 = 0;
-    if (y1 < 0) y1 = 0;
-    if (x2 >= SCREEN_WIDTH) x2 = SCREEN_WIDTH - 1;
-    if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
     if (x1 > x2 || y1 > y2) return;
-    
-    /* Expand area slightly to ensure we catch all hearts that might be needed */
-    expanded_x1 = x1 - heart_size;
-    expanded_y1 = y1 - heart_size;
-    expanded_x2 = x2 + heart_size;
-    expanded_y2 = y2 + heart_size;
-    
-    /* Start from the first heart that could affect this area */
-    start_x = (expanded_x1 / spacing) * spacing;
-    start_y = (expanded_y1 / spacing) * spacing;
-    if (start_x < 0) start_x = 0;
-    if (start_y < 0) start_y = 0;
-    
-    for (y = start_y; y <= expanded_y2 && y < SCREEN_HEIGHT; y += spacing)
+
+    if (!background_buffer)
     {
-        for (x = start_x; x <= expanded_x2 && x < SCREEN_WIDTH; x += spacing)
+        draw_background();
+    }
+    else
+    {
+        int x, y;
+        unsigned long row;
+
+        for (y = y1; y <= y2; y++)
         {
-            /* Only draw hearts that could intersect with original area */
-            if (x + heart_size >= x1 && x <= x2 &&
-                y + heart_size >= y1 && y <= y2)
+            row = (unsigned long)y * SCREEN_WIDTH;
+            for (x = x1; x <= x2; x++)
             {
-                /* Use the exact same color calculation as original background */
-                unsigned char color = get_heart_color(x, y);
-                draw_heart(x, y, heart_size, color);
+                VGA[row + x] = background_buffer[row + x];
             }
         }
     }
