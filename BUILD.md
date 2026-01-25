@@ -32,18 +32,24 @@ dosbox-x -c "mount c $HOME/workspace/cruzkanoid/" -c "c:" -c "addpath.bat"
 Also you can compile directly from commandline with the following command inside DOS
 
 ```
-tcc -ml -Ic:\tc\include -Lc:\tc\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C
+tcc -ml -Ic:\tc\include -Lc:\tc\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C DMAW.C
 ```
 
 So putting everthing together you can run
 
 ```
-dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml -Ic:\\tc\\include -Lc:\\tc\\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C" -c "cruzkan" -fs -exit
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "tcc -ml -Ic:\\tc\\include -Lc:\\tc\\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C DMAW.C" -c "cruzkan" -fs
 ```
 
 Or even better we have a .BAT that automates most of it
 ```
-dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "BUILD.BAT" -fs -exit
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "BUILD.BAT" -fs
+```
+
+And last but not least we can do a more advanced .BAT that builds, verifies it did it correctly and runs the app:
+
+```
+dosbox-x -c "mount c $(pwd)" -c "c:" -c "call ADDPATH.BAT" -c "BUILD_R.BAT" -fs
 ```
 
 ## Sound Blaster (optional, but mandatory to take care of your ears)
