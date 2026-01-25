@@ -570,8 +570,9 @@ void far draw_heart(int cx, int cy, int size, unsigned char color)
 void far draw_background()
 {
     int x, y;
-    int heart_size = 8;
-    int spacing = heart_size - 2; /* Tight packing with slight overlap */
+    int heart_size = 9;
+    int spacing = heart_size + 1;
+    int offset = heart_size / 2;
     unsigned char base_color = 52;
 
     /* Clear to base color so hearts don't stack or leave artifacts. */
@@ -582,9 +583,9 @@ void far draw_background()
         background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
     }
 
-    for (y = 0; y < SCREEN_HEIGHT; y += spacing)
+    for (y = offset; y + heart_size - 1 < SCREEN_HEIGHT; y += spacing)
     {
-        for (x = 0; x < SCREEN_WIDTH; x += spacing)
+        for (x = offset; x + heart_size - 1 < SCREEN_WIDTH; x += spacing)
         {
             /* Vary heart colors for visual interest */
             unsigned char color = 52 + ((x + y) / spacing) % 3;
