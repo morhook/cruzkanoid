@@ -716,17 +716,23 @@ void intro_scene()
         {
             wav_done = update_wav_file(&intro_wav);
             delay(10);
+            if (kbhit())
+            {
+                getch();
+                break;
+            }
         }
     }
 
+    if (wav_active)
+        stop_wav_file(&intro_wav);
+        
     fade_palette_color(intro_border_index,
                        intro_border_r, intro_border_g, intro_border_b,
                        0, 0, 0,
                        fade_steps, fade_delay_ms);
 
 
-    if (wav_active)
-        stop_wav_file(&intro_wav);
     clear_screen(0);
 }
 
