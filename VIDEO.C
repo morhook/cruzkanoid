@@ -436,7 +436,7 @@ void far draw_filled_circle(int cx, int cy, int r, unsigned char color, unsigned
 
 void far draw_ball(Ball ball)
 {
-    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x3f);
+    draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x22);
 }
 
 void far erase_ball(int x, int y, Ball ball)
