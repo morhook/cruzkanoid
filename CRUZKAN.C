@@ -129,7 +129,7 @@ void init_paddle_palette()
     /* Steel/cyan paddle with highlight + shadow. */
     set_palette_color(PADDLE_PALETTE_START + 0, 18, 44, 52); /* base */
     set_palette_color(PADDLE_PALETTE_START + 1, 38, 60, 63); /* light */
-    set_palette_color(PADDLE_PALETTE_START + 2, 0, 0, 63);  /* dark */
+    set_palette_color(PADDLE_PALETTE_START + 2, 0, 0, 63);   /* dark */
 }
 
 void init_pink_palette()
@@ -174,7 +174,7 @@ void init_bricks(int level)
         }
     }
 
-if (active_count > 0 && (level == 1 || level == 2))
+    if (active_count > 0 && (level == 1 || level == 2))
     {
         hidden_index = rand() % active_count;
         for (i = 0; i < BRICK_ROWS; i++)
@@ -183,7 +183,7 @@ if (active_count > 0 && (level == 1 || level == 2))
             {
                 if (!bricks[i][j].active)
                     continue;
-if (hidden_index == 0)
+                if (hidden_index == 0)
                 {
                     bricks[i][j].hp = 1;
                     bricks[i][j].gives_life = 1;
@@ -266,8 +266,6 @@ void draw_brick(int x, int y, int width, int height, unsigned char base_color)
     }
 }
 
-
-
 void draw_bricks()
 {
     int i, j;
@@ -275,7 +273,7 @@ void draw_bricks()
     {
         for (j = 0; j < BRICK_COLS; j++)
         {
-if (bricks[i][j].active)
+            if (bricks[i][j].active)
             {
                 draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
             }
@@ -354,7 +352,7 @@ void update_game()
                 pause_toggle_requested = 1;
             }
         }
-        if (key == 27 || key == 'q' || key =='Q')
+        if (key == 27 || key == 'q' || key == 'Q')
         { // ESC
             mouse_shutdown();
             audio_shutdown();
@@ -460,7 +458,7 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
     int i, j;
     int radius = BALL_SIZE / 2;
 
-if (hit_destroyed)
+    if (hit_destroyed)
         *hit_destroyed = 0;
     if (hit_life_up)
         *hit_life_up = 0;
@@ -503,7 +501,7 @@ if (hit_destroyed)
                         }
                     }
 
-{
+                    {
                         if (bricks[i][j].hp > 0)
                             bricks[i][j].hp--;
                     }
@@ -537,7 +535,7 @@ if (hit_destroyed)
 int update_ball(int *brick_hit_x, int *brick_hit_y)
 {
     int hit_pos;
-int brick_hit = 0;
+    int brick_hit = 0;
     int brick_collided = 0;
     int brick_life_up = 0;
     int radius = BALL_SIZE / 2;
@@ -597,7 +595,7 @@ int brick_hit = 0;
             ball.dx = 1;
     }
 
-// Brick collision
+    // Brick collision
     if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_life_up))
     {
         brick_collided = 1;
@@ -645,7 +643,7 @@ int brick_hit = 0;
         }
     }
 
-if (brick_hit)
+    if (brick_hit)
         return 1;
     return 0;
 }
@@ -730,7 +728,8 @@ void intro_scene()
             {
                 if (kbhit())
                     getch();
-                if (wav_active) {
+                if (wav_active)
+                {
                     stop_wav_file(&intro_wav);
                     wav_active = 0;
                 }
@@ -742,12 +741,11 @@ void intro_scene()
 
     if (wav_active)
         stop_wav_file(&intro_wav);
-        
+
     fade_palette_color(intro_border_index,
                        intro_border_r, intro_border_g, intro_border_b,
                        0, 0, 0,
                        fade_steps, fade_delay_ms);
-
 
     clear_screen(0);
 }
