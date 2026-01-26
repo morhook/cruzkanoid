@@ -719,6 +719,11 @@ void intro_scene()
             if (kbhit())
             {
                 getch();
+                if (wav_active) {
+                    stop_wav_file(&intro_wav);
+                    wav_active = 0;
+                }
+                play_wav("e2-pmute.wav");
                 break;
             }
         }
