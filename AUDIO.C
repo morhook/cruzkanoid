@@ -1330,19 +1330,7 @@ void far audio_event_life_up_blocking(void)
 
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
     {
-        (void)sb_play_tone(659, 70);  /* E */
-        delay(80);
-        (void)sb_play_tone(784, 70);  /* G */
-        delay(80);
-        (void)sb_play_tone(880, 70);  /* A */
-        delay(80);
-        (void)sb_play_tone(1047, 80); /* C */
-        delay(90);
-        (void)sb_play_tone(1175, 80); /* D */
-        delay(90);
-        (void)sb_play_tone(1568, 120); /* G */
-        delay(130);
-        sb_stop_internal();
+        play_wav("life-up.wav");
         return;
     }
 
