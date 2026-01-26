@@ -714,11 +714,22 @@ void intro_scene()
     {
         while (!wav_done)
         {
+            int any_clicked = 0;
+
             wav_done = update_wav_file(&intro_wav);
             delay(10);
-            if (kbhit())
+
+            if (mouse_available)
             {
-                getch();
+                mouse_update();
+                any_clicked = ((mouse_buttons & 3) != 0) && ((mouse_prev_buttons & 3) == 0);
+                mouse_prev_buttons = mouse_buttons;
+            }
+
+            if (kbhit() || any_clicked)
+            {
+                if (kbhit())
+                    getch();
                 if (wav_active) {
                     stop_wav_file(&intro_wav);
                     wav_active = 0;
