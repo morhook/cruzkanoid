@@ -294,7 +294,7 @@ void init_game()
     init_level(1);
 }
 
-void update_paddle()
+void update_game()
 {
     int move_dir = 0;
     int pause_toggle_requested = 0;
@@ -779,7 +779,7 @@ void game_loop()
             old_paddle_x = paddle.x;
 
             /* Update game state */
-            update_paddle();
+            update_game();
             if (!paused)
             {
                 if (ball_stuck)
