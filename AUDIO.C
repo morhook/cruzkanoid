@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "DMAW.H"
 
 #include <alloc.h>
 #include <conio.h>
@@ -28,6 +29,9 @@ typedef enum
 
 static ToneSource tone_source = TONE_NONE;
 
+static void audio_start_tone_internal(int freq, int ms, ToneSource source);
+static int sb_present;
+
 typedef struct
 {
     unsigned int freq;
@@ -39,6 +43,12 @@ static int music_running = 1;
 static unsigned int music_index = 0;
 static unsigned int music_len = 0;
 static unsigned int music_drum_mute_start = 0;
+
+static int life_up_active = 0;
+static unsigned int life_up_index = 0;
+
+static struct WavFilePlay life_up_wav;
+static int life_up_wav_active = 0;
 
 #define NOTE_C3 131
 #define NOTE_D3 147
@@ -178,11 +188,58 @@ static const MusicNote music_track[] = {
 
     {0, 0}};
 
+static const MusicNote life_up_notes[] = {
+    {659, 70}, {784, 70}, {880, 70}, {1047, 80}, {1175, 80}, {1568, 120}, {0, 0}};
+
 static void music_advance_index(void)
 {
     music_index++;
     if (music_track[music_index].ms == 0U)
         music_index = 0;
+}
+
+static void life_up_stop_wav(void)
+{
+    if (life_up_wav_active)
+    {
+        stop_wav_file(&life_up_wav);
+        life_up_wav_active = 0;
+    }
+}
+
+static void life_up_stop_sequence(void)
+{
+    life_up_active = 0;
+    life_up_index = 0;
+    life_up_stop_wav();
+}
+
+static void life_up_start_sequence(void)
+{
+    life_up_active = 1;
+    life_up_index = 0;
+
+    if (!audio_enabled)
+        return;
+
+    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
+    {
+        life_up_stop_wav();
+        if (start_wav_file(&life_up_wav, "life-up.wav") != 0)
+            life_up_wav_active = 1;
+        return;
+    }
+
+    if (life_up_notes[0].ms != 0U)
+    {
+        audio_start_tone_internal((int)life_up_notes[0].freq, (int)life_up_notes[0].ms, TONE_SFX);
+        life_up_index = 1;
+    }
+}
+
+static int life_up_is_active(void)
+{
+    return (life_up_active || life_up_wav_active);
 }
 
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
@@ -1072,6 +1129,7 @@ void audio_stop_internal(void)
     audio_active = 0;
     audio_end_clock = 0;
     tone_source = TONE_NONE;
+    life_up_stop_wav();
 }
 
 static void audio_start_tone_internal(int freq, int ms, ToneSource source)
@@ -1155,7 +1213,7 @@ static void music_start_next_note(void)
 {
     MusicNote n;
 
-    if (!audio_enabled || !music_enabled || !music_running || audio_active)
+    if (!audio_enabled || !music_enabled || !music_running || audio_active || life_up_is_active())
         return;
 
     n = music_track[music_index];
@@ -1272,6 +1330,33 @@ void far audio_update(void)
         audio_stop_internal();
     }
 
+    if (life_up_wav_active)
+    {
+        if (update_wav_file(&life_up_wav))
+        {
+            stop_wav_file(&life_up_wav);
+            life_up_wav_active = 0;
+            life_up_active = 0;
+            life_up_index = 0;
+        }
+    }
+
+    if (life_up_active && !life_up_wav_active && !audio_active)
+    {
+        if (life_up_notes[life_up_index].ms == 0U)
+        {
+            life_up_active = 0;
+            life_up_index = 0;
+        }
+        else
+        {
+            audio_start_tone_internal((int)life_up_notes[life_up_index].freq,
+                                      (int)life_up_notes[life_up_index].ms,
+                                      TONE_SFX);
+            life_up_index++;
+        }
+    }
+
     music_start_next_note();
 }
 
@@ -1327,26 +1412,8 @@ void far audio_event_life_up_blocking(void)
         return;
 
     audio_stop_internal();
-
-    if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
-    {
-        play_wav("life-up.wav");
-        return;
-    }
-
-    sound(659);
-    delay(70);
-    sound(784);
-    delay(70);
-    sound(880);
-    delay(70);
-    sound(1047);
-    delay(80);
-    sound(1175);
-    delay(80);
-    sound(1568);
-    delay(120);
-    nosound();
+    life_up_stop_sequence();
+    life_up_start_sequence();
 }
 
 void far audio_event_level_clear_blocking(void)
