@@ -58,4 +58,6 @@ void far erase_paddle_with_background(int x, Paddle paddle);
 
 void far erase_rect_with_background(int x, int y, int width, int height);
 
+void draw_brick(int x, int y, int width, int height, unsigned char base_color);
+
 #endif /* VIDEO_H */

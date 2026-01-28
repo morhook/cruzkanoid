@@ -672,3 +672,64 @@ void far erase_rect_with_background(int x, int y, int width, int height)
     /* Restore background in the rectangle area - expanded to catch all hearts */
     draw_background_area(x1, y1, x2, y2);
 }
+
+
+void draw_brick(int x, int y, int width, int height, unsigned char base_color)
+{
+    int i, j;
+    unsigned char light_color = base_color + 1;
+    unsigned char dark_color = base_color + 2;
+
+    /* Fill interior with a subtle "shine" + texture. */
+    for (i = 1; i < height - 1; i++)
+    {
+        for (j = 1; j < width - 1; j++)
+        {
+            unsigned char c = base_color;
+
+            /* Shiny top half, slightly darker bottom half */
+            if (i < (height / 2))
+            {
+                if (((i + j) & 3) == 0)
+                    c = light_color;
+            }
+            else
+            {
+                if (((i + j) & 3) == 0)
+                    c = dark_color;
+            }
+
+            put_pixel(x + j, y + i, c);
+        }
+    }
+
+    /* Beveled border: light on top/left, dark on bottom/right */
+    for (j = 0; j < width; j++)
+    {
+        put_pixel(x + j, y, light_color);
+        put_pixel(x + j, y + height - 1, dark_color);
+    }
+    for (i = 0; i < height; i++)
+    {
+        put_pixel(x, y + i, light_color);
+        put_pixel(x + width - 1, y + i, dark_color);
+    }
+
+    /* Extra inner highlight stripe for a more "arcade" look */
+    if (height > 4 && width > 6)
+    {
+        for (j = 2; j < width - 2; j++)
+        {
+            if ((j & 1) == 0)
+                put_pixel(x + j, y + 2, light_color);
+        }
+    }
+
+    /* Tiny specular highlight near the top-left */
+    if (width > 8 && height > 6)
+    {
+        put_pixel(x + 2, y + 2, 15);
+        put_pixel(x + 3, y + 2, 15);
+        put_pixel(x + 2, y + 3, 15);
+    }
+}
