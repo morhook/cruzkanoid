@@ -186,7 +186,6 @@ int start_wav_file(struct WavFilePlay *waveFilePlay, char *filename)
   /*------------------------------------------------------------*/
   if (waveFilePlay->RetValue == FAIL)
   {
-    puts("BLASTER env. string or parameter(s) missing--PROGRAM ABORTED!");
     free(waveFilePlay->DMABuffer);
     fclose(waveFilePlay->FileToPlay);
     return(FAIL);

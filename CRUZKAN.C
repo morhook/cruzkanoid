@@ -683,6 +683,8 @@ void intro_scene()
                 break;
             }
         }
+    } else { // no wav playing. wait just a little bit for PC speaker users
+        delay(1000);
     }
 
     if (wav_active)
