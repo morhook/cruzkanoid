@@ -16,7 +16,7 @@
    # Inside DOSBox-x:
    mount c ~/workspace/cruzkanoid
    mount d ~/downloads/tc
-   SET PATH=%PATH%;d:\tc\bin
+   SET PATH=%PATH%;d:\bin
    c:
    tc
    ```
