@@ -771,6 +771,7 @@ void game_loop()
                 brick_was_hit = 0;
             }
 
+            wait_vblank();
             /* Erase old positions */
             erase_ball_with_background(old_ball_x, old_ball_y, ball);
             {
