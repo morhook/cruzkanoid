@@ -57,26 +57,6 @@ void drain_keyboard_buffer(void)
         (void)getch();
 }
 
-void delay_with_audio(int ms)
-{
-    clock_t start;
-    clock_t ticks;
-
-    if (ms <= 0)
-        return;
-
-    start = clock();
-    ticks = (clock_t)(((long)ms * (long)CLK_TCK + 999L) / 1000L);
-    if (ticks <= 0)
-        ticks = 1;
-
-    while ((clock() - start) < ticks)
-    {
-        audio_update();
-        delay(10);
-    }
-}
-
 void reset_paddle()
 {
     int radius = BALL_SIZE / 2;
