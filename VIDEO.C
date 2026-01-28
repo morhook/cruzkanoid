@@ -664,12 +664,12 @@ void far erase_paddle_with_background(int x, Paddle paddle)
 
 void far erase_rect_with_background(int x, int y, int width, int height)
 {
-    int x1 = x - 2;
-    int y1 = y - 2;
-    int x2 = x + width + 2;
-    int y2 = y + height + 2;
+    int x1 = x;
+    int y1 = y;
+    int x2 = x + width - 1;
+    int y2 = y + height - 1;
     
-    /* Restore background in the rectangle area - expanded to catch all hearts */
+    /* Restore background only where the brick was drawn */
     draw_background_area(x1, y1, x2, y2);
 }
 
