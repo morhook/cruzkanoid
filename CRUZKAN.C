@@ -202,6 +202,31 @@ void draw_bricks()
     }
 }
 
+void redraw_bricks_in_area(int x1, int y1, int x2, int y2)
+{
+    int i, j;
+    int bx1, by1, bx2, by2;
+
+    for (i = 0; i < BRICK_ROWS; i++)
+    {
+        for (j = 0; j < BRICK_COLS; j++)
+        {
+            if (!bricks[i][j].active)
+                continue;
+
+            bx1 = bricks[i][j].x;
+            by1 = bricks[i][j].y;
+            bx2 = bricks[i][j].x + BRICK_WIDTH - 1;
+            by2 = bricks[i][j].y + BRICK_HEIGHT - 1;
+
+            if (x1 <= bx2 && x2 >= bx1 && y1 <= by2 && y2 >= by1)
+            {
+                draw_brick(bricks[i][j].x, bricks[i][j].y, BRICK_WIDTH, BRICK_HEIGHT, bricks[i][j].color);
+            }
+        }
+    }
+}
+
 void init_game()
 {
     /* Avoid the restart key auto-repeat affecting the next game (e.g. toggling music). */
@@ -748,6 +773,14 @@ void game_loop()
 
             /* Erase old positions */
             erase_ball_with_background(old_ball_x, old_ball_y, ball);
+            {
+                int r = BALL_SIZE / 2;
+                int x1 = old_ball_x - r - 1;
+                int y1 = old_ball_y - r - 1;
+                int x2 = old_ball_x + r + 1;
+                int y2 = old_ball_y + r + 1;
+                redraw_bricks_in_area(x1, y1, x2, y2);
+            }
             if (old_paddle_x != paddle.x)
             {
                 erase_paddle_with_background(old_paddle_x, paddle);
