@@ -189,7 +189,7 @@ static const MusicNote music_track[] = {
     {0, 0}};
 
 static const MusicNote life_up_notes[] = {
-    {659, 70}, {784, 70}, {880, 70}, {1047, 80}, {1175, 80}, {1568, 120}, {0, 0}};
+    {1319, 140}, {1568, 140}, {880, 80}, {2093, 140}, {1175, 80}, {784, 60}, {1568, 220}, {0, 0}};
 
 static void music_advance_index(void)
 {
