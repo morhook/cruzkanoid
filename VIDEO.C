@@ -549,7 +549,7 @@ void far draw_heart(int cx, int cy, int size, unsigned char color)
         "011111100",
         "001111000",
         "000110000",
-        "000010000",
+        "000000000",
         "000000000"
     };
 
@@ -589,7 +589,7 @@ void far draw_background()
         {
             /* Vary heart colors for visual interest */
             unsigned char color = 52 + ((x + y) / spacing) % 3;
-            draw_heart(x, y, heart_size, color);
+            draw_heart(x, y, heart_size, color + 1);
         }
     }
 

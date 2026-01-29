@@ -119,6 +119,7 @@ void init_pink_palette()
     set_palette_color(52, 63, 32, 48); /* Light pink */
     set_palette_color(53, 55, 15, 35); /* Medium pink */
     set_palette_color(54, 40, 8, 20);  /* Dark pink */
+    set_palette_color(55, 63, 63, 63);  /* White */
 }
 
 void init_bricks(int level)
