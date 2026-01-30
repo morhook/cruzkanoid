@@ -20,6 +20,7 @@
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
 #define MAX_LEVELS 10
+#define LIFE_PILL_CHANCE 40
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     {
@@ -178,8 +179,6 @@ void init_bricks(int level)
     int start_x = (SCREEN_WIDTH - total_width) / 2;
     int level_index = level - 1;
     unsigned int row_mask;
-    int active_count = 0;
-    int hidden_index = -1;
 
     if (start_x < 0)
         start_x = 0;
@@ -199,28 +198,6 @@ void init_bricks(int level)
             bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
             bricks[i][j].hp = 1;
             bricks[i][j].gives_life = 0;
-            if (bricks[i][j].active)
-                active_count++;
-        }
-    }
-
-    if (active_count > 0 && (level == 1 || level == 2))
-    {
-        hidden_index = rand() % active_count;
-        for (i = 0; i < BRICK_ROWS; i++)
-        {
-            for (j = 0; j < BRICK_COLS; j++)
-            {
-                if (!bricks[i][j].active)
-                    continue;
-                if (hidden_index == 0)
-                {
-                    bricks[i][j].hp = 1;
-                    bricks[i][j].gives_life = 1;
-                    return;
-                }
-                hidden_index--;
-            }
         }
     }
 }
@@ -514,6 +491,14 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
                             bricks[i][j].gives_life = 0;
                             if (hit_life_up)
                                 *hit_life_up = 1;
+                        }
+                        else
+                        {
+                            if ((rand() % LIFE_PILL_CHANCE) == 0)
+                            {
+                                if (hit_life_up)
+                                    *hit_life_up = 1;
+                            }
                         }
                     }
                     *hit_x = bricks[i][j].x;
