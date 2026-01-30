@@ -439,6 +439,56 @@ void far draw_ball(Ball ball)
     draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x22);
 }
 
+void far draw_pill(Pill pill)
+{
+    int i, j;
+    int rx = PILL_WIDTH / 2;
+    int top_cy = rx;
+    int bottom_cy = (PILL_HEIGHT - 1) - rx;
+    int x0 = pill.x - rx;
+    int y0 = pill.y - (PILL_HEIGHT / 2);
+    unsigned char light_color = 55;
+    unsigned char base_color = 54;
+    unsigned char border_color = 15;
+
+    for (i = 0; i < PILL_HEIGHT; i++)
+    {
+        for (j = 0; j < PILL_WIDTH; j++)
+        {
+            int dx = j - rx;
+            int inside = 1;
+
+            if (i < top_cy)
+            {
+                int dy = i - top_cy;
+                if ((dx * dx + dy * dy) > (rx * rx))
+                    inside = 0;
+            }
+            else if (i > bottom_cy)
+            {
+                int dy = i - bottom_cy;
+                if ((dx * dx + dy * dy) > (rx * rx))
+                    inside = 0;
+            }
+
+            if (!inside)
+                continue;
+
+            if (i == 0 || i == PILL_HEIGHT - 1 || j == 0 || j == PILL_WIDTH - 1)
+            {
+                put_pixel(x0 + j, y0 + i, border_color);
+            }
+            else
+            {
+                if (j < rx)
+                    put_pixel(x0 + j, y0 + i, light_color);
+                else
+                    put_pixel(x0 + j, y0 + i, base_color);
+            }
+        }
+    }
+}
+
 void far erase_ball(int x, int y, Ball ball)
 {
     int i, j;
@@ -460,6 +510,16 @@ void far erase_ball(int x, int y, Ball ball)
 	    put_pixel(x0 + j, y0 + i, 0);
 	}
     }
+}
+
+void far erase_pill_with_background(int x, int y)
+{
+    int x1 = x - (PILL_WIDTH / 2) - 1;
+    int y1 = y - (PILL_HEIGHT / 2) - 1;
+    int x2 = x + (PILL_WIDTH / 2) + 1;
+    int y2 = y + (PILL_HEIGHT / 2) + 1;
+
+    draw_background_area(x1, y1, x2, y2);
 }
 
 void far draw_ui(int score, int lives, int current_level)
