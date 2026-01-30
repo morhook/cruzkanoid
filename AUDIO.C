@@ -79,7 +79,11 @@ static const MusicNote music_track[] = {
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
-
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+ 
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
     {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
@@ -434,12 +438,12 @@ static void opl_set_freq_no_key(int ch, unsigned int freq_hz)
 static void opl_program_rhythm(void)
 {
     /* TL (total level): higher = quieter (0..63). */
-#define DRUM_TL_BD_MOD 0x26
-#define DRUM_TL_BD_CAR 0x18
-#define DRUM_TL_HH     0x24
-#define DRUM_TL_SD     0x22
-#define DRUM_TL_TT     0x26
-#define DRUM_TL_CY     0x2A
+#define DRUM_TL_BD_MOD 0x28
+#define DRUM_TL_BD_CAR 0x16
+#define DRUM_TL_HH     0x63
+#define DRUM_TL_SD     0x1C
+#define DRUM_TL_TT     0x28
+#define DRUM_TL_CY     0x30
 
     /* OPL2 rhythm-mode percussion mapping:
      * - BD: ch6 ops 16+19
@@ -465,9 +469,9 @@ static void opl_program_rhythm(void)
     /* Hi-hat (op17). */
     opl_write0(0x20 + 17, 0x01);
     opl_write0(0x40 + 17, DRUM_TL_HH);
-    opl_write0(0x60 + 17, 0xF4);
+    opl_write0(0x60 + 17, 0xF6);
     opl_write0(0x80 + 17, 0x32);
-    opl_write0(0xE0 + 17, 0x01);
+    opl_write0(0xE0 + 17, 0x06);
 
     /* Snare (op20). */
     opl_write0(0x20 + 20, 0x01);
