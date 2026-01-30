@@ -25,6 +25,8 @@ void far draw_ball(Ball ball);
 
 void far erase_ball(int x, int y, Ball ball);
 
+void far draw_pill(Pill pill);
+
 void far draw_char(int x, int y, char c, unsigned char color);
 
 void far draw_text(int x, int y, char *text);
@@ -53,6 +55,8 @@ void far draw_background();
 void far draw_background_area(int x1, int y1, int x2, int y2);
 
 void far erase_ball_with_background(int x, int y, Ball ball);
+
+void far erase_pill_with_background(int x, int y);
 
 void far erase_paddle_with_background(int x, Paddle paddle);
 

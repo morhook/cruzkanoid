@@ -7,12 +7,22 @@
 #define PADDLE_HEIGHT 8
 #define BALL_SIZE 4
 #define PADDLE_PALETTE_START 48
+#define PILL_WIDTH 8
+#define PILL_HEIGHT 12
+#define PILL_FALL_SPEED 2
 
 typedef struct
 {
     int x, y;
     int dx, dy;
 } Ball;
+
+typedef struct
+{
+    int x, y;
+    int dy;
+    int active;
+} Pill;
 
 typedef struct
 {
