@@ -119,8 +119,10 @@ unsigned long  AllocateDMABuffer(unsigned char **),
 
 void           Play(unsigned int, char),
                DSPOut(int, int),
- 	             Fill_play_buf(unsigned char *, int *, FILE *),
+	             Fill_play_buf(unsigned char *, int *, FILE *),
                SetMixer(void);
+
+void           wav_set_mixer_volume(unsigned char master, unsigned char voice);
 
 void interrupt DMAOutputISR(void);   // Interrupt Service Routine
 
@@ -142,6 +144,9 @@ int   Base,
       DSP_Ver;
 
 unsigned long gNoOfBytesLeftInFile;
+
+static unsigned char mixer_master_volume = 0xFF;
+static unsigned char mixer_voice_volume = 0xFF;
 
 /*----------------------------------------------------------------*/
 
@@ -1015,10 +1020,17 @@ void SetMixer(void)
   outp(Base + MIXER_DATA, (int) 0x00);
 
   outp(Base + MIXER_ADDR, (int) VOICE_VOLUME);
-  outp(Base + MIXER_DATA, (int) 0xFF);
+  outp(Base + MIXER_DATA, (int) mixer_voice_volume);
 
   outp(Base + MIXER_ADDR, (int) MASTER_VOLUME);
-  outp(Base + MIXER_DATA, (int) 0xFF);
+  outp(Base + MIXER_DATA, (int) mixer_master_volume);
 
   return;
+}
+
+void wav_set_mixer_volume(unsigned char master, unsigned char voice)
+{
+  mixer_master_volume = master;
+  mixer_voice_volume = voice;
+  SetMixer();
 }
