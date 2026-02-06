@@ -31,5 +31,6 @@ int start_wav_file(struct WavFilePlay *waveFilePlay, char *filename);
 int update_wav_file(struct WavFilePlay *waveFilePlay);
 void stop_wav_file(struct WavFilePlay *waveFilePlay);
 int play_wav(char *filename);
+void wav_set_mixer_volume(unsigned char master, unsigned char voice);
 
 #endif /* DMAW_H */
