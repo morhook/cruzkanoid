@@ -52,6 +52,7 @@ int launch_requested = 0;
 int paused = 0;
 int force_redraw = 0;
 static int life_pill_spawn_request = 0;
+static int life_pill_spawn_type = PILL_TYPE_NONE;
 
 static int key_vx = 0;
 static int key_offset = 0;
@@ -104,10 +105,12 @@ void reset_life_pill()
     life_pill.x = 0;
     life_pill.y = 0;
     life_pill.dy = PILL_FALL_SPEED;
+    life_pill.type = PILL_TYPE_NONE;
     life_pill_spawn_request = 0;
+    life_pill_spawn_type = PILL_TYPE_NONE;
 }
 
-void spawn_life_pill(int brick_x, int brick_y)
+void spawn_life_pill(int brick_x, int brick_y, int pill_type)
 {
     if (life_pill.active)
         return;
@@ -116,6 +119,7 @@ void spawn_life_pill(int brick_x, int brick_y)
     life_pill.x = brick_x + (BRICK_WIDTH / 2);
     life_pill.y = brick_y + (BRICK_HEIGHT / 2);
     life_pill.dy = PILL_FALL_SPEED;
+    life_pill.type = pill_type;
 }
 
 void update_life_pill()
@@ -140,8 +144,30 @@ void update_life_pill()
         life_pill.y - half_h < paddle.y + PADDLE_HEIGHT)
     {
         life_pill.active = 0;
-        lives++;
-        audio_event_life_up_blocking();
+        if (life_pill.type == PILL_TYPE_LIFE)
+        {
+            lives++;
+            audio_event_life_up_blocking();
+        }
+        else if (life_pill.type == PILL_TYPE_GROW)
+        {
+            paddle.width = PADDLE_WIDTH_GROW;
+        }
+        else if (life_pill.type == PILL_TYPE_SHRINK)
+        {
+            paddle.width = PADDLE_WIDTH_SHRINK;
+        }
+
+        if (paddle.width < 8)
+            paddle.width = 8;
+        if (paddle.width > SCREEN_WIDTH - 2)
+            paddle.width = SCREEN_WIDTH - 2;
+
+        if (paddle.x < 0)
+            paddle.x = 0;
+        if (paddle.x + paddle.width > SCREEN_WIDTH)
+            paddle.x = SCREEN_WIDTH - paddle.width;
+        mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
     }
 }
 
@@ -455,15 +481,15 @@ void update_game()
     }
 }
 
-int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_life_up)
+int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_pill_type)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
 
     if (hit_destroyed)
         *hit_destroyed = 0;
-    if (hit_life_up)
-        *hit_life_up = 0;
+    if (hit_pill_type)
+        *hit_pill_type = PILL_TYPE_NONE;
 
     for (i = 0; i < BRICK_ROWS; i++)
     {
@@ -517,15 +543,23 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
                         if (bricks[i][j].gives_life)
                         {
                             bricks[i][j].gives_life = 0;
-                            if (hit_life_up)
-                                *hit_life_up = 1;
+                            if (hit_pill_type)
+                                *hit_pill_type = PILL_TYPE_LIFE;
                         }
                         else
                         {
                             if ((rand() % LIFE_PILL_CHANCE) == 0)
                             {
-                                if (hit_life_up)
-                                    *hit_life_up = 1;
+                                if (hit_pill_type)
+                                {
+                                    int roll = rand() % 3;
+                                    if (roll == 0)
+                                        *hit_pill_type = PILL_TYPE_LIFE;
+                                    else if (roll == 1)
+                                        *hit_pill_type = PILL_TYPE_GROW;
+                                    else
+                                        *hit_pill_type = PILL_TYPE_SHRINK;
+                                }
                             }
                         }
                     }
@@ -546,7 +580,7 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int hit_pos;
     int brick_hit = 0;
     int brick_collided = 0;
-    int brick_life_up = 0;
+    int brick_pill_type = PILL_TYPE_NONE;
     int radius = BALL_SIZE / 2;
     int min_x = radius + 1;
     int max_x = (SCREEN_WIDTH - 2) - radius;
@@ -605,7 +639,7 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     }
 
     // Brick collision
-    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_life_up))
+    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
     {
         brick_collided = 1;
         if (brick_hit_axis)
@@ -627,8 +661,11 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         brick_hit = brick_destroyed ? 1 : 0;
     }
 
-    if (brick_life_up)
+    if (brick_pill_type != PILL_TYPE_NONE)
+    {
         life_pill_spawn_request = 1;
+        life_pill_spawn_type = brick_pill_type;
+    }
 
     if (brick_collided)
         audio_event_brick(brick_hit_row);
@@ -775,6 +812,7 @@ void game_loop()
     char buffer[50];
     int old_ball_x, old_ball_y;
     int old_paddle_x;
+    int old_paddle_width;
     int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
@@ -811,6 +849,7 @@ void game_loop()
             old_ball_x = (int)(ball.x + 0.5f);
             old_ball_y = (int)(ball.y + 0.5f);
             old_paddle_x = paddle.x;
+            old_paddle_width = paddle.width;
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
             old_pill_active = life_pill.active;
@@ -849,8 +888,9 @@ void game_loop()
                     brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
                     if (life_pill_spawn_request)
                     {
-                        spawn_life_pill(brick_hit_x, brick_hit_y);
+                        spawn_life_pill(brick_hit_x, brick_hit_y, life_pill_spawn_type);
                         life_pill_spawn_request = 0;
+                        life_pill_spawn_type = PILL_TYPE_NONE;
                         spawned_this_frame = 1;
                     }
                 }
@@ -874,9 +914,11 @@ void game_loop()
                 int y2 = old_ball_y + r + 1;
                 redraw_bricks_in_area(x1, y1, x2, y2);
             }
-            if (old_paddle_x != paddle.x)
+            if (old_paddle_x != paddle.x || old_paddle_width != paddle.width)
             {
-                erase_paddle_with_background(old_paddle_x, paddle);
+                Paddle old_paddle = paddle;
+                old_paddle.width = old_paddle_width;
+                erase_paddle_with_background(old_paddle_x, old_paddle);
             }
             if (old_pill_active)
             {

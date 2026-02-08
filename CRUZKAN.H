@@ -15,6 +15,12 @@
 #define PILL_COLOR_BASE (PILL_PALETTE_START + 1)
 #define PILL_COLOR_BORDER (PILL_PALETTE_START + 2)
 #define PILL_COLOR_GLYPH (PILL_PALETTE_START + 3)
+#define PILL_TYPE_NONE 0
+#define PILL_TYPE_LIFE 1
+#define PILL_TYPE_GROW 2
+#define PILL_TYPE_SHRINK 3
+#define PADDLE_WIDTH_GROW (PADDLE_WIDTH + 12)
+#define PADDLE_WIDTH_SHRINK (PADDLE_WIDTH - 12)
 
 typedef struct
 {
@@ -27,6 +33,7 @@ typedef struct
     int x, y;
     int dy;
     int active;
+    int type;
 } Pill;
 
 typedef struct
