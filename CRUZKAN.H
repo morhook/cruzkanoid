@@ -13,8 +13,8 @@
 
 typedef struct
 {
-    int x, y;
-    int dx, dy;
+    float x, y;
+    float dx, dy;
 } Ball;
 
 typedef struct

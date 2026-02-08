@@ -3,6 +3,7 @@
 #include <conio.h>
 #include <dos.h>
 #include <time.h>
+#include <math.h>
 
 #include "audio.h"
 #include "DMAW.H"
@@ -21,6 +22,8 @@
 #define PADDLE_FRICTION 1
 #define MAX_LEVELS 10
 #define LIFE_PILL_CHANCE 40
+#define BALL_SPEED_INCREMENT 0.15f
+#define BALL_SPEED_MAX 7.0f
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     {
@@ -54,6 +57,22 @@ static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
 
+static void increase_ball_speed(void)
+{
+    float speed = (float)sqrt((double)(ball.dx * ball.dx + ball.dy * ball.dy));
+    float new_speed = speed + BALL_SPEED_INCREMENT;
+
+    if (new_speed > BALL_SPEED_MAX)
+        new_speed = BALL_SPEED_MAX;
+
+    if (speed > 0.0f)
+    {
+        float scale = new_speed / speed;
+        ball.dx *= scale;
+        ball.dy *= scale;
+    }
+}
+
 void drain_keyboard_buffer(void)
 {
     while (kbhit())
@@ -65,8 +84,8 @@ void reset_paddle()
     int radius = BALL_SIZE / 2;
     ball.x = paddle.x + paddle.width / 2;
     ball.y = paddle.y - radius - 1;
-    ball.dx = 2;
-    ball.dy = -2;
+    ball.dx = 2.0f;
+    ball.dy = -2.0f;
 
     paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = SCREEN_HEIGHT - 20;
@@ -427,7 +446,7 @@ void update_game()
     }
 }
 
-int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_life_up)
+int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_life_up)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
@@ -523,8 +542,8 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int min_x = radius + 1;
     int max_x = (SCREEN_WIDTH - 2) - radius;
     int min_y = radius + 1;
-    int prev_ball_x = ball.x;
-    int prev_ball_y = ball.y;
+    float prev_ball_x = ball.x;
+    float prev_ball_y = ball.y;
     int wall_hit = 0;
     int paddle_hit = 0;
     int brick_hit_row = 0;
@@ -571,9 +590,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
 
         // Add spin based on where ball hits paddle
         hit_pos = ball.x - paddle.x;
-        ball.dx = (hit_pos - paddle.width / 2) / 5;
-        if (ball.dx == 0)
-            ball.dx = 1;
+        ball.dx = (float)(hit_pos - paddle.width / 2) / 5.0f;
+        if (ball.dx == 0.0f)
+            ball.dx = 1.0f;
     }
 
     // Brick collision
@@ -608,6 +627,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         audio_event_paddle();
     else if (wall_hit)
         audio_event_wall();
+
+    if (brick_collided || paddle_hit || wall_hit)
+        increase_ball_speed();
 
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT)
@@ -777,8 +799,8 @@ void game_loop()
             }
 
             /* Save old positions */
-            old_ball_x = ball.x;
-            old_ball_y = ball.y;
+            old_ball_x = (int)(ball.x + 0.5f);
+            old_ball_y = (int)(ball.y + 0.5f);
             old_paddle_x = paddle.x;
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
@@ -803,8 +825,8 @@ void game_loop()
 
                         ball_stuck = 0;
                         launch_requested = 0;
-                        ball.dx = launch_dx;
-                        ball.dy = -2;
+                        ball.dx = (float)launch_dx;
+                        ball.dy = -2.0f;
                     }
                     else
                     {
