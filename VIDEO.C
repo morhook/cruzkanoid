@@ -447,9 +447,21 @@ void far draw_pill(Pill pill)
     int bottom_cy = (PILL_HEIGHT - 1) - rx;
     int x0 = pill.x - rx;
     int y0 = pill.y - (PILL_HEIGHT / 2);
-    unsigned char light_color = 55;
-    unsigned char base_color = 54;
-    unsigned char border_color = 15;
+    unsigned char light_color = PILL_COLOR_LIGHT;
+    unsigned char base_color = PILL_COLOR_BASE;
+    unsigned char border_color = PILL_COLOR_BORDER;
+    unsigned char glyph_color = PILL_COLOR_GLYPH;
+    int glyph_w = 3;
+    int glyph_h = 5;
+    int glyph_x = pill.x - (glyph_w / 2);
+    int glyph_y = pill.y - (glyph_h / 2);
+    static const char *glyph[5] = {
+        "100",
+        "100",
+        "100",
+        "100",
+        "111"
+    };
 
     for (i = 0; i < PILL_HEIGHT; i++)
     {
@@ -484,6 +496,17 @@ void far draw_pill(Pill pill)
                     put_pixel(x0 + j, y0 + i, light_color);
                 else
                     put_pixel(x0 + j, y0 + i, base_color);
+            }
+        }
+    }
+
+    for (i = 0; i < glyph_h; i++)
+    {
+        for (j = 0; j < glyph_w; j++)
+        {
+            if (glyph[i][j] == '1')
+            {
+                put_pixel(glyph_x + j, glyph_y + i, glyph_color);
             }
         }
     }

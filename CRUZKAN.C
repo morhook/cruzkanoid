@@ -190,6 +190,15 @@ void init_pink_palette()
     set_palette_color(54, 40, 8, 20);  /* Dark pink */
 }
 
+void init_pill_palette()
+{
+    /* Pill colors for life-up (indices 55-58). RGB values are 0-63. */
+    set_palette_color(PILL_COLOR_LIGHT, 20, 48, 63);  /* highlight */
+    set_palette_color(PILL_COLOR_BASE, 8, 22, 50);    /* base */
+    set_palette_color(PILL_COLOR_BORDER, 2, 6, 20);   /* outline */
+    set_palette_color(PILL_COLOR_GLYPH, 63, 63, 63);  /* glyph */
+}
+
 void init_bricks(int level)
 {
     int i, j;
@@ -959,6 +968,7 @@ int main()
     init_brick_palette();
     init_paddle_palette();
     init_pink_palette();
+    init_pill_palette();
     audio_init();
     mouse_init();
 
