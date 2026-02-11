@@ -447,9 +447,36 @@ void far draw_pill(Pill pill)
     int bottom_cy = (PILL_HEIGHT - 1) - rx;
     int x0 = pill.x - rx;
     int y0 = pill.y - (PILL_HEIGHT / 2);
-    unsigned char light_color = 55;
-    unsigned char base_color = 54;
-    unsigned char border_color = 15;
+    unsigned char light_color = PILL_COLOR_LIGHT;
+    unsigned char base_color = PILL_COLOR_BASE;
+    unsigned char border_color = PILL_COLOR_BORDER;
+    unsigned char glyph_color = PILL_COLOR_GLYPH;
+    int glyph_w = 5;
+    int glyph_h = 5;
+    int glyph_px = pill.x - (glyph_w / 2);
+    int glyph_py = pill.y - (glyph_h / 2);
+    const char (*glyph)[6];
+    static const char glyph_l[5][6] = {
+        "10000",
+        "10000",
+        "10000",
+        "10000",
+        "11111"
+    };
+    static const char glyph_x[5][6] = {
+        "10001",
+        "01010",
+        "00100",
+        "01010",
+        "10001"
+    };
+    static const char glyph_s[5][6] = {
+        "01111",
+        "10000",
+        "01110",
+        "00001",
+        "11110"
+    };
 
     for (i = 0; i < PILL_HEIGHT; i++)
     {
@@ -484,6 +511,24 @@ void far draw_pill(Pill pill)
                     put_pixel(x0 + j, y0 + i, light_color);
                 else
                     put_pixel(x0 + j, y0 + i, base_color);
+            }
+        }
+    }
+
+    if (pill.type == PILL_TYPE_GROW)
+        glyph = glyph_x;
+    else if (pill.type == PILL_TYPE_SHRINK)
+        glyph = glyph_s;
+    else
+        glyph = glyph_l;
+
+    for (i = 0; i < glyph_h; i++)
+    {
+        for (j = 0; j < glyph_w; j++)
+        {
+            if (glyph[i][j] == '1')
+            {
+                put_pixel(glyph_px + j, glyph_py + i, glyph_color);
             }
         }
     }

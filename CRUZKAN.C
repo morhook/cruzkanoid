@@ -3,6 +3,7 @@
 #include <conio.h>
 #include <dos.h>
 #include <time.h>
+#include <math.h>
 
 #include "audio.h"
 #include "DMAW.H"
@@ -21,6 +22,8 @@
 #define PADDLE_FRICTION 1
 #define MAX_LEVELS 10
 #define LIFE_PILL_CHANCE 40
+#define BALL_SPEED_INCREMENT 0.15f
+#define BALL_SPEED_MAX 7.0f
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     {
@@ -49,10 +52,27 @@ int launch_requested = 0;
 int paused = 0;
 int force_redraw = 0;
 static int life_pill_spawn_request = 0;
+static int life_pill_spawn_type = PILL_TYPE_NONE;
 
 static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
+
+static void increase_ball_speed(void)
+{
+    float speed = (float)sqrt((double)(ball.dx * ball.dx + ball.dy * ball.dy));
+    float new_speed = speed + BALL_SPEED_INCREMENT;
+
+    if (new_speed > BALL_SPEED_MAX)
+        new_speed = BALL_SPEED_MAX;
+
+    if (speed > 0.0f)
+    {
+        float scale = new_speed / speed;
+        ball.dx *= scale;
+        ball.dy *= scale;
+    }
+}
 
 void drain_keyboard_buffer(void)
 {
@@ -65,8 +85,8 @@ void reset_paddle()
     int radius = BALL_SIZE / 2;
     ball.x = paddle.x + paddle.width / 2;
     ball.y = paddle.y - radius - 1;
-    ball.dx = 2;
-    ball.dy = -2;
+    ball.dx = 2.0f;
+    ball.dy = -2.0f;
 
     paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = SCREEN_HEIGHT - 20;
@@ -85,10 +105,12 @@ void reset_life_pill()
     life_pill.x = 0;
     life_pill.y = 0;
     life_pill.dy = PILL_FALL_SPEED;
+    life_pill.type = PILL_TYPE_NONE;
     life_pill_spawn_request = 0;
+    life_pill_spawn_type = PILL_TYPE_NONE;
 }
 
-void spawn_life_pill(int brick_x, int brick_y)
+void spawn_life_pill(int brick_x, int brick_y, int pill_type)
 {
     if (life_pill.active)
         return;
@@ -97,6 +119,7 @@ void spawn_life_pill(int brick_x, int brick_y)
     life_pill.x = brick_x + (BRICK_WIDTH / 2);
     life_pill.y = brick_y + (BRICK_HEIGHT / 2);
     life_pill.dy = PILL_FALL_SPEED;
+    life_pill.type = pill_type;
 }
 
 void update_life_pill()
@@ -121,8 +144,30 @@ void update_life_pill()
         life_pill.y - half_h < paddle.y + PADDLE_HEIGHT)
     {
         life_pill.active = 0;
-        lives++;
-        audio_event_life_up_blocking();
+        if (life_pill.type == PILL_TYPE_LIFE)
+        {
+            lives++;
+            audio_event_life_up_blocking();
+        }
+        else if (life_pill.type == PILL_TYPE_GROW)
+        {
+            paddle.width = PADDLE_WIDTH_GROW;
+        }
+        else if (life_pill.type == PILL_TYPE_SHRINK)
+        {
+            paddle.width = PADDLE_WIDTH_SHRINK;
+        }
+
+        if (paddle.width < 8)
+            paddle.width = 8;
+        if (paddle.width > SCREEN_WIDTH - 2)
+            paddle.width = SCREEN_WIDTH - 2;
+
+        if (paddle.x < 0)
+            paddle.x = 0;
+        if (paddle.x + paddle.width > SCREEN_WIDTH)
+            paddle.x = SCREEN_WIDTH - paddle.width;
+        mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
     }
 }
 
@@ -170,6 +215,15 @@ void init_pink_palette()
     set_palette_color(53, 55, 15, 35); /* Medium pink */
     set_palette_color(54, 40, 8, 20);  /* Dark pink */
     set_palette_color(55, 63, 63, 63);  /* White */
+}
+
+void init_pill_palette()
+{
+    /* Pill colors for life-up (indices 55-58). RGB values are 0-63. */
+    set_palette_color(PILL_COLOR_LIGHT, 20, 48, 63);  /* highlight */
+    set_palette_color(PILL_COLOR_BASE, 8, 22, 50);    /* base */
+    set_palette_color(PILL_COLOR_BORDER, 2, 6, 20);   /* outline */
+    set_palette_color(PILL_COLOR_GLYPH, 63, 63, 63);  /* glyph */
 }
 
 void init_bricks(int level)
@@ -428,15 +482,15 @@ void update_game()
     }
 }
 
-int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_life_up)
+int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_pill_type)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
 
     if (hit_destroyed)
         *hit_destroyed = 0;
-    if (hit_life_up)
-        *hit_life_up = 0;
+    if (hit_pill_type)
+        *hit_pill_type = PILL_TYPE_NONE;
 
     for (i = 0; i < BRICK_ROWS; i++)
     {
@@ -490,15 +544,23 @@ int check_brick_collision(int prev_ball_x, int prev_ball_y, int *hit_x, int *hit
                         if (bricks[i][j].gives_life)
                         {
                             bricks[i][j].gives_life = 0;
-                            if (hit_life_up)
-                                *hit_life_up = 1;
+                            if (hit_pill_type)
+                                *hit_pill_type = PILL_TYPE_LIFE;
                         }
                         else
                         {
                             if ((rand() % LIFE_PILL_CHANCE) == 0)
                             {
-                                if (hit_life_up)
-                                    *hit_life_up = 1;
+                                if (hit_pill_type)
+                                {
+                                    int roll = rand() % 3;
+                                    if (roll == 0)
+                                        *hit_pill_type = PILL_TYPE_LIFE;
+                                    else if (roll == 1)
+                                        *hit_pill_type = PILL_TYPE_GROW;
+                                    else
+                                        *hit_pill_type = PILL_TYPE_SHRINK;
+                                }
                             }
                         }
                     }
@@ -519,13 +581,13 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int hit_pos;
     int brick_hit = 0;
     int brick_collided = 0;
-    int brick_life_up = 0;
+    int brick_pill_type = PILL_TYPE_NONE;
     int radius = BALL_SIZE / 2;
     int min_x = radius + 1;
     int max_x = (SCREEN_WIDTH - 2) - radius;
     int min_y = radius + 1;
-    int prev_ball_x = ball.x;
-    int prev_ball_y = ball.y;
+    float prev_ball_x = ball.x;
+    float prev_ball_y = ball.y;
     int wall_hit = 0;
     int paddle_hit = 0;
     int brick_hit_row = 0;
@@ -572,13 +634,13 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
 
         // Add spin based on where ball hits paddle
         hit_pos = ball.x - paddle.x;
-        ball.dx = (hit_pos - paddle.width / 2) / 5;
-        if (ball.dx == 0)
-            ball.dx = 1;
+        ball.dx = (float)(hit_pos - paddle.width / 2) / 5.0f;
+        if (ball.dx == 0.0f)
+            ball.dx = 1.0f;
     }
 
     // Brick collision
-    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_life_up))
+    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
     {
         brick_collided = 1;
         if (brick_hit_axis)
@@ -600,8 +662,11 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         brick_hit = brick_destroyed ? 1 : 0;
     }
 
-    if (brick_life_up)
+    if (brick_pill_type != PILL_TYPE_NONE)
+    {
         life_pill_spawn_request = 1;
+        life_pill_spawn_type = brick_pill_type;
+    }
 
     if (brick_collided)
         audio_event_brick(brick_hit_row);
@@ -609,6 +674,9 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         audio_event_paddle();
     else if (wall_hit)
         audio_event_wall();
+
+    if (brick_collided || paddle_hit || wall_hit)
+        increase_ball_speed();
 
     // Ball lost
     if (ball.y >= SCREEN_HEIGHT)
@@ -663,7 +731,10 @@ void intro_scene()
     int wav_active = 0;
     int wav_done = 0;
     int i;
+    unsigned char intro_master_volume = 0xC0;
+    unsigned char intro_voice_volume = 0xC0;
 
+    wav_set_mixer_volume(intro_master_volume, intro_voice_volume);
     play_wav("e2-pmute.wav");
     play_wav("e2-pmute.wav");
     play_wav("e2-pmute.wav");
@@ -727,6 +798,8 @@ void intro_scene()
     if (wav_active)
         stop_wav_file(&intro_wav);
 
+    wav_set_mixer_volume(0xFF, 0xFF);
+
     fade_palette_color(intro_border_index,
                        intro_border_r, intro_border_g, intro_border_b,
                        0, 0, 0,
@@ -740,6 +813,7 @@ void game_loop()
     char buffer[50];
     int old_ball_x, old_ball_y;
     int old_paddle_x;
+    int old_paddle_width;
     int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
@@ -773,9 +847,10 @@ void game_loop()
             }
 
             /* Save old positions */
-            old_ball_x = ball.x;
-            old_ball_y = ball.y;
+            old_ball_x = (int)(ball.x + 0.5f);
+            old_ball_y = (int)(ball.y + 0.5f);
             old_paddle_x = paddle.x;
+            old_paddle_width = paddle.width;
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
             old_pill_active = life_pill.active;
@@ -799,8 +874,8 @@ void game_loop()
 
                         ball_stuck = 0;
                         launch_requested = 0;
-                        ball.dx = launch_dx;
-                        ball.dy = -2;
+                        ball.dx = (float)launch_dx;
+                        ball.dy = -2.0f;
                     }
                     else
                     {
@@ -814,8 +889,9 @@ void game_loop()
                     brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
                     if (life_pill_spawn_request)
                     {
-                        spawn_life_pill(brick_hit_x, brick_hit_y);
+                        spawn_life_pill(brick_hit_x, brick_hit_y, life_pill_spawn_type);
                         life_pill_spawn_request = 0;
+                        life_pill_spawn_type = PILL_TYPE_NONE;
                         spawned_this_frame = 1;
                     }
                 }
@@ -839,9 +915,11 @@ void game_loop()
                 int y2 = old_ball_y + r + 1;
                 redraw_bricks_in_area(x1, y1, x2, y2);
             }
-            if (old_paddle_x != paddle.x)
+            if (old_paddle_x != paddle.x || old_paddle_width != paddle.width)
             {
-                erase_paddle_with_background(old_paddle_x, paddle);
+                Paddle old_paddle = paddle;
+                old_paddle.width = old_paddle_width;
+                erase_paddle_with_background(old_paddle_x, old_paddle);
             }
             if (old_pill_active)
             {
@@ -933,6 +1011,7 @@ int main()
     init_brick_palette();
     init_paddle_palette();
     init_pink_palette();
+    init_pill_palette();
     audio_init();
     mouse_init();
 
