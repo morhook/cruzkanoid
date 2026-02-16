@@ -422,6 +422,41 @@ static void opl_program_channel(int ch, unsigned char carrier_tl, unsigned char 
     opl_write0((unsigned char)(0xC0 + ch), (unsigned char)(0x04 | (pan_mask & 0x30)));
 }
 
+void opl_set_guitar(int chan) {
+    int op_offset[] = {0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 
+        0x10, 0x11, 0x12}; 
+    
+    int mod = op_offset[chan];
+    int car = mod + 3;
+
+    // Aumentar el feedback al máximo para la "mugre"
+    // El registro 0xC0 tiene el feedback en los bits 1-3. 
+    // Valor 0x0F activa feedback máximo y conexión FM.
+    opl_write0(0xC0 + chan, 0x0B); 
+
+    // El Modulador debe tener un nivel de salida muy alto
+    // Registro 0x40: pon un valor bajo para que la modulación sea fuerte
+    opl_write0(0x40 + mod, 0x02); 
+
+    opl_write0(0x60 + mod, 0x88);  // Attack medio, Decay rápido
+    opl_write0(0x80 + mod, 0x00);  // Sustain bajo
+
+    // Cambia el multiplicador del modulador para que no sea armónico
+    // En el registro 0x20, cambia el multiplicador a algo como 3 o 5
+    opl_write0(0x20 + mod, 0x20); // Bit de sustain activado + multiplicador
+
+        // --- Configurar Portadora ---
+    opl_write0(0x20 + car, 0x01);  // Multiplicador x1
+    opl_write0(0x40 + car, 0x0F);  // Volumen moderado
+    opl_write0(0x60 + car, 0xF8);  // Attack rápido, Decay muy rápido
+    opl_write0(0x80 + car, 0x00);  // Sin sustain
+
+        /* Waveform select (sine). */
+    opl_write0((unsigned char)(0xE0 + mod), 0x00);
+    opl_write0((unsigned char)(0xE0 + car), 0x00);
+
+}
+
 static void opl_set_freq_no_key(int ch, unsigned int freq_hz)
 {
     unsigned int fnum = 0;
@@ -573,8 +608,10 @@ static int opl_init_internal(void)
     opl_write0(0xBD, opl_bd_base);
 
     /* Two channels: ch0 (bass), ch1 (lead). */
-    opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
-    opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
+    //opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
+    //opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
+    opl_set_guitar(0);
+    opl_set_guitar(1);
     opl_program_rhythm();
 
     opl_last_b0_ch0 = 0;
