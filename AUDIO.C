@@ -630,19 +630,23 @@ static void opl_play_music_step(unsigned int freq_hz, unsigned int step)
     unsigned int other;
     unsigned char drum_bits;
 
-    opl_set_guitar(0);
-    opl_set_guitar(1);
-    
     if (!opl_present)
         return;
-
+        
     if (freq_hz == 0U)
     {
+        if (step == 3000) {
+            opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
+            opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
+        }
         opl_note_off(0);
         opl_note_off(1);
     }
     else
     {
+        opl_set_guitar(0);
+        opl_set_guitar(1);
+    
         /* Keep the original note as-is, add an octave companion note. */
         if (freq_hz < 260U)
             other = (unsigned int)(freq_hz * 2U);
