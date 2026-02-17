@@ -30,6 +30,7 @@ typedef enum
 static ToneSource tone_source = TONE_NONE;
 
 static void audio_start_tone_internal(int freq, int ms, ToneSource source);
+static void opl_program_channel(int ch, unsigned char carrier_tl, unsigned char pan_mask);
 static int sb_present;
 
 typedef struct
@@ -336,6 +337,8 @@ static void opl_stop_internal(void)
 
     opl_note_off(0);
     opl_note_off(1);
+    opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
+    opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
 
     /* Clear percussion triggers (keep rhythm enabled). */
     opl_write0(0xBD, opl_bd_base);
@@ -627,6 +630,9 @@ static void opl_play_music_step(unsigned int freq_hz, unsigned int step)
     unsigned int other;
     unsigned char drum_bits;
 
+    opl_set_guitar(0);
+    opl_set_guitar(1);
+    
     if (!opl_present)
         return;
 

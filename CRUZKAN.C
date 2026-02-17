@@ -734,7 +734,6 @@ void intro_scene()
     unsigned char intro_master_volume = 0xC0;
     unsigned char intro_voice_volume = 0xC0;
 
-    wav_set_mixer_volume(intro_master_volume, intro_voice_volume);
     play_wav("e2-pmute.wav");
     play_wav("e2-pmute.wav");
     play_wav("e2-pmute.wav");
@@ -797,8 +796,6 @@ void intro_scene()
 
     if (wav_active)
         stop_wav_file(&intro_wav);
-
-    wav_set_mixer_volume(0xFF, 0xFF);
 
     fade_palette_color(intro_border_index,
                        intro_border_r, intro_border_g, intro_border_b,
