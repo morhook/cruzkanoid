@@ -21,7 +21,7 @@
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
 #define MAX_LEVELS 10
-#define LIFE_PILL_CHANCE 40
+#define LIFE_POWERUP_CHANCE 10
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
 
@@ -549,7 +549,7 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
                         }
                         else
                         {
-                            if ((rand() % LIFE_PILL_CHANCE) == 0)
+                            if ((rand() % LIFE_POWERUP_CHANCE) == 0)
                             {
                                 if (hit_pill_type)
                                 {
