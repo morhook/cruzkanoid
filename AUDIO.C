@@ -610,9 +610,6 @@ static int opl_init_internal(void)
     opl_bd_base = 0x20;
     opl_write0(0xBD, opl_bd_base);
 
-    /* Two channels: ch0 (bass), ch1 (lead). */
-    //opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
-    //opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
     opl_set_guitar(0);
     opl_set_guitar(1);
     opl_program_rhythm();
