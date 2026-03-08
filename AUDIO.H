@@ -16,6 +16,7 @@ void far audio_music_stop(void);
 void far audio_event_paddle(void);
 void far audio_event_wall(void);
 void far audio_event_brick(int row);
+void far audio_event_multiball(void);
 void far audio_event_life_lost_blocking(void);
 void far audio_event_life_up_blocking(void);
 void far audio_event_level_clear_blocking(void);

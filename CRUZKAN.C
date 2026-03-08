@@ -271,6 +271,7 @@ void update_life_pill()
         }
         else if (life_pill.type == PILL_TYPE_MULTIBALL)
         {
+            audio_event_multiball();
             spawn_multiball_bonus();
         }
 

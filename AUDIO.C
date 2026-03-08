@@ -47,6 +47,8 @@ static unsigned int music_drum_mute_start = 0;
 
 static int life_up_active = 0;
 static unsigned int life_up_index = 0;
+static int multiball_active = 0;
+static unsigned int multiball_index = 0;
 
 static struct WavFilePlay life_up_wav;
 static int life_up_wav_active = 0;
@@ -196,6 +198,9 @@ static const MusicNote music_track[] = {
 static const MusicNote life_up_notes[] = {
     {1319, 140}, {1568, 140}, {880, 80}, {2093, 140}, {1175, 80}, {784, 60}, {1568, 220}, {0, 0}};
 
+static const MusicNote multiball_notes[] = {
+    {980, 35}, {1240, 40}, {1560, 45}, {0, 0}};
+
 static void music_advance_index(void)
 {
     music_index++;
@@ -245,6 +250,32 @@ static void life_up_start_sequence(void)
 static int life_up_is_active(void)
 {
     return (life_up_active || life_up_wav_active);
+}
+
+static void multiball_stop_sequence(void)
+{
+    multiball_active = 0;
+    multiball_index = 0;
+}
+
+static void multiball_start_sequence(void)
+{
+    multiball_active = 1;
+    multiball_index = 0;
+
+    if (!audio_enabled)
+        return;
+
+    if (multiball_notes[0].ms != 0U)
+    {
+        audio_start_tone_internal((int)multiball_notes[0].freq, (int)multiball_notes[0].ms, TONE_SFX);
+        multiball_index = 1;
+    }
+}
+
+static int multiball_is_active(void)
+{
+    return multiball_active;
 }
 
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
@@ -1178,6 +1209,7 @@ void audio_stop_internal(void)
     audio_end_clock = 0;
     tone_source = TONE_NONE;
     life_up_stop_wav();
+    multiball_stop_sequence();
 }
 
 static void audio_start_tone_internal(int freq, int ms, ToneSource source)
@@ -1261,7 +1293,7 @@ static void music_start_next_note(void)
 {
     MusicNote n;
 
-    if (!audio_enabled || !music_enabled || !music_running || audio_active || life_up_is_active())
+    if (!audio_enabled || !music_enabled || !music_running || audio_active || life_up_is_active() || multiball_is_active())
         return;
 
     n = music_track[music_index];
@@ -1405,6 +1437,22 @@ void far audio_update(void)
         }
     }
 
+    if (multiball_active && !audio_active)
+    {
+        if (multiball_notes[multiball_index].ms == 0U)
+        {
+            multiball_active = 0;
+            multiball_index = 0;
+        }
+        else
+        {
+            audio_start_tone_internal((int)multiball_notes[multiball_index].freq,
+                                      (int)multiball_notes[multiball_index].ms,
+                                      TONE_SFX);
+            multiball_index++;
+        }
+    }
+
     music_start_next_note();
 }
 
@@ -1424,6 +1472,15 @@ void far audio_event_brick(int row)
     if (freq < 400)
         freq = 400;
     audio_play_tone(freq, 55);
+}
+
+void far audio_event_multiball(void)
+{
+    if (!audio_enabled)
+        return;
+
+    multiball_stop_sequence();
+    multiball_start_sequence();
 }
 
 void far audio_event_life_lost_blocking(void)
