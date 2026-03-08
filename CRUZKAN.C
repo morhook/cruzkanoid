@@ -41,7 +41,8 @@ static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
 };
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
-Ball ball;
+Ball balls[MAX_BALLS];
+int ball_active[MAX_BALLS];
 Paddle paddle;
 Pill life_pill;
 int score = 0;
@@ -58,9 +59,124 @@ static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
 
-static void increase_ball_speed(void)
+static int count_active_balls(void)
 {
-    float speed = (float)sqrt((double)(ball.dx * ball.dx + ball.dy * ball.dy));
+    int i;
+    int count = 0;
+
+    for (i = 0; i < MAX_BALLS; i++)
+    {
+        if (ball_active[i])
+            count++;
+    }
+
+    return count;
+}
+
+static int find_free_ball_slot(void)
+{
+    int i;
+
+    for (i = 0; i < MAX_BALLS; i++)
+    {
+        if (!ball_active[i])
+            return i;
+    }
+
+    return -1;
+}
+
+static int find_first_active_ball(void)
+{
+    int i;
+
+    for (i = 0; i < MAX_BALLS; i++)
+    {
+        if (ball_active[i])
+            return i;
+    }
+
+    return -1;
+}
+
+static void reset_balls(void)
+{
+    int i;
+    int radius = BALL_SIZE / 2;
+
+    for (i = 0; i < MAX_BALLS; i++)
+    {
+        ball_active[i] = 0;
+        balls[i].x = 0.0f;
+        balls[i].y = 0.0f;
+        balls[i].dx = 0.0f;
+        balls[i].dy = 0.0f;
+    }
+
+    ball_active[0] = 1;
+    balls[0].x = paddle.x + paddle.width / 2;
+    balls[0].y = paddle.y - radius - 1;
+    balls[0].dx = 2.0f;
+    balls[0].dy = -2.0f;
+}
+
+static int spawn_ball(float x, float y, float dx, float dy)
+{
+    int slot = find_free_ball_slot();
+
+    if (slot < 0)
+        return 0;
+
+    ball_active[slot] = 1;
+    balls[slot].x = x;
+    balls[slot].y = y;
+    balls[slot].dx = dx;
+    balls[slot].dy = dy;
+
+    return 1;
+}
+
+static void spawn_multiball_bonus(void)
+{
+    int source_index = find_first_active_ball();
+    int i;
+    static const float spread_dx[5] = {-3.0f, -1.5f, 0.0f, 1.5f, 3.0f};
+    float base_x;
+    float base_y;
+    float base_dy;
+
+    if (source_index < 0)
+    {
+        source_index = 0;
+        ball_active[0] = 1;
+        balls[0].x = paddle.x + paddle.width / 2;
+        balls[0].y = paddle.y - (BALL_SIZE / 2) - 1;
+        balls[0].dx = 2.0f;
+        balls[0].dy = -2.0f;
+    }
+
+    base_x = balls[source_index].x;
+    base_y = balls[source_index].y;
+    base_dy = balls[source_index].dy;
+    if (base_dy > -1.0f && base_dy < 1.0f)
+        base_dy = -2.5f;
+
+    for (i = 0; i < 5; i++)
+    {
+        float dx = spread_dx[i];
+        float dy = (base_dy < 0.0f) ? (-2.5f - (float)i * 0.1f) : (2.5f + (float)i * 0.1f);
+
+        if (dx == 0.0f)
+            dx = (balls[source_index].dx >= 0.0f) ? 1.0f : -1.0f;
+
+        if (!spawn_ball(base_x, base_y, dx, dy))
+            break;
+    }
+}
+
+static void increase_ball_speed(Ball *ball)
+{
+    float speed = (float)sqrt((double)(ball->dx * ball->dx + ball->dy * ball->dy));
     float new_speed = speed + BALL_SPEED_INCREMENT;
 
     if (new_speed > BALL_SPEED_MAX)
@@ -69,8 +185,8 @@ static void increase_ball_speed(void)
     if (speed > 0.0f)
     {
         float scale = new_speed / speed;
-        ball.dx *= scale;
-        ball.dy *= scale;
+        ball->dx *= scale;
+        ball->dy *= scale;
     }
 }
 
@@ -82,18 +198,14 @@ void drain_keyboard_buffer(void)
 
 void reset_paddle()
 {
-    int radius = BALL_SIZE / 2;
-    ball.x = paddle.x + paddle.width / 2;
-    ball.y = paddle.y - radius - 1;
-    ball.dx = 2.0f;
-    ball.dy = -2.0f;
-
     paddle.x = SCREEN_WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
     paddle.vx = 0;
     key_vx = 0;
     key_offset = 0;
+
+    reset_balls();
 
     /* Prevent a big "jump" when mouse control is active. */
     mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
@@ -156,6 +268,10 @@ void update_life_pill()
         else if (life_pill.type == PILL_TYPE_SHRINK)
         {
             paddle.width = PADDLE_WIDTH_SHRINK;
+        }
+        else if (life_pill.type == PILL_TYPE_MULTIBALL)
+        {
+            spawn_multiball_bonus();
         }
 
         if (paddle.width < 8)
@@ -482,7 +598,7 @@ void update_game()
     }
 }
 
-int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_pill_type)
+int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int *hit_x, int *hit_y, int *hit_row, int *hit_axis, int *hit_destroyed, int *hit_pill_type)
 {
     int i, j;
     int radius = BALL_SIZE / 2;
@@ -498,19 +614,19 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
         {
             if (bricks[i][j].active)
             {
-                if (ball.x + radius > bricks[i][j].x &&
-                    ball.x - radius < bricks[i][j].x + BRICK_WIDTH &&
-                    ball.y + radius > bricks[i][j].y &&
-                    ball.y - radius < bricks[i][j].y + BRICK_HEIGHT)
+                if (ball->x + radius > bricks[i][j].x &&
+                    ball->x - radius < bricks[i][j].x + BRICK_WIDTH &&
+                    ball->y + radius > bricks[i][j].y &&
+                    ball->y - radius < bricks[i][j].y + BRICK_HEIGHT)
                 {
                     int from_left = (prev_ball_x + radius <= bricks[i][j].x) &&
-                                    (ball.x + radius > bricks[i][j].x);
+                                    (ball->x + radius > bricks[i][j].x);
                     int from_right = (prev_ball_x - radius >= bricks[i][j].x + BRICK_WIDTH) &&
-                                     (ball.x - radius < bricks[i][j].x + BRICK_WIDTH);
+                                     (ball->x - radius < bricks[i][j].x + BRICK_WIDTH);
                     int from_top = (prev_ball_y + radius <= bricks[i][j].y) &&
-                                   (ball.y + radius > bricks[i][j].y);
+                                   (ball->y + radius > bricks[i][j].y);
                     int from_bottom = (prev_ball_y - radius >= bricks[i][j].y + BRICK_HEIGHT) &&
-                                      (ball.y - radius < bricks[i][j].y + BRICK_HEIGHT);
+                                      (ball->y - radius < bricks[i][j].y + BRICK_HEIGHT);
 
                     if (hit_axis)
                     {
@@ -520,10 +636,10 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
                             *hit_axis = 0; /* vertical: flip dy */
                         else
                         {
-                            int overlap_left = (ball.x + radius) - bricks[i][j].x;
-                            int overlap_right = (bricks[i][j].x + BRICK_WIDTH) - (ball.x - radius);
-                            int overlap_top = (ball.y + radius) - bricks[i][j].y;
-                            int overlap_bottom = (bricks[i][j].y + BRICK_HEIGHT) - (ball.y - radius);
+                            int overlap_left = (ball->x + radius) - bricks[i][j].x;
+                            int overlap_right = (bricks[i][j].x + BRICK_WIDTH) - (ball->x - radius);
+                            int overlap_top = (ball->y + radius) - bricks[i][j].y;
+                            int overlap_bottom = (bricks[i][j].y + BRICK_HEIGHT) - (ball->y - radius);
                             int min_x = (overlap_left < overlap_right) ? overlap_left : overlap_right;
                             int min_y = (overlap_top < overlap_bottom) ? overlap_top : overlap_bottom;
                             *hit_axis = (min_x < min_y) ? 1 : 0;
@@ -553,13 +669,15 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
                             {
                                 if (hit_pill_type)
                                 {
-                                    int roll = rand() % 3;
+                                    int roll = rand() % 4;
                                     if (roll == 0)
                                         *hit_pill_type = PILL_TYPE_LIFE;
                                     else if (roll == 1)
                                         *hit_pill_type = PILL_TYPE_GROW;
-                                    else
+                                    else if (roll == 2)
                                         *hit_pill_type = PILL_TYPE_SHRINK;
+                                    else
+                                        *hit_pill_type = PILL_TYPE_MULTIBALL;
                                 }
                             }
                         }
@@ -576,7 +694,7 @@ int check_brick_collision(float prev_ball_x, float prev_ball_y, int *hit_x, int 
     return 0;
 }
 
-int update_ball(int *brick_hit_x, int *brick_hit_y)
+int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
 {
     int hit_pos;
     int brick_hit = 0;
@@ -586,78 +704,76 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
     int min_x = radius + 1;
     int max_x = (SCREEN_WIDTH - 2) - radius;
     int min_y = radius + 1;
-    float prev_ball_x = ball.x;
-    float prev_ball_y = ball.y;
+    float prev_ball_x = ball->x;
+    float prev_ball_y = ball->y;
     int wall_hit = 0;
     int paddle_hit = 0;
     int brick_hit_row = 0;
     int brick_hit_axis = 0;
     int brick_destroyed = 0;
 
-    ball.x += ball.dx;
-    ball.y += ball.dy;
+    ball->x += ball->dx;
+    ball->y += ball->dy;
 
     // Wall collision
-    if (ball.x < min_x)
+    if (ball->x < min_x)
     {
-        ball.x = min_x;
-        if (ball.dx < 0)
-            ball.dx = -ball.dx;
+        ball->x = min_x;
+        if (ball->dx < 0)
+            ball->dx = -ball->dx;
         wall_hit = 1;
     }
-    else if (ball.x > max_x)
+    else if (ball->x > max_x)
     {
-        ball.x = max_x;
-        if (ball.dx > 0)
-            ball.dx = -ball.dx;
+        ball->x = max_x;
+        if (ball->dx > 0)
+            ball->dx = -ball->dx;
         wall_hit = 1;
     }
 
-    if (ball.y < min_y)
+    if (ball->y < min_y)
     {
-        ball.y = min_y;
-        if (ball.dy < 0)
-            ball.dy = -ball.dy;
+        ball->y = min_y;
+        if (ball->dy < 0)
+            ball->dy = -ball->dy;
         wall_hit = 1;
     }
 
     // Paddle collision
-    if (ball.x + radius > paddle.x &&
-        ball.x - radius < paddle.x + paddle.width &&
-        ball.y + radius > paddle.y &&
-        ball.y - radius < paddle.y + PADDLE_HEIGHT)
+    if (ball->x + radius > paddle.x &&
+        ball->x - radius < paddle.x + paddle.width &&
+        ball->y + radius > paddle.y &&
+        ball->y - radius < paddle.y + PADDLE_HEIGHT)
     {
 
-        ball.dy = -ball.dy;
-        ball.y = paddle.y - radius; // Place ball just above paddle
+        ball->dy = -ball->dy;
+        ball->y = paddle.y - radius;
         paddle_hit = 1;
 
-        // Add spin based on where ball hits paddle
-        hit_pos = ball.x - paddle.x;
-        ball.dx = (float)(hit_pos - paddle.width / 2) / 5.0f;
-        if (ball.dx == 0.0f)
-            ball.dx = 1.0f;
+        hit_pos = (int)ball->x - paddle.x;
+        ball->dx = (float)(hit_pos - paddle.width / 2) / 5.0f;
+        if (ball->dx == 0.0f)
+            ball->dx = 1.0f;
     }
 
-    // Brick collision
-    if (check_brick_collision(prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
+    if (check_brick_collision(ball, prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
     {
         brick_collided = 1;
         if (brick_hit_axis)
         {
-            ball.dx = -ball.dx;
+            ball->dx = -ball->dx;
             if (prev_ball_x < *brick_hit_x)
-                ball.x = *brick_hit_x - radius;
+                ball->x = *brick_hit_x - radius;
             else if (prev_ball_x > *brick_hit_x + BRICK_WIDTH)
-                ball.x = *brick_hit_x + BRICK_WIDTH + radius;
+                ball->x = *brick_hit_x + BRICK_WIDTH + radius;
         }
         else
         {
-            ball.dy = -ball.dy;
+            ball->dy = -ball->dy;
             if (prev_ball_y < *brick_hit_y)
-                ball.y = *brick_hit_y - radius;
+                ball->y = *brick_hit_y - radius;
             else if (prev_ball_y > *brick_hit_y + BRICK_HEIGHT)
-                ball.y = *brick_hit_y + BRICK_HEIGHT + radius;
+                ball->y = *brick_hit_y + BRICK_HEIGHT + radius;
         }
         brick_hit = brick_destroyed ? 1 : 0;
     }
@@ -676,22 +792,28 @@ int update_ball(int *brick_hit_x, int *brick_hit_y)
         audio_event_wall();
 
     if (brick_collided || paddle_hit || wall_hit)
-        increase_ball_speed();
+        increase_ball_speed(ball);
 
-    // Ball lost
-    if (ball.y >= SCREEN_HEIGHT)
+    if (ball->y >= SCREEN_HEIGHT)
     {
-        lives--;
-        audio_music_stop();
-        audio_event_life_lost_blocking();
-        if (lives > 0)
+        ball_active[ball_index] = 0;
+
+        if (count_active_balls() == 0)
         {
-            ball_stuck = 1;
-            launch_requested = 0;
-            reset_paddle();
-            delay_with_audio(1000);
-            audio_music_restart();
+            lives--;
+            audio_music_stop();
+            audio_event_life_lost_blocking();
+            if (lives > 0)
+            {
+                ball_stuck = 1;
+                launch_requested = 0;
+                reset_paddle();
+                delay_with_audio(1000);
+                audio_music_restart();
+            }
         }
+
+        return 0;
     }
 
     if (brick_hit)
@@ -808,17 +930,21 @@ void intro_scene()
 void game_loop()
 {
     char buffer[50];
-    int old_ball_x, old_ball_y;
+    int old_ball_x[MAX_BALLS];
+    int old_ball_y[MAX_BALLS];
+    int old_ball_active[MAX_BALLS];
     int old_paddle_x;
     int old_paddle_width;
     int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
+    int brick_hits_this_frame;
     int radius = BALL_SIZE / 2;
     int launch_dx;
     int old_pill_x, old_pill_y;
     int old_pill_active;
     int spawned_this_frame;
+    int i;
 
     while (lives > 0)
     {
@@ -831,7 +957,11 @@ void game_loop()
                 draw_background();
                 draw_bricks();
                 draw_paddle(paddle);
-                draw_ball(ball);
+                for (i = 0; i < MAX_BALLS; i++)
+                {
+                    if (ball_active[i])
+                        draw_ball(balls[i]);
+                }
                 if (life_pill.active)
                     draw_pill(life_pill);
                 draw_ui(score, lives, current_level);
@@ -844,8 +974,15 @@ void game_loop()
             }
 
             /* Save old positions */
-            old_ball_x = (int)(ball.x + 0.5f);
-            old_ball_y = (int)(ball.y + 0.5f);
+            for (i = 0; i < MAX_BALLS; i++)
+            {
+                old_ball_active[i] = ball_active[i];
+                if (ball_active[i])
+                {
+                    old_ball_x[i] = (int)(balls[i].x + 0.5f);
+                    old_ball_y[i] = (int)(balls[i].y + 0.5f);
+                }
+            }
             old_paddle_x = paddle.x;
             old_paddle_width = paddle.width;
             old_pill_x = life_pill.x;
@@ -857,6 +994,7 @@ void game_loop()
             if (!paused)
             {
                 spawned_this_frame = 0;
+                brick_hits_this_frame = 0;
                 if (ball_stuck)
                 {
                     if (launch_requested)
@@ -871,26 +1009,44 @@ void game_loop()
 
                         ball_stuck = 0;
                         launch_requested = 0;
-                        ball.dx = (float)launch_dx;
-                        ball.dy = -2.0f;
+                        balls[0].dx = (float)launch_dx;
+                        balls[0].dy = -2.0f;
                     }
                     else
                     {
-                        ball.x = paddle.x + paddle.width / 2;
-                        ball.y = paddle.y - radius - 1;
+                        balls[0].x = paddle.x + paddle.width / 2;
+                        balls[0].y = paddle.y - radius - 1;
                     }
                     brick_was_hit = 0;
                 }
                 else
                 {
-                    brick_was_hit = update_ball(&brick_hit_x, &brick_hit_y);
-                    if (life_pill_spawn_request)
+                    brick_was_hit = 0;
+                    for (i = 0; i < MAX_BALLS; i++)
                     {
-                        spawn_life_pill(brick_hit_x, brick_hit_y, life_pill_spawn_type);
-                        life_pill_spawn_request = 0;
-                        life_pill_spawn_type = PILL_TYPE_NONE;
-                        spawned_this_frame = 1;
+                        int ball_result;
+
+                        if (!ball_active[i])
+                            continue;
+
+                        ball_result = update_ball(&balls[i], i, &brick_hit_x, &brick_hit_y);
+                        if (ball_result == 1)
+                        {
+                            brick_hits_this_frame++;
+                            brick_was_hit = 1;
+                        }
+
+                        if (life_pill_spawn_request)
+                        {
+                            spawn_life_pill(brick_hit_x, brick_hit_y, life_pill_spawn_type);
+                            life_pill_spawn_request = 0;
+                            life_pill_spawn_type = PILL_TYPE_NONE;
+                            spawned_this_frame = 1;
+                        }
                     }
+
+                    if (brick_hits_this_frame > 1)
+                        force_redraw = 1;
                 }
 
                 if (!spawned_this_frame)
@@ -903,14 +1059,20 @@ void game_loop()
 
             wait_vblank();
             /* Erase old positions */
-            erase_ball_with_background(old_ball_x, old_ball_y, ball);
+            for (i = 0; i < MAX_BALLS; i++)
             {
-                int r = BALL_SIZE / 2;
-                int x1 = old_ball_x - r - 1;
-                int y1 = old_ball_y - r - 1;
-                int x2 = old_ball_x + r + 1;
-                int y2 = old_ball_y + r + 1;
-                redraw_bricks_in_area(x1, y1, x2, y2);
+                if (!old_ball_active[i])
+                    continue;
+
+                erase_ball_with_background(old_ball_x[i], old_ball_y[i], balls[i]);
+                {
+                    int r = BALL_SIZE / 2;
+                    int x1 = old_ball_x[i] - r - 1;
+                    int y1 = old_ball_y[i] - r - 1;
+                    int x2 = old_ball_x[i] + r + 1;
+                    int y2 = old_ball_y[i] + r + 1;
+                    redraw_bricks_in_area(x1, y1, x2, y2);
+                }
             }
             if (old_paddle_x != paddle.x || old_paddle_width != paddle.width)
             {
@@ -941,7 +1103,11 @@ void game_loop()
 
             /* Draw new positions */
             draw_paddle(paddle);
-            draw_ball(ball);
+            for (i = 0; i < MAX_BALLS; i++)
+            {
+                if (ball_active[i])
+                    draw_ball(balls[i]);
+            }
             if (life_pill.active)
                 draw_pill(life_pill);
 

@@ -477,6 +477,13 @@ void far draw_pill(Pill pill)
         "00001",
         "11110"
     };
+    static const char glyph_m[5][6] = {
+        "10001",
+        "11011",
+        "10101",
+        "10001",
+        "10001"
+    };
 
     for (i = 0; i < PILL_HEIGHT; i++)
     {
@@ -519,6 +526,8 @@ void far draw_pill(Pill pill)
         glyph = glyph_x;
     else if (pill.type == PILL_TYPE_SHRINK)
         glyph = glyph_s;
+    else if (pill.type == PILL_TYPE_MULTIBALL)
+        glyph = glyph_m;
     else
         glyph = glyph_l;
 
