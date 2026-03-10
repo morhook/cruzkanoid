@@ -24,6 +24,8 @@
 #define LIFE_POWERUP_CHANCE 10
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
+#define LASER_SHOT_SPEED 6
+#define LASER_FIRE_COOLDOWN_FRAMES 6
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     {
@@ -45,6 +47,7 @@ Ball balls[MAX_BALLS];
 int ball_active[MAX_BALLS];
 Paddle paddle;
 Pill life_pill;
+LaserShot laser_shots[MAX_LASER_SHOTS];
 int score = 0;
 int lives = 3;
 int current_level = 1;
@@ -54,6 +57,9 @@ int paused = 0;
 int force_redraw = 0;
 static int life_pill_spawn_request = 0;
 static int life_pill_spawn_type = PILL_TYPE_NONE;
+static int life_pill_spawn_x = 0;
+static int life_pill_spawn_y = 0;
+static int laser_fire_cooldown = 0;
 
 static int key_vx = 0;
 static int key_offset = 0;
@@ -174,6 +180,156 @@ static void spawn_multiball_bonus(void)
     }
 }
 
+static void reset_laser_shots(void)
+{
+    int i;
+
+    for (i = 0; i < MAX_LASER_SHOTS; i++)
+    {
+        laser_shots[i].active = 0;
+        laser_shots[i].x = 0;
+        laser_shots[i].y = 0;
+        laser_shots[i].dy = -LASER_SHOT_SPEED;
+    }
+
+    laser_fire_cooldown = 0;
+}
+
+static int fire_laser_shot_pair(void)
+{
+    int i;
+    int first = -1;
+    int second = -1;
+    int shot_y;
+    int left_x;
+    int right_x;
+
+    if (!paddle.laser_enabled || laser_fire_cooldown > 0)
+        return 0;
+
+    for (i = 0; i < MAX_LASER_SHOTS; i++)
+    {
+        if (!laser_shots[i].active)
+        {
+            if (first < 0)
+                first = i;
+            else
+            {
+                second = i;
+                break;
+            }
+        }
+    }
+
+    if (first < 0 || second < 0)
+        return 0;
+
+    shot_y = paddle.y - 1;
+    left_x = paddle.x + 2;
+    right_x = paddle.x + paddle.width - 3;
+
+    if (left_x < 1)
+        left_x = 1;
+    if (right_x > SCREEN_WIDTH - 2)
+        right_x = SCREEN_WIDTH - 2;
+
+    laser_shots[first].active = 1;
+    laser_shots[first].x = left_x;
+    laser_shots[first].y = shot_y;
+    laser_shots[first].dy = -LASER_SHOT_SPEED;
+
+    laser_shots[second].active = 1;
+    laser_shots[second].x = right_x;
+    laser_shots[second].y = shot_y;
+    laser_shots[second].dy = -LASER_SHOT_SPEED;
+
+    laser_fire_cooldown = LASER_FIRE_COOLDOWN_FRAMES;
+    return 1;
+}
+
+static int update_laser_shots(void)
+{
+    int i;
+    int row;
+    int col;
+    int brick_destroyed = 0;
+
+    for (i = 0; i < MAX_LASER_SHOTS; i++)
+    {
+        if (!laser_shots[i].active)
+            continue;
+
+        laser_shots[i].y += laser_shots[i].dy;
+        if (laser_shots[i].y < 2)
+        {
+            laser_shots[i].active = 0;
+            continue;
+        }
+
+        for (row = 0; row < BRICK_ROWS; row++)
+        {
+            for (col = 0; col < BRICK_COLS; col++)
+            {
+                if (!bricks[row][col].active)
+                    continue;
+
+                if (laser_shots[i].x >= bricks[row][col].x &&
+                    laser_shots[i].x < bricks[row][col].x + BRICK_WIDTH &&
+                    laser_shots[i].y >= bricks[row][col].y &&
+                    laser_shots[i].y < bricks[row][col].y + BRICK_HEIGHT)
+                {
+                    int hit_pill_type = PILL_TYPE_NONE;
+
+                    if (bricks[row][col].hp > 0)
+                        bricks[row][col].hp--;
+
+                    if (bricks[row][col].hp <= 0)
+                    {
+                        bricks[row][col].active = 0;
+                        score += 10;
+                        brick_destroyed = 1;
+
+                        if (bricks[row][col].gives_life)
+                        {
+                            bricks[row][col].gives_life = 0;
+                            hit_pill_type = PILL_TYPE_LIFE;
+                        }
+                        else if ((rand() % LIFE_POWERUP_CHANCE) == 0)
+                        {
+                            int roll = rand() % 5;
+                            if (roll == 0)
+                                hit_pill_type = PILL_TYPE_LIFE;
+                            else if (roll == 1)
+                                hit_pill_type = PILL_TYPE_GROW;
+                            else if (roll == 2)
+                                hit_pill_type = PILL_TYPE_SHRINK;
+                            else if (roll == 3)
+                                hit_pill_type = PILL_TYPE_MULTIBALL;
+                            else
+                                hit_pill_type = PILL_TYPE_LASER;
+                        }
+
+                        if (hit_pill_type != PILL_TYPE_NONE)
+                        {
+                            life_pill_spawn_request = 1;
+                            life_pill_spawn_type = hit_pill_type;
+                            life_pill_spawn_x = bricks[row][col].x;
+                            life_pill_spawn_y = bricks[row][col].y;
+                        }
+                    }
+
+                    laser_shots[i].active = 0;
+                    audio_event_brick(row);
+                    row = BRICK_ROWS;
+                    break;
+                }
+            }
+        }
+    }
+
+    return brick_destroyed;
+}
+
 static void increase_ball_speed(Ball *ball)
 {
     float speed = (float)sqrt((double)(ball->dx * ball->dx + ball->dy * ball->dy));
@@ -202,9 +358,11 @@ void reset_paddle()
     paddle.y = SCREEN_HEIGHT - 20;
     paddle.width = PADDLE_WIDTH;
     paddle.vx = 0;
+    paddle.laser_enabled = 0;
     key_vx = 0;
     key_offset = 0;
 
+    reset_laser_shots();
     reset_balls();
 
     /* Prevent a big "jump" when mouse control is active. */
@@ -220,6 +378,8 @@ void reset_life_pill()
     life_pill.type = PILL_TYPE_NONE;
     life_pill_spawn_request = 0;
     life_pill_spawn_type = PILL_TYPE_NONE;
+    life_pill_spawn_x = 0;
+    life_pill_spawn_y = 0;
 }
 
 void spawn_life_pill(int brick_x, int brick_y, int pill_type)
@@ -273,6 +433,11 @@ void update_life_pill()
         {
             audio_event_multiball();
             spawn_multiball_bonus();
+        }
+        else if (life_pill.type == PILL_TYPE_LASER)
+        {
+            paddle.laser_enabled = 1;
+            laser_fire_cooldown = 0;
         }
 
         if (paddle.width < 8)
@@ -442,6 +607,7 @@ void update_game()
 {
     int move_dir = 0;
     int pause_toggle_requested = 0;
+    int fire_requested = 0;
     int old_x = paddle.x;
     int use_mouse = mouse_available;
     int target_x = paddle.x;
@@ -478,7 +644,7 @@ void update_game()
         }
         if (key == ' ' && !paused)
         {
-            launch_requested = 1;
+            fire_requested = 1;
             continue;
         }
         if (key == 0 || key == 0xE0)
@@ -525,7 +691,18 @@ void update_game()
     }
 
     if (left_clicked)
-        launch_requested = 1;
+        fire_requested = 1;
+
+    if (laser_fire_cooldown > 0)
+        laser_fire_cooldown--;
+
+    if (fire_requested)
+    {
+        if (ball_stuck)
+            launch_requested = 1;
+        else if (paddle.laser_enabled)
+            fire_laser_shot_pair();
+    }
 
     if (use_mouse)
     {
@@ -670,15 +847,17 @@ int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int 
                             {
                                 if (hit_pill_type)
                                 {
-                                    int roll = rand() % 4;
+                                    int roll = rand() % 5;
                                     if (roll == 0)
                                         *hit_pill_type = PILL_TYPE_LIFE;
                                     else if (roll == 1)
                                         *hit_pill_type = PILL_TYPE_GROW;
                                     else if (roll == 2)
                                         *hit_pill_type = PILL_TYPE_SHRINK;
-                                    else
+                                    else if (roll == 3)
                                         *hit_pill_type = PILL_TYPE_MULTIBALL;
+                                    else
+                                        *hit_pill_type = PILL_TYPE_LASER;
                                 }
                             }
                         }
@@ -783,6 +962,8 @@ int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
     {
         life_pill_spawn_request = 1;
         life_pill_spawn_type = brick_pill_type;
+        life_pill_spawn_x = *brick_hit_x;
+        life_pill_spawn_y = *brick_hit_y;
     }
 
     if (brick_collided)
@@ -936,6 +1117,10 @@ void game_loop()
     int old_ball_active[MAX_BALLS];
     int old_paddle_x;
     int old_paddle_width;
+    int old_paddle_laser_enabled;
+    int old_laser_x[MAX_LASER_SHOTS];
+    int old_laser_y[MAX_LASER_SHOTS];
+    int old_laser_active[MAX_LASER_SHOTS];
     int first_frame;
     int brick_hit_x, brick_hit_y;
     int brick_was_hit;
@@ -965,6 +1150,11 @@ void game_loop()
                 }
                 if (life_pill.active)
                     draw_pill(life_pill);
+                for (i = 0; i < MAX_LASER_SHOTS; i++)
+                {
+                    if (laser_shots[i].active)
+                        draw_laser_shot(laser_shots[i]);
+                }
                 draw_ui(score, lives, current_level);
                 if (paused)
                 {
@@ -986,9 +1176,19 @@ void game_loop()
             }
             old_paddle_x = paddle.x;
             old_paddle_width = paddle.width;
+            old_paddle_laser_enabled = paddle.laser_enabled;
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
             old_pill_active = life_pill.active;
+            for (i = 0; i < MAX_LASER_SHOTS; i++)
+            {
+                old_laser_active[i] = laser_shots[i].active;
+                if (laser_shots[i].active)
+                {
+                    old_laser_x[i] = laser_shots[i].x;
+                    old_laser_y[i] = laser_shots[i].y;
+                }
+            }
 
             /* Update game state */
             update_game();
@@ -1039,9 +1239,11 @@ void game_loop()
 
                         if (life_pill_spawn_request)
                         {
-                            spawn_life_pill(brick_hit_x, brick_hit_y, life_pill_spawn_type);
+                            spawn_life_pill(life_pill_spawn_x, life_pill_spawn_y, life_pill_spawn_type);
                             life_pill_spawn_request = 0;
                             life_pill_spawn_type = PILL_TYPE_NONE;
+                            life_pill_spawn_x = 0;
+                            life_pill_spawn_y = 0;
                             spawned_this_frame = 1;
                         }
                     }
@@ -1052,6 +1254,9 @@ void game_loop()
 
                 if (!spawned_this_frame)
                     update_life_pill();
+
+                if (update_laser_shots())
+                    brick_was_hit = 2;
             }
             else
             {
@@ -1075,11 +1280,20 @@ void game_loop()
                     redraw_bricks_in_area(x1, y1, x2, y2);
                 }
             }
-            if (old_paddle_x != paddle.x || old_paddle_width != paddle.width)
+            if (old_paddle_x != paddle.x || old_paddle_width != paddle.width || old_paddle_laser_enabled != paddle.laser_enabled)
             {
                 Paddle old_paddle = paddle;
                 old_paddle.width = old_paddle_width;
+                old_paddle.laser_enabled = old_paddle_laser_enabled;
                 erase_paddle_with_background(old_paddle_x, old_paddle);
+            }
+            for (i = 0; i < MAX_LASER_SHOTS; i++)
+            {
+                if (old_laser_active[i])
+                {
+                    erase_laser_shot_with_background(old_laser_x[i], old_laser_y[i]);
+                    redraw_bricks_in_area(old_laser_x[i] - 1, old_laser_y[i] - 4, old_laser_x[i] + 1, old_laser_y[i] + 1);
+                }
             }
             if (old_pill_active)
             {
@@ -1111,6 +1325,11 @@ void game_loop()
             }
             if (life_pill.active)
                 draw_pill(life_pill);
+            for (i = 0; i < MAX_LASER_SHOTS; i++)
+            {
+                if (laser_shots[i].active)
+                    draw_laser_shot(laser_shots[i]);
+            }
 
             /* Redraw UI (borders, score, lives) */
             draw_ui(score, lives, current_level);

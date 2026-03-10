@@ -25,6 +25,10 @@ void far draw_ball(Ball ball);
 
 void far erase_ball(int x, int y, Ball ball);
 
+void far draw_laser_shot(LaserShot shot);
+
+void far erase_laser_shot_with_background(int x, int y);
+
 void far draw_pill(Pill pill);
 
 void far draw_char(int x, int y, char c, unsigned char color);

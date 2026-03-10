@@ -26,12 +26,14 @@ For running on your browser thanks to the magic of `js-dos` (dosbox on the web) 
 - Left Arrow: Move paddle left
 - Right Arrow: Move paddle right
 - Space: Launch ball
+- Space: Launch ball / fire lasers (with laser power-up)
 - S: Toggle sound effects
 - M: Toggle soundtrack
 - Esc: Quit game
 
 With the mouse you can control it too:
 - Left click: Fire the ball
+- Left click: Fire the ball / fire lasers (with laser power-up)
 - Right click: Pause the game
 
 ## Running on your machine

@@ -20,7 +20,9 @@
 #define PILL_TYPE_GROW 2
 #define PILL_TYPE_SHRINK 3
 #define PILL_TYPE_MULTIBALL 4
+#define PILL_TYPE_LASER 5
 #define MAX_BALLS 16
+#define MAX_LASER_SHOTS 8
 #define PADDLE_WIDTH_GROW (PADDLE_WIDTH + 12)
 #define PADDLE_WIDTH_SHRINK (PADDLE_WIDTH - 12)
 
@@ -43,7 +45,15 @@ typedef struct
     int x, y;
     int width;
     int vx;
+    int laser_enabled;
 } Paddle;
+
+typedef struct
+{
+    int x, y;
+    int dy;
+    int active;
+} LaserShot;
 
 typedef struct
 {

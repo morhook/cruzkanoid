@@ -226,6 +226,31 @@ void far draw_paddle(Paddle paddle)
                 put_pixel(paddle.x + j, paddle.y + 3, light_color);
         }
     }
+
+    if (paddle.laser_enabled && paddle.width >= 12)
+    {
+        int lx = paddle.x + 1;
+        int rx = paddle.x + paddle.width - 3;
+
+        for (i = 1; i < PADDLE_HEIGHT - 1; i++)
+        {
+            put_pixel(lx, paddle.y + i, dark_color);
+            put_pixel(lx + 1, paddle.y + i, 15);
+
+            put_pixel(rx + 1, paddle.y + i, dark_color);
+            put_pixel(rx, paddle.y + i, 15);
+        }
+
+        put_pixel(lx, paddle.y - 1, dark_color);
+        put_pixel(lx + 1, paddle.y - 1, 15);
+        put_pixel(lx, paddle.y - 2, dark_color);
+        put_pixel(lx + 1, paddle.y - 2, 15);
+
+        put_pixel(rx + 1, paddle.y - 1, dark_color);
+        put_pixel(rx, paddle.y - 1, 15);
+        put_pixel(rx + 1, paddle.y - 2, dark_color);
+        put_pixel(rx, paddle.y - 2, 15);
+    }
 }
 
 void far erase_paddle(int x, Paddle paddle)
@@ -439,6 +464,21 @@ void far draw_ball(Ball ball)
     draw_filled_circle(ball.x, ball.y, BALL_SIZE / 2, 0x64, 0x22);
 }
 
+void far draw_laser_shot(LaserShot shot)
+{
+    int i;
+
+    if (!shot.active)
+        return;
+
+    for (i = 0; i < 4; i++)
+    {
+        put_pixel(shot.x - 1, shot.y - i, 12);
+        put_pixel(shot.x, shot.y - i, 15);
+        put_pixel(shot.x + 1, shot.y - i, 12);
+    }
+}
+
 void far draw_pill(Pill pill)
 {
     int i, j;
@@ -484,6 +524,13 @@ void far draw_pill(Pill pill)
         "10001",
         "10001"
     };
+    static const char glyph_f[5][6] = {
+        "11111",
+        "10000",
+        "11110",
+        "10000",
+        "10000"
+    };
 
     for (i = 0; i < PILL_HEIGHT; i++)
     {
@@ -528,6 +575,8 @@ void far draw_pill(Pill pill)
         glyph = glyph_s;
     else if (pill.type == PILL_TYPE_MULTIBALL)
         glyph = glyph_m;
+    else if (pill.type == PILL_TYPE_LASER)
+        glyph = glyph_f;
     else
         glyph = glyph_l;
 
@@ -574,6 +623,11 @@ void far erase_pill_with_background(int x, int y)
     int y2 = y + (PILL_HEIGHT / 2) + 1;
 
     draw_background_area(x1, y1, x2, y2);
+}
+
+void far erase_laser_shot_with_background(int x, int y)
+{
+    draw_background_area(x - 1, y - 4, x + 1, y + 1);
 }
 
 void far draw_ui(int score, int lives, int current_level)
@@ -766,11 +820,13 @@ void far erase_ball_with_background(int x, int y, Ball ball)
 
 void far erase_paddle_with_background(int x, Paddle paddle)
 {
-    int radius = PADDLE_HEIGHT / 2;
     int x1 = x - 1;
     int y1 = paddle.y - 1;
     int x2 = x + paddle.width + 1;
     int y2 = paddle.y + PADDLE_HEIGHT + 1;
+
+    if (paddle.laser_enabled)
+        y1 = paddle.y - 3;
     
     /* Restore background in the paddle's previous area */
     draw_background_area(x1, y1, x2, y2);
