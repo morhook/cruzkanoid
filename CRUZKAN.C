@@ -61,6 +61,10 @@ static int life_pill_spawn_type = PILL_TYPE_NONE;
 static int life_pill_spawn_x = 0;
 static int life_pill_spawn_y = 0;
 static int laser_fire_cooldown = 0;
+static int brick_field_x1 = 0;
+static int brick_field_y1 = 0;
+static int brick_field_x2 = 0;
+static int brick_field_y2 = 0;
 
 static int key_vx = 0;
 static int key_offset = 0;
@@ -522,6 +526,7 @@ void init_bricks(int level)
     int i, j;
     int start_y = 20;
     int total_width = (BRICK_COLS * BRICK_WIDTH) + ((BRICK_COLS - 1) * BRICK_GAP);
+    int total_height = (BRICK_ROWS * BRICK_HEIGHT) + ((BRICK_ROWS - 1) * 2);
     int start_x = (SCREEN_WIDTH - total_width) / 2;
     int level_index = level - 1;
     unsigned int row_mask;
@@ -531,6 +536,11 @@ void init_bricks(int level)
 
     if (level_index < 0 || level_index >= MAX_LEVELS)
         level_index = 0;
+
+    brick_field_x1 = start_x;
+    brick_field_y1 = start_y;
+    brick_field_x2 = start_x + total_width - 1;
+    brick_field_y2 = start_y + total_height - 1;
 
     for (i = 0; i < BRICK_ROWS; i++)
     {
@@ -578,11 +588,52 @@ void draw_bricks()
 void redraw_bricks_in_area(int x1, int y1, int x2, int y2)
 {
     int i, j;
+    int first_row;
+    int last_row;
+    int first_col;
+    int last_col;
+    int row_pitch = BRICK_HEIGHT + 2;
+    int col_pitch = BRICK_WIDTH + BRICK_GAP;
     int bx1, by1, bx2, by2;
 
-    for (i = 0; i < BRICK_ROWS; i++)
+    if (x2 < brick_field_x1 || x1 > brick_field_x2 ||
+        y2 < brick_field_y1 || y1 > brick_field_y2)
     {
-        for (j = 0; j < BRICK_COLS; j++)
+        return;
+    }
+
+    if (y1 <= brick_field_y1)
+        first_row = 0;
+    else
+        first_row = (y1 - brick_field_y1) / row_pitch;
+
+    if (y2 >= brick_field_y2)
+        last_row = BRICK_ROWS - 1;
+    else
+        last_row = (y2 - brick_field_y1) / row_pitch;
+
+    if (x1 <= brick_field_x1)
+        first_col = 0;
+    else
+        first_col = (x1 - brick_field_x1) / col_pitch;
+
+    if (x2 >= brick_field_x2)
+        last_col = BRICK_COLS - 1;
+    else
+        last_col = (x2 - brick_field_x1) / col_pitch;
+
+    if (first_row < 0)
+        first_row = 0;
+    if (last_row >= BRICK_ROWS)
+        last_row = BRICK_ROWS - 1;
+    if (first_col < 0)
+        first_col = 0;
+    if (last_col >= BRICK_COLS)
+        last_col = BRICK_COLS - 1;
+
+    for (i = first_row; i <= last_row; i++)
+    {
+        for (j = first_col; j <= last_col; j++)
         {
             if (!bricks[i][j].active)
                 continue;
