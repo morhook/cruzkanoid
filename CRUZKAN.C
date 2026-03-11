@@ -21,11 +21,12 @@
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
 #define MAX_LEVELS 10
-#define LIFE_POWERUP_CHANCE 10
+#define LIFE_POWERUP_CHANCE 2
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
 #define LASER_SHOT_SPEED 6
 #define LASER_FIRE_COOLDOWN_FRAMES 6
+#define MAX_BRICKS_DESTROYED_PER_FRAME (MAX_BALLS + MAX_LASER_SHOTS)
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     {
@@ -247,12 +248,21 @@ static int fire_laser_shot_pair(void)
     return 1;
 }
 
-static int update_laser_shots(void)
+static void record_destroyed_brick(int *xs, int *ys, int *count, int x, int y)
+{
+    if (*count >= MAX_BRICKS_DESTROYED_PER_FRAME)
+        return;
+
+    xs[*count] = x;
+    ys[*count] = y;
+    (*count)++;
+}
+
+static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destroyed_count)
 {
     int i;
     int row;
     int col;
-    int brick_destroyed = 0;
 
     for (i = 0; i < MAX_LASER_SHOTS; i++)
     {
@@ -287,7 +297,8 @@ static int update_laser_shots(void)
                     {
                         bricks[row][col].active = 0;
                         score += 10;
-                        brick_destroyed = 1;
+                        record_destroyed_brick(destroyed_xs, destroyed_ys, destroyed_count,
+                                              bricks[row][col].x, bricks[row][col].y);
 
                         if (bricks[row][col].gives_life)
                         {
@@ -326,8 +337,6 @@ static int update_laser_shots(void)
             }
         }
     }
-
-    return brick_destroyed;
 }
 
 static void increase_ball_speed(Ball *ball)
@@ -603,7 +612,7 @@ void init_game()
     init_level(1);
 }
 
-void update_game()
+void get_inputs()
 {
     int move_dir = 0;
     int pause_toggle_requested = 0;
@@ -1123,13 +1132,14 @@ void game_loop()
     int old_laser_active[MAX_LASER_SHOTS];
     int first_frame;
     int brick_hit_x, brick_hit_y;
-    int brick_was_hit;
-    int brick_hits_this_frame;
     int radius = BALL_SIZE / 2;
     int launch_dx;
     int old_pill_x, old_pill_y;
     int old_pill_active;
     int spawned_this_frame;
+    int destroyed_brick_x[MAX_BRICKS_DESTROYED_PER_FRAME];
+    int destroyed_brick_y[MAX_BRICKS_DESTROYED_PER_FRAME];
+    int destroyed_brick_count;
     int i;
 
     while (lives > 0)
@@ -1191,11 +1201,11 @@ void game_loop()
             }
 
             /* Update game state */
-            update_game();
+            get_inputs();
             if (!paused)
             {
                 spawned_this_frame = 0;
-                brick_hits_this_frame = 0;
+                destroyed_brick_count = 0;
                 if (ball_stuck)
                 {
                     if (launch_requested)
@@ -1218,11 +1228,9 @@ void game_loop()
                         balls[0].x = paddle.x + paddle.width / 2;
                         balls[0].y = paddle.y - radius - 1;
                     }
-                    brick_was_hit = 0;
                 }
                 else
                 {
-                    brick_was_hit = 0;
                     for (i = 0; i < MAX_BALLS; i++)
                     {
                         int ball_result;
@@ -1233,8 +1241,8 @@ void game_loop()
                         ball_result = update_ball(&balls[i], i, &brick_hit_x, &brick_hit_y);
                         if (ball_result == 1)
                         {
-                            brick_hits_this_frame++;
-                            brick_was_hit = 1;
+                            record_destroyed_brick(destroyed_brick_x, destroyed_brick_y,
+                                                  &destroyed_brick_count, brick_hit_x, brick_hit_y);
                         }
 
                         if (life_pill_spawn_request)
@@ -1247,20 +1255,16 @@ void game_loop()
                             spawned_this_frame = 1;
                         }
                     }
-
-                    if (brick_hits_this_frame > 1)
-                        force_redraw = 1;
                 }
 
                 if (!spawned_this_frame)
                     update_life_pill();
 
-                if (update_laser_shots())
-                    brick_was_hit = 2;
+                update_laser_shots(destroyed_brick_x, destroyed_brick_y, &destroyed_brick_count);
             }
             else
             {
-                brick_was_hit = 0;
+                destroyed_brick_count = 0;
             }
 
             wait_vblank();
@@ -1306,14 +1310,10 @@ void game_loop()
                 redraw_bricks_in_area(x1, y1, x2, y2);
             }
 
-            /* Erase destroyed brick */
-            if (brick_was_hit == 1)
+            /* Erase destroyed bricks */
+            for (i = 0; i < destroyed_brick_count; i++)
             {
-                erase_rect_with_background(brick_hit_x, brick_hit_y, BRICK_WIDTH, BRICK_HEIGHT);
-            }
-            else if (brick_was_hit == 2)
-            {
-                force_redraw = 1;
+                erase_rect_with_background(destroyed_brick_x[i], destroyed_brick_y[i], BRICK_WIDTH, BRICK_HEIGHT);
             }
 
             /* Draw new positions */
