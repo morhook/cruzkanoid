@@ -642,12 +642,15 @@ void far draw_ui(int score, int lives, int current_level)
     draw_rect(SCREEN_WIDTH - 1, 0, 1, SCREEN_HEIGHT, 15);
 
     // Score and lives at top (pixel coordinates now)
+    erase_rect_with_background(5, 5, 72, 7);
     sprintf(buffer, "Score: %d", score);
     draw_text(5, 5, buffer);
 
+    erase_rect_with_background(120, 5, 72, 7);
     sprintf(buffer, "Level: %d", current_level);
     draw_text(120, 5, buffer);
 
+    erase_rect_with_background(200, 5, 72, 7);
     sprintf(buffer, "Lives: %d", lives);
     draw_text(200, 5, buffer);
 }
