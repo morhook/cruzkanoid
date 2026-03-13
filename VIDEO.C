@@ -4,6 +4,8 @@
 #include "cruzkan.h"
 #include "video.h" 
 
+extern int current_level;
+
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
 static unsigned char far *background_buffer = 0;
 
@@ -742,6 +744,20 @@ void far draw_background()
     int spacing = heart_size + 1;
     int offset = heart_size / 2;
     unsigned char base_color = 52;
+
+    /* Level 2 has a black background */
+    if (current_level == 2)
+    {
+        draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+
+        if (!background_buffer)
+        {
+            background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
+        }
+
+        capture_background();
+        return;
+    }
 
     /* Clear to base color so hearts don't stack or leave artifacts. */
     draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
