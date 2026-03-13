@@ -411,6 +411,9 @@ void update_life_pill()
 {
     int half_w = PILL_WIDTH / 2;
     int half_h = PILL_HEIGHT / 2;
+    int prev_paddle_x;
+    int prev_paddle_width;
+    int paddle_reposition_required;
 
     if (!life_pill.active)
         return;
@@ -429,6 +432,8 @@ void update_life_pill()
         life_pill.y - half_h < paddle.y + PADDLE_HEIGHT)
     {
         life_pill.active = 0;
+        prev_paddle_x = paddle.x;
+        prev_paddle_width = paddle.width;
         if (life_pill.type == PILL_TYPE_LIFE)
         {
             lives++;
@@ -462,7 +467,10 @@ void update_life_pill()
             paddle.x = 0;
         if (paddle.x + paddle.width > SCREEN_WIDTH)
             paddle.x = SCREEN_WIDTH - paddle.width;
-        mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
+        paddle_reposition_required = (paddle.x != prev_paddle_x) ||
+                                    (paddle.width != prev_paddle_width);
+        if (paddle_reposition_required && mouse_available)
+            mouse_set_pos(paddle.x + paddle.width / 2, paddle.y);
     }
 }
 
