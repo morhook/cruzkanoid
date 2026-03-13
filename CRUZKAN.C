@@ -562,6 +562,18 @@ void init_level(int level)
 {
     current_level = level;
 
+    /* Switch music for level 2 only */
+    if (level == 2)
+    {
+        audio_music_set_track(1);
+        audio_music_restart();
+    }
+    else
+    {
+        audio_music_set_track(0);
+        audio_music_restart();
+    }
+
     ball_stuck = 1;
     launch_requested = 0;
     reset_paddle();

@@ -807,6 +807,11 @@ void far audio_music_toggle(void)
         audio_stop_internal();
 }
 
+void far audio_music_set_track(int track_index)
+{
+    music_set_track(track_index);
+}
+
 void far audio_update(void)
 {
     clock_t now = clock();
@@ -861,6 +866,7 @@ void far audio_update(void)
         }
     }
 
+    music_drum_update();
     music_start_next_note();
 }
 

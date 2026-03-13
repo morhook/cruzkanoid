@@ -14,15 +14,18 @@ int far music_is_enabled(void);
 void far music_toggle(void);
 void far music_restart(void);
 void far music_stop(void);
+void far music_set_track(int track_index);
 
 void far music_on_note_finished(void);
 void far music_on_sfx_preempt(int preempted_music_tone);
 
 int far music_prepare_next_note(int audio_enabled,
-                                int audio_active,
-                                int life_up_active,
-                                int multiball_active,
-                                unsigned int *out_freq,
-                                unsigned int *out_ms);
+                                 int audio_active,
+                                 int life_up_active,
+                                 int multiball_active,
+                                 unsigned int *out_freq,
+                                 unsigned int *out_ms);
+
+void far music_drum_update(void);
 
 #endif

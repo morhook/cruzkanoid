@@ -1,4 +1,6 @@
 #include <dos.h>
+#include <stdio.h>
+#include <time.h>
 
 #include "MUSIC.H"
 
@@ -13,6 +15,14 @@ static int music_running = 1;
 static unsigned int music_index = 0;
 static unsigned int music_len = 0;
 static unsigned int music_drum_mute_start = 0;
+
+#define DRUM_STEP_MS 110
+static unsigned int drum_step = 0;
+static clock_t drum_next_clock = 0;
+
+/* Track selection for per-level music */
+static const MusicNote *active_track = NULL;
+static unsigned int active_track_len = 0;
 
 #define NOTE_C3 131
 #define NOTE_D3 147
@@ -36,6 +46,16 @@ static unsigned int music_drum_mute_start = 0;
 #define NOTE_F5 698
 #define NOTE_G5 784
 #define NOTE_A5 880
+#define NOTE_AS5 932
+#define NOTE_B5 988
+
+#define NOTE_DS7 2489
+#define NOTE_E7 2637
+#define NOTE_FS7 2959
+#define NOTE_G7 3136
+#define NOTE_A7 3520
+#define NOTE_AS7 3729
+#define NOTE_B7 3951
 
 static const MusicNote music_track[] = {
     /* Cruzkanoid Groove (extended), looped. */
@@ -154,7 +174,47 @@ static const MusicNote music_track[] = {
     {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
     {NOTE_A3, 220}, {0, 3000},
 
-    {0, 0}};
+     {0, 0}};
+
+static const MusicNote music_track2[] = {
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_FS7, 55}, {NOTE_E7, 55},
+     {NOTE_DS7, 55}, {NOTE_FS7, 55}, {NOTE_A7, 55}, {NOTE_G7, 55},
+     {NOTE_FS7, 55}, {NOTE_DS7, 55}, {NOTE_FS7, 55}, {NOTE_G7, 55},
+     {NOTE_A7, 55}, {NOTE_B7, 55}, {NOTE_A7, 55}, {NOTE_G7, 55},
+     {NOTE_FS7, 55}, {NOTE_DS7, 55},
+
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
+     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
+     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+
+     {0, 110},
+     
+     {0, 0}};
 
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
@@ -171,8 +231,11 @@ static unsigned char opl_bd_base = 0x20;
 static void music_advance_index(void)
 {
     music_index++;
-    if (music_track[music_index].ms == 0U)
+    if (active_track[music_index].ms == 0U)
+    {
         music_index = 0;
+        drum_step = 0;
+    }
 }
 
 static void opl_io_delay_port(unsigned int addr)
@@ -422,6 +485,29 @@ static void opl_rhythm_trigger(unsigned char bits)
         opl_write0(0xBD, (unsigned char)(opl_bd_base | (bits & 0x1FU)));
 }
 
+static void music_drum_update_internal(void)
+{
+    clock_t now;
+    clock_t ticks;
+    unsigned char bits;
+
+    if (!opl_present || !music_running || !music_enabled)
+        return;
+
+    now = clock();
+    if (drum_next_clock != 0 && now < drum_next_clock)
+        return;
+
+    bits = opl_drums_for_step(drum_step);
+    opl_rhythm_trigger(bits);
+    drum_step++;
+
+    ticks = (clock_t)(((long)DRUM_STEP_MS * (long)CLK_TCK + 999L) / 1000L);
+    if (ticks <= 0)
+        ticks = 1;
+    drum_next_clock = now + ticks;
+}
+
 static int opl_init_internal(void)
 {
     if (!opl_detect_port(opl_addr0, opl_data0))
@@ -511,21 +597,15 @@ static void opl_note_on(int ch, unsigned int freq_hz)
         opl_last_b0_ch1 = b0;
 }
 
-static void opl_play_music_step(unsigned int freq_hz, unsigned int step)
+static void opl_play_music_step(unsigned int freq_hz)
 {
     unsigned int other;
-    unsigned char drum_bits;
 
     if (!opl_present)
         return;
 
     if (freq_hz == 0U)
     {
-        if (step == 3000U)
-        {
-            opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
-            opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
-        }
         opl_note_off(0);
         opl_note_off(1);
     }
@@ -545,9 +625,6 @@ static void opl_play_music_step(unsigned int freq_hz, unsigned int step)
         opl_note_on(0, freq_hz);
         opl_note_on(1, other);
     }
-
-    drum_bits = opl_drums_for_step(step);
-    opl_rhythm_trigger(drum_bits);
 }
 
 void far music_init(void)
@@ -555,12 +632,18 @@ void far music_init(void)
     unsigned int i;
     unsigned int acc_ms;
 
+    /* Initialize active_track to track 0 if not set */
+    if (active_track == NULL)
+        active_track = music_track;
+
     music_enabled = 1;
     music_running = 1;
     music_index = 0;
+    drum_step = 0;
+    drum_next_clock = 0;
 
     music_len = 0;
-    while (music_track[music_len].ms != 0U)
+    while (active_track[music_len].ms != 0U)
         music_len++;
 
     music_drum_mute_start = 0;
@@ -569,7 +652,7 @@ void far music_init(void)
     while (i > 0U && acc_ms < 3000U)
     {
         i--;
-        acc_ms += music_track[i].ms;
+        acc_ms += active_track[i].ms;
     }
     if (i > 0U)
         music_drum_mute_start = i;
@@ -610,7 +693,7 @@ void far music_backend_stop(void)
 
 void far music_backend_play_step(unsigned int freq_hz)
 {
-    opl_play_music_step(freq_hz, music_index);
+    opl_play_music_step(freq_hz);
 }
 
 int far music_is_enabled(void)
@@ -627,6 +710,44 @@ void far music_restart(void)
 {
     music_index = 0;
     music_running = 1;
+    drum_step = 0;
+    drum_next_clock = 0;
+}
+
+void far music_set_track(int track_index)
+{
+    unsigned int i;
+    unsigned int acc_ms;
+
+    /* Select the appropriate track */
+    if (track_index == 1)
+        active_track = music_track2;
+    else
+        active_track = music_track;
+
+    /* Recalculate music_len for the new track */
+    music_len = 0;
+    while (active_track[music_len].ms != 0U)
+        music_len++;
+
+    /* Compute drum mute boundary only for track 0.
+       Track 2 has variable-duration held notes that cause drum_step to race
+       ahead of music_index, making the mute fire prematurely. Since track 2
+       has a short loop anyway, leave drums unmuted and let the loop wrap
+       (music_advance_index) reset drum_step naturally. */
+    music_drum_mute_start = 0;
+    if (track_index != 1)
+    {
+        acc_ms = 0;
+        i = music_len;
+        while (i > 0U && acc_ms < 3000U)
+        {
+            i--;
+            acc_ms += active_track[i].ms;
+        }
+        if (i > 0U)
+            music_drum_mute_start = i;
+    }
 }
 
 void far music_stop(void)
@@ -647,11 +768,11 @@ void far music_on_sfx_preempt(int preempted_music_tone)
 }
 
 int far music_prepare_next_note(int audio_enabled,
-                                int audio_active,
-                                int life_up_active,
-                                int multiball_active,
-                                unsigned int *out_freq,
-                                unsigned int *out_ms)
+                                 int audio_active,
+                                 int life_up_active,
+                                 int multiball_active,
+                                 unsigned int *out_freq,
+                                 unsigned int *out_ms)
 {
     MusicNote n;
 
@@ -661,14 +782,19 @@ int far music_prepare_next_note(int audio_enabled,
     if (!audio_enabled || !music_enabled || !music_running || audio_active || life_up_active || multiball_active)
         return 0;
 
-    n = music_track[music_index];
+    n = active_track[music_index];
     if (n.ms == 0U)
     {
         music_index = 0;
-        n = music_track[music_index];
+        n = active_track[music_index];
     }
 
     *out_freq = n.freq;
     *out_ms = n.ms;
     return 1;
+}
+
+void far music_drum_update(void)
+{
+    music_drum_update_internal();
 }

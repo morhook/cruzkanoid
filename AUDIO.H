@@ -12,6 +12,7 @@ void far audio_music_toggle(void);
 int far audio_music_is_enabled(void);
 void far audio_music_restart(void);
 void far audio_music_stop(void);
+void far audio_music_set_track(int track_index);
 
 void far audio_event_paddle(void);
 void far audio_event_wall(void);
