@@ -1423,7 +1423,7 @@ void game_loop()
             draw_background();
             draw_text(105, 90, "LEVEL CLEAR!");
             audio_event_level_clear_blocking();
-            delay_with_audio(1500);
+            delay(1500);
             init_level(current_level + 1);
         }
         else
