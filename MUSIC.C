@@ -58,11 +58,6 @@ static unsigned int active_track_len = 0;
 #define NOTE_B7 3951
 
 static const MusicNote music_track[] = {
-    /* Cruzkanoid Groove (extended), looped. */
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
     {0, 110}, {0, 110}, {0, 110}, {0, 110},
@@ -172,7 +167,9 @@ static const MusicNote music_track[] = {
     {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
     {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
     {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
-    {NOTE_A3, 220}, {0, 3000},
+    {NOTE_A3, 440}, 
+
+    {0, 3000},
 
      {0, 0}};
 
@@ -183,7 +180,9 @@ static const MusicNote music_track2[] = {
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
      {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+
+     {0, 440},
 
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
      {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
@@ -191,7 +190,9 @@ static const MusicNote music_track2[] = {
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
      {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+
+     {0, 440},
 
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
      {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
@@ -210,7 +211,9 @@ static const MusicNote music_track2[] = {
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
      {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
      {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 550},
+     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+
+     {0, 440},
 
      {0, 110},
      

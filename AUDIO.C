@@ -30,6 +30,8 @@ typedef enum
 
 static ToneSource tone_source = TONE_NONE;
 
+#define MUSIC_REST_HARD_CUT_MS 1000
+
 static void audio_start_tone_internal(int freq, int ms, ToneSource source);
 static int sb_present;
 
@@ -672,9 +674,12 @@ static void audio_start_tone_internal(int freq, int ms, ToneSource source)
     {
         if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && music_backend_has_opl() && source == TONE_SILENCE)
         {
-            /* Music rest: keep the groove going with OPL percussion. */
+            /* Short rests keep release/ring; long rests cut cleanly. */
             sb_stop_internal();
-            music_backend_play_step(0U);
+            if (ms >= MUSIC_REST_HARD_CUT_MS)
+                music_backend_stop();
+            else
+                music_backend_play_step(0U);
             nosound();
             return;
         }
@@ -819,8 +824,25 @@ void far audio_update(void)
     if (audio_active && now >= audio_end_clock)
     {
         if (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE)
+        {
             music_on_note_finished();
-        audio_stop_internal();
+
+            if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && music_backend_has_opl())
+            {
+                /* Keep OPL voice release/ring between music steps. */
+                audio_active = 0;
+                audio_end_clock = 0;
+                tone_source = TONE_NONE;
+            }
+            else
+            {
+                audio_stop_internal();
+            }
+        }
+        else
+        {
+            audio_stop_internal();
+        }
     }
 
     if (life_up_wav_active)
