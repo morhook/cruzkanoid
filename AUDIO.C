@@ -819,8 +819,25 @@ void far audio_update(void)
     if (audio_active && now >= audio_end_clock)
     {
         if (tone_source == TONE_MUSIC || tone_source == TONE_SILENCE)
+        {
             music_on_note_finished();
-        audio_stop_internal();
+
+            if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && music_backend_has_opl())
+            {
+                /* Keep OPL voice release/ring between music steps. */
+                audio_active = 0;
+                audio_end_clock = 0;
+                tone_source = TONE_NONE;
+            }
+            else
+            {
+                audio_stop_internal();
+            }
+        }
+        else
+        {
+            audio_stop_internal();
+        }
     }
 
     if (life_up_wav_active)
