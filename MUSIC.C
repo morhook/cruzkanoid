@@ -58,6 +58,11 @@ static unsigned int active_track_len = 0;
 #define NOTE_B7 3951
 
 static const MusicNote music_track[] = {
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
     {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
     {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
@@ -163,6 +168,8 @@ static const MusicNote music_track[] = {
     {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
     {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
     {NOTE_A3, 440}, 
+
+    {0, 3000},
 
      {0, 0}};
 
