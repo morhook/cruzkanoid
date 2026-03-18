@@ -33,6 +33,7 @@ static ToneSource tone_source = TONE_NONE;
 #define MUSIC_REST_HARD_CUT_MS 1000
 
 static void audio_start_tone_internal(int freq, int ms, ToneSource source);
+static void audio_start_tone_internal_chord(int freq, int freq2, int ms, ToneSource source);
 static int sb_present;
 
 typedef struct
@@ -645,7 +646,7 @@ void audio_stop_internal(void)
     multiball_stop_sequence();
 }
 
-static void audio_start_tone_internal(int freq, int ms, ToneSource source)
+static void audio_start_tone_internal_chord(int freq, int freq2, int ms, ToneSource source)
 {
     clock_t now;
     clock_t ticks;
@@ -679,7 +680,7 @@ static void audio_start_tone_internal(int freq, int ms, ToneSource source)
             if (ms >= MUSIC_REST_HARD_CUT_MS)
                 music_backend_stop();
             else
-                music_backend_play_step(0U);
+                music_backend_play_step(0U, 0U);
             nosound();
             return;
         }
@@ -694,13 +695,19 @@ static void audio_start_tone_internal(int freq, int ms, ToneSource source)
     if (audio_backend == AUDIO_BACKEND_SOUNDBLASTER && sb_present)
     {
         if ((source == TONE_MUSIC || source == TONE_SILENCE) && music_backend_has_opl())
-            music_backend_play_step((freq > 0) ? (unsigned int)freq : 0U);
+            music_backend_play_step((freq > 0) ? (unsigned int)freq : 0U,
+                                    (freq2 > 0) ? (unsigned int)freq2 : 0U);
         else
             (void)sb_play_tone(freq, ms);
         return;
     }
 
     sound(freq);
+}
+
+static void audio_start_tone_internal(int freq, int ms, ToneSource source)
+{
+    audio_start_tone_internal_chord(freq, 0, ms, source);
 }
 
 static void audio_play_tone(int freq, int ms)
@@ -727,6 +734,7 @@ static void audio_play_silence(int ms, ToneSource source)
 static void music_start_next_note(void)
 {
     unsigned int freq;
+    unsigned int freq2;
     unsigned int ms;
 
     if (!music_prepare_next_note(audio_enabled,
@@ -734,13 +742,14 @@ static void music_start_next_note(void)
                                  life_up_is_active(),
                                  multiball_is_active(),
                                  &freq,
+                                 &freq2,
                                  &ms))
         return;
 
     if (freq == 0U)
         audio_play_silence((int)ms, TONE_SILENCE);
     else
-        audio_start_tone_internal((int)freq, (int)ms, TONE_MUSIC);
+        audio_start_tone_internal_chord((int)freq, (int)freq2, (int)ms, TONE_MUSIC);
 }
 
 void far audio_init(void)

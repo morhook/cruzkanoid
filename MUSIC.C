@@ -7,6 +7,7 @@
 typedef struct
 {
     unsigned int freq;
+    unsigned int freq2; /* second chord tone for OPL; 0 = none */
     unsigned int ms;
 } MusicNote;
 
@@ -47,7 +48,9 @@ static unsigned int active_track_len = 0;
 #define NOTE_G5 784
 #define NOTE_A5 880
 #define NOTE_AS5 932
-#define NOTE_B5 988
+#define NOTE_B5  988
+
+#define NOTE_D6 1175
 
 #define NOTE_DS7 2489
 #define NOTE_E7 2637
@@ -58,166 +61,166 @@ static unsigned int active_track_len = 0;
 #define NOTE_B7 3951
 
 static const MusicNote music_track[] = {
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
-    {0, 110}, {0, 110}, {0, 110}, {0, 110},
+    {0, 0, 110}, {0, 0, 110}, {0, 0, 110}, {0, 0, 110},
+    {0, 0, 110}, {0, 0, 110}, {0, 0, 110}, {0, 0, 110},
+    {0, 0, 110}, {0, 0, 110}, {0, 0, 110}, {0, 0, 110},
+    {0, 0, 110}, {0, 0, 110}, {0, 0, 110}, {0, 0, 110},
 
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {0, 0, 110},
 
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
-    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
-    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {0, 0, 110},
 
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
-    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {NOTE_G4, 110},
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
-    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110}, {0, 0, 110},
 
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
-    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110},
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
-    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {0, 0, 110},
 
     /* Variation A (keeps the bass feel, adds a lead). */
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_E5, 110},
-    {NOTE_D5, 110}, {NOTE_C5, 110}, {NOTE_B4, 110}, {NOTE_A4, 110},
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {0, 0, 110},
 
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_C5, 110},
-    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_E5, 110},
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_A4, 110}, {NOTE_F4, 110}, {NOTE_C4, 110}, {0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_F5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_A4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_C4, 0, 110}, {0, 0, 110},
 
     /* Bridge (more motion, a short "climb" then reset). */
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_G4, 110},
-    {NOTE_E4, 110}, {NOTE_G4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
-    {NOTE_G3, 110}, {NOTE_B3, 110}, {NOTE_D4, 110}, {NOTE_F4, 110},
-    {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110}, {0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_B3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110}, {0, 0, 110},
 
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_D5, 110},
-    {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_G5, 110}, {NOTE_A5, 110},
-    {NOTE_G5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {NOTE_A4, 110},
-    {NOTE_G4, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_F5, 0, 110}, {NOTE_G5, 0, 110}, {NOTE_A5, 0, 110},
+    {NOTE_G5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_D4, 0, 110}, {0, 0, 110},
 
     /* Variation B (alternating bass + lead to highlight mixed waveforms). */
-    {NOTE_A3, 110}, {NOTE_C5, 110}, {NOTE_A3, 110}, {NOTE_E5, 110},
-    {NOTE_A3, 110}, {NOTE_D5, 110}, {NOTE_A3, 110}, {NOTE_C5, 110},
-    {NOTE_F3, 110}, {NOTE_C5, 110}, {NOTE_F3, 110}, {NOTE_F5, 110},
-    {NOTE_F3, 110}, {NOTE_E5, 110}, {NOTE_F3, 110}, {NOTE_C5, 110},
+    {NOTE_A3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_A3, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_A3, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_F3, 0, 110}, {NOTE_F5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_F3, 0, 110}, {NOTE_C5, 0, 110},
 
-    {NOTE_C3, 110}, {NOTE_G4, 110}, {NOTE_C3, 110}, {NOTE_E5, 110},
-    {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
-    {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
-    {NOTE_G3, 110}, {NOTE_A4, 110}, {NOTE_G3, 110}, {0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C3, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_C3, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_G3, 0, 110}, {0, 0, 110},
 
     /* repeat everything, with just a little bit different the ending */
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {0, 0, 110},
 
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
-    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110},
-    {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_A4, 110}, {0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {0, 0, 110},
 
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
-    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {NOTE_G4, 110},
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110},
-    {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_E4, 110}, {0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110}, {0, 0, 110},
 
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
-    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110},
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110},
-    {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_B4, 110}, {0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {0, 0, 110},
 
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_E5, 110},
-    {NOTE_D5, 110}, {NOTE_C5, 110}, {NOTE_B4, 110}, {NOTE_A4, 110},
-    {NOTE_A3, 110}, {NOTE_E4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {0, 0, 110},
 
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_F4, 110}, {NOTE_C5, 110},
-    {NOTE_D5, 110}, {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_E5, 110},
-    {NOTE_F3, 110}, {NOTE_C4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110},
-    {NOTE_A4, 110}, {NOTE_F4, 110}, {NOTE_C4, 110}, {0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_F5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_A4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_C4, 0, 110}, {0, 0, 110},
 
-    {NOTE_C3, 110}, {NOTE_G3, 110}, {NOTE_C4, 110}, {NOTE_G4, 110},
-    {NOTE_E4, 110}, {NOTE_G4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110},
-    {NOTE_G3, 110}, {NOTE_B3, 110}, {NOTE_D4, 110}, {NOTE_F4, 110},
-    {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110}, {0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_B3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110}, {0, 0, 110},
 
-    {NOTE_G3, 110}, {NOTE_D4, 110}, {NOTE_G4, 110}, {NOTE_D5, 110},
-    {NOTE_E5, 110}, {NOTE_F5, 110}, {NOTE_G5, 110}, {NOTE_A5, 110},
-    {NOTE_G5, 110}, {NOTE_E5, 110}, {NOTE_C5, 110}, {NOTE_A4, 110},
-    {NOTE_G4, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_F5, 0, 110}, {NOTE_G5, 0, 110}, {NOTE_A5, 0, 110},
+    {NOTE_G5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_D4, 0, 110}, {0, 0, 110},
 
-    {NOTE_A3, 110}, {NOTE_C5, 110}, {NOTE_A3, 110}, {NOTE_E5, 110},
-    {NOTE_A3, 110}, {NOTE_D5, 110}, {NOTE_A3, 110}, {NOTE_C5, 110},
-    {NOTE_F3, 110}, {NOTE_C5, 110}, {NOTE_F3, 110}, {NOTE_F5, 110},
-    {NOTE_F3, 110}, {NOTE_E5, 110}, {NOTE_F3, 110}, {NOTE_C5, 110},
+    {NOTE_A3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_A3, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_A3, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_A3, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_F3, 0, 110}, {NOTE_F5, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_F3, 0, 110}, {NOTE_C5, 0, 110},
 
     /* Variation C (and modified the "looper" notes of the end of this riff). */
-    {NOTE_C3, 110}, {NOTE_G4, 110}, {NOTE_C3, 110}, {NOTE_E5, 110},
-    {NOTE_C3, 110}, {NOTE_C5, 110}, {NOTE_C3, 110}, {NOTE_G4, 110},
-    {NOTE_G3, 110}, {NOTE_B4, 110}, {NOTE_G3, 110}, {NOTE_D5, 110},
-    {NOTE_G3, 110}, {NOTE_E4, 110}, {NOTE_D4, 110}, {NOTE_C4, 110},
-    {NOTE_A3, 440}, 
+    {NOTE_C3, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C3, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_C3, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_C3, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_G3, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_C4, 0, 110},
+    {NOTE_A3, 0, 440}, 
 
-    {0, 3000},
+    {0, 0, 3000},
 
-     {0, 0}};
+     {0, 0, 0}};
 
 static const MusicNote music_track2[] = {
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_B5, 0, 110}, {NOTE_C5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, NOTE_D6, 110},
 
-     {0, 440},
+     {0, 0, 440},
 
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_B5, 0, 110}, {NOTE_C5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, NOTE_D6, 110},
 
-     {0, 440},
+     {0, 0, 440},
 
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_FS7, 55}, {NOTE_E7, 55},
-     {NOTE_DS7, 55}, {NOTE_FS7, 55}, {NOTE_A7, 55}, {NOTE_G7, 55},
-     {NOTE_FS7, 55}, {NOTE_DS7, 55}, {NOTE_FS7, 55}, {NOTE_G7, 55},
-     {NOTE_A7, 55}, {NOTE_B7, 55}, {NOTE_A7, 55}, {NOTE_G7, 55},
-     {NOTE_FS7, 55}, {NOTE_DS7, 55},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_B5, 0, 110}, {NOTE_C5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_FS7, 0, 55}, {NOTE_E7, 0, 55},
+     {NOTE_DS7, 0, 55}, {NOTE_FS7, 0, 55}, {NOTE_A7, 0, 55}, {NOTE_G7, 0, 55},
+     {NOTE_FS7, 0, 55}, {NOTE_DS7, 0, 55}, {NOTE_FS7, 0, 55}, {NOTE_G7, 0, 55},
+     {NOTE_A7, 0, 55}, {NOTE_B7, 0, 55}, {NOTE_A7, 0, 55}, {NOTE_G7, 0, 55},
+     {NOTE_FS7, 0, 55}, {NOTE_DS7, 0, 55},
 
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_B5, 110}, {NOTE_C5, 110},
-     {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_E5, 110}, {NOTE_E4, 110},
-     {NOTE_E4, 110}, {NOTE_D5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110},
-     {NOTE_C5, 110}, {NOTE_E4, 110}, {NOTE_E4, 110}, {NOTE_AS5, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_B5, 0, 110}, {NOTE_C5, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_E4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110},
+     {NOTE_C5, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_AS5, NOTE_D6, 110},
 
-     {0, 440},
+     {0, 0, 440},
 
-     {0, 110},
+     {0, 0, 110},
      
-     {0, 0}};
+     {0, 0, 0}};
 
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
@@ -229,6 +232,8 @@ static int opl_is_opl3 = 0;
 
 static unsigned char opl_last_b0_ch0 = 0;
 static unsigned char opl_last_b0_ch1 = 0;
+static unsigned char opl_last_b0_ch2 = 0;
+static unsigned char opl_last_b0_ch3 = 0;
 static unsigned char opl_bd_base = 0x20;
 
 static void music_advance_index(void)
@@ -303,11 +308,22 @@ static void opl_note_off(int ch)
     {
         opl_last_b0_ch0 = (unsigned char)(opl_last_b0_ch0 & (unsigned char)~0x20);
         opl_write0((unsigned char)(0xB0 + ch), opl_last_b0_ch0);
-        return;
     }
-
-    opl_last_b0_ch1 = (unsigned char)(opl_last_b0_ch1 & (unsigned char)~0x20);
-    opl_write0((unsigned char)(0xB0 + ch), opl_last_b0_ch1);
+    else if (ch == 1)
+    {
+        opl_last_b0_ch1 = (unsigned char)(opl_last_b0_ch1 & (unsigned char)~0x20);
+        opl_write0((unsigned char)(0xB0 + ch), opl_last_b0_ch1);
+    }
+    else if (ch == 2)
+    {
+        opl_last_b0_ch2 = (unsigned char)(opl_last_b0_ch2 & (unsigned char)~0x20);
+        opl_write0((unsigned char)(0xB0 + ch), opl_last_b0_ch2);
+    }
+    else if (ch == 3)
+    {
+        opl_last_b0_ch3 = (unsigned char)(opl_last_b0_ch3 & (unsigned char)~0x20);
+        opl_write0((unsigned char)(0xB0 + ch), opl_last_b0_ch3);
+    }
 }
 
 static void opl_program_channel(int ch, unsigned char carrier_tl, unsigned char pan_mask)
@@ -532,12 +548,18 @@ static int opl_init_internal(void)
 
     opl_set_guitar(0);
     opl_set_guitar(1);
+    opl_set_guitar(2);
+    opl_set_guitar(3);
     opl_program_rhythm();
 
     opl_last_b0_ch0 = 0;
     opl_last_b0_ch1 = 0;
+    opl_last_b0_ch2 = 0;
+    opl_last_b0_ch3 = 0;
     opl_note_off(0);
     opl_note_off(1);
+    opl_note_off(2);
+    opl_note_off(3);
 
     return 1;
 }
@@ -549,8 +571,12 @@ static void opl_stop_internal(void)
 
     opl_note_off(0);
     opl_note_off(1);
+    opl_note_off(2);
+    opl_note_off(3);
     opl_program_channel(0, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
     opl_program_channel(1, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
+    opl_program_channel(2, 0x18, (unsigned char)(opl_is_opl3 ? 0x10 : 0x00));
+    opl_program_channel(3, 0x10, (unsigned char)(opl_is_opl3 ? 0x20 : 0x00));
     opl_write0(0xBD, opl_bd_base);
 }
 
@@ -596,11 +622,15 @@ static void opl_note_on(int ch, unsigned int freq_hz)
 
     if (ch == 0)
         opl_last_b0_ch0 = b0;
-    else
+    else if (ch == 1)
         opl_last_b0_ch1 = b0;
+    else if (ch == 2)
+        opl_last_b0_ch2 = b0;
+    else if (ch == 3)
+        opl_last_b0_ch3 = b0;
 }
 
-static void opl_play_music_step(unsigned int freq_hz)
+static void opl_play_music_step(unsigned int freq_hz, unsigned int freq2_hz)
 {
     unsigned int other;
 
@@ -611,22 +641,36 @@ static void opl_play_music_step(unsigned int freq_hz)
     {
         opl_note_off(0);
         opl_note_off(1);
+        opl_note_off(2);
+        opl_note_off(3);
     }
     else
     {
         opl_set_guitar(0);
         opl_set_guitar(1);
+        opl_set_guitar(2);
+        opl_set_guitar(3);
 
-        if (freq_hz < 260U)
+        if (freq2_hz != 0U)
+        {
+            other = freq2_hz;
+        }
+        else if (freq_hz < 260U)
+        {
             other = (unsigned int)(freq_hz * 2U);
+        }
         else
+        {
             other = (unsigned int)(freq_hz / 2U);
+        }
 
         if (other == 0U)
             other = freq_hz;
 
-        opl_note_on(0, freq_hz);
-        opl_note_on(1, other);
+        opl_note_on(0, freq_hz);  /* string 1, voice A */
+        opl_note_on(2, freq_hz);  /* string 1, voice B */
+        opl_note_on(1, other);    /* string 2, voice A */
+        opl_note_on(3, other);    /* string 2, voice B */
     }
 }
 
@@ -694,9 +738,9 @@ void far music_backend_stop(void)
     opl_stop_internal();
 }
 
-void far music_backend_play_step(unsigned int freq_hz)
+void far music_backend_play_step(unsigned int freq_hz, unsigned int freq2_hz)
 {
-    opl_play_music_step(freq_hz);
+    opl_play_music_step(freq_hz, freq2_hz);
 }
 
 int far music_is_enabled(void)
@@ -775,11 +819,12 @@ int far music_prepare_next_note(int audio_enabled,
                                  int life_up_active,
                                  int multiball_active,
                                  unsigned int *out_freq,
+                                 unsigned int *out_freq2,
                                  unsigned int *out_ms)
 {
     MusicNote n;
 
-    if (!out_freq || !out_ms)
+    if (!out_freq || !out_freq2 || !out_ms)
         return 0;
 
     if (!audio_enabled || !music_enabled || !music_running || audio_active || life_up_active || multiball_active)
@@ -792,8 +837,9 @@ int far music_prepare_next_note(int audio_enabled,
         n = active_track[music_index];
     }
 
-    *out_freq = n.freq;
-    *out_ms = n.ms;
+    *out_freq  = n.freq;
+    *out_freq2 = n.freq2;
+    *out_ms    = n.ms;
     return 1;
 }
 

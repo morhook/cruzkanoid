@@ -8,7 +8,7 @@ int far music_backend_init(int sb_is_present);
 void far music_backend_shutdown(void);
 int far music_backend_has_opl(void);
 void far music_backend_stop(void);
-void far music_backend_play_step(unsigned int freq_hz);
+void far music_backend_play_step(unsigned int freq_hz, unsigned int freq2_hz);
 
 int far music_is_enabled(void);
 void far music_toggle(void);
@@ -24,6 +24,7 @@ int far music_prepare_next_note(int audio_enabled,
                                  int life_up_active,
                                  int multiball_active,
                                  unsigned int *out_freq,
+                                 unsigned int *out_freq2,
                                  unsigned int *out_ms);
 
 void far music_drum_update(void);
