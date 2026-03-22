@@ -82,8 +82,10 @@ jobs:
       - name: Verify build output
         run: test -f CRUZKAN.EXE
 
-      - name: Upload executable artifact
+      - name: Upload game artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CRUZKAN-EXE
-          path: CRUZKAN.EXE
+          name: CRUZKAN-game
+          path: |
+            CRUZKAN.EXE
+            *.wav
