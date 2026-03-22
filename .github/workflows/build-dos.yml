@@ -68,8 +68,12 @@ jobs:
           fi
 
       - name: Build with DOSBox-X
+        timeout-minutes: 10
         run: |
-          dosbox-x -nogui -exit \
+          dosbox-x -nogui -exit -nopromptfolder \
+            -defaultdir "$GITHUB_WORKSPACE" \
+            -noconfig -defaultconf -defaultmapper \
+            -time-limit 300 \
             -c "mount c $GITHUB_WORKSPACE" \
             -c "c:" \
             -c "call ADDPATH.BAT" \
