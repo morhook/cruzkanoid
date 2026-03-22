@@ -1,0 +1,85 @@
+name: Build DOS Executable
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Turbo C archive
+        uses: actions/cache@v4
+        with:
+          path: .ci-cache/TC.zip
+          key: tczip-v1-md5-1a611cedec6bfd02c5d848bc5811ad74
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y dosbox-x unzip
+
+      - name: Download and extract Turbo C
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p .ci-cache
+
+          if [ ! -f .ci-cache/TC.zip ]; then
+            curl -fL --retry 5 --retry-delay 3 --retry-all-errors \
+              -o .ci-cache/TC.zip \
+              https://archive.org/download/turboc3.1_202112/TC.zip
+          fi
+
+          echo "1a611cedec6bfd02c5d848bc5811ad74  .ci-cache/TC.zip" | md5sum -c -
+
+          rm -rf TC
+
+          temp_root="$(mktemp -d)"
+          unzip -q .ci-cache/TC.zip -d "$temp_root/outer"
+
+          if [ -f "$temp_root/outer/TC.zip" ]; then
+            unzip -q "$temp_root/outer/TC.zip" -d "$temp_root/inner"
+          fi
+
+          shopt -s globstar nullglob
+          candidates=(
+            "$temp_root"/**/TC/BIN/TCC.EXE
+            "$temp_root"/**/tc/BIN/TCC.EXE
+            "$temp_root"/**/TC/bin/TCC.EXE
+            "$temp_root"/**/tc/bin/TCC.EXE
+          )
+
+          if [ "${#candidates[@]}" -eq 0 ]; then
+            echo "Turbo C toolchain not found after extraction."
+            exit 1
+          fi
+
+          tc_dir="$(dirname "$(dirname "${candidates[0]}")")"
+          cp -R "$tc_dir" ./TC
+
+          if [ ! -f TC/BIN/TCC.EXE ]; then
+            echo "TC/BIN/TCC.EXE missing after copy."
+            exit 1
+          fi
+
+      - name: Build with DOSBox-X
+        run: |
+          dosbox-x -nogui -exit \
+            -c "mount c $GITHUB_WORKSPACE" \
+            -c "c:" \
+            -c "call ADDPATH.BAT" \
+            -c "BUILD.BAT"
+
+      - name: Verify build output
+        run: test -f CRUZKAN.EXE
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CRUZKAN-EXE
+          path: CRUZKAN.EXE
