@@ -2,8 +2,13 @@ name: Build DOS Executable
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -20,7 +25,7 @@ jobs:
           key: tczip-v1-md5-1a611cedec6bfd02c5d848bc5811ad74
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y dosbox-x unzip
+        run: sudo apt-get update && sudo apt-get install -y dosbox-x unzip zip
 
       - name: Download and extract Turbo C
         shell: bash
@@ -82,10 +87,64 @@ jobs:
       - name: Verify build output
         run: test -f CRUZKAN.EXE
 
+      - name: Build distributable zip
+        run: zip -j cruzkan.zip CRUZKAN.EXE *.wav
+
       - name: Upload game artifact
         uses: actions/upload-artifact@v4
         with:
           name: CRUZKAN-game
           path: |
+            cruzkan.zip
             CRUZKAN.EXE
             *.wav
+
+  deploy-site:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CRUZKAN-game
+          path: .artifact
+
+      - name: Publish cruzkan.zip to site branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cp .artifact/cruzkan.zip /tmp/cruzkan.zip
+
+          if git ls-remote --exit-code --heads origin site >/dev/null; then
+            git fetch origin site:refs/remotes/origin/site
+            git switch --create site --track origin/site 2>/dev/null || git switch site
+          elif git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch origin gh-pages:refs/remotes/origin/gh-pages
+            git switch --detach origin/gh-pages
+            git switch -C site
+          else
+            git switch --orphan site
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+
+          cp /tmp/cruzkan.zip ./cruzkan.zip
+
+          git add cruzkan.zip
+
+          if git diff --cached --quiet; then
+            echo "No site artifact changes to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update cruzkan.zip from ${GITHUB_SHA::7}"
+          git push origin site
