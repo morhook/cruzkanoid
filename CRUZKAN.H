@@ -27,6 +27,11 @@
 #define MAX_LASER_SHOTS 8
 #define PADDLE_WIDTH_GROW (PADDLE_WIDTH + 12)
 #define PADDLE_WIDTH_SHRINK (PADDLE_WIDTH - 12)
+#define MONSTER_WIDTH 24
+#define MONSTER_HEIGHT 16
+#define MONSTER_HP 3
+#define MONSTER_SPEED 2
+#define MONSTER_PALETTE_START 67
 
 typedef struct
 {
@@ -65,5 +70,12 @@ typedef struct
     int hp;
     int gives_life;
 } Brick;
+
+typedef struct
+{
+    int x, y;
+    int hp;
+    int active;
+} Monster;
 
 #endif /* CRUZKAN_H */

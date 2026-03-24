@@ -20,7 +20,7 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
-#define MAX_LEVELS 15
+#define MAX_LEVELS 16
 #define LIFE_POWERUP_CHANCE 2
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
@@ -76,6 +76,9 @@ static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
 
     /* 15: Final - all bricks */
     {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF},
+
+    /* 16: Monster level - sparse top rows, monster is the main threat */
+    {0x3FF, 0x000, 0x3FF, 0x000, 0x000, 0x000, 0x000, 0x000},
 };
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
@@ -100,6 +103,11 @@ static int brick_field_x1 = 0;
 static int brick_field_y1 = 0;
 static int brick_field_x2 = 0;
 static int brick_field_y2 = 0;
+
+Monster monster;
+static int old_monster_x = 0;
+static int old_monster_y = 0;
+static int old_monster_active = 0;
 
 static int key_vx = 0;
 static int key_offset = 0;
@@ -315,6 +323,24 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
             continue;
         }
 
+        /* Monster collision */
+        if (monster.active &&
+            laser_shots[i].x >= monster.x &&
+            laser_shots[i].x < monster.x + MONSTER_WIDTH &&
+            laser_shots[i].y >= monster.y &&
+            laser_shots[i].y < monster.y + MONSTER_HEIGHT)
+        {
+            monster.hp--;
+            if (monster.hp <= 0)
+            {
+                monster.active = 0;
+                score += 100;
+            }
+            laser_shots[i].active = 0;
+            audio_event_brick(0);
+            continue;
+        }
+
         for (row = 0; row < BRICK_ROWS; row++)
         {
             for (col = 0; col < BRICK_COLS; col++)
@@ -509,6 +535,118 @@ void update_life_pill()
     }
 }
 
+void update_monster()
+{
+    int target_x;
+    int center;
+
+    if (!monster.active)
+        return;
+
+    /* Track paddle center: slide toward paddle center at MONSTER_SPEED */
+    center = paddle.x + paddle.width / 2 - MONSTER_WIDTH / 2;
+    if (monster.x < center)
+    {
+        monster.x += MONSTER_SPEED;
+        if (monster.x > center)
+            monster.x = center;
+    }
+    else if (monster.x > center)
+    {
+        monster.x -= MONSTER_SPEED;
+        if (monster.x < center)
+            monster.x = center;
+    }
+
+    /* Clamp to screen */
+    if (monster.x < 2)
+        monster.x = 2;
+    if (monster.x + MONSTER_WIDTH > SCREEN_WIDTH - 2)
+        monster.x = SCREEN_WIDTH - 2 - MONSTER_WIDTH;
+
+    (void)target_x;
+}
+
+/* Check ball vs monster collision. Returns 1 if hit. */
+int check_monster_collision(Ball *ball, float prev_ball_x, float prev_ball_y)
+{
+    int radius = BALL_SIZE / 2;
+    int mx, my, mw, mh;
+    int from_top, from_bottom, from_left, from_right;
+    int hit_axis;
+
+    if (!monster.active)
+        return 0;
+
+    mx = monster.x;
+    my = monster.y;
+    mw = MONSTER_WIDTH;
+    mh = MONSTER_HEIGHT;
+
+    if (ball->x + radius <= mx || ball->x - radius >= mx + mw ||
+        ball->y + radius <= my || ball->y - radius >= my + mh)
+        return 0;
+
+    /* Determine which face was hit */
+    from_left   = (prev_ball_x + radius <= mx) && (ball->x + radius > mx);
+    from_right  = (prev_ball_x - radius >= mx + mw) && (ball->x - radius < mx + mw);
+    from_top    = (prev_ball_y + radius <= my) && (ball->y + radius > my);
+    from_bottom = (prev_ball_y - radius >= my + mh) && (ball->y - radius < my + mh);
+
+    if (from_left || from_right)
+        hit_axis = 1; /* flip dx */
+    else if (from_top || from_bottom)
+        hit_axis = 0; /* flip dy */
+    else
+    {
+        /* Corner: resolve by minimum overlap */
+        int ol = (int)(ball->x + radius) - mx;
+        int or2 = (mx + mw) - (int)(ball->x - radius);
+        int ot = (int)(ball->y + radius) - my;
+        int ob = (my + mh) - (int)(ball->y - radius);
+        int min_x = (ol < or2) ? ol : or2;
+        int min_y = (ot < ob) ? ot : ob;
+        hit_axis = (min_x < min_y) ? 1 : 0;
+    }
+
+    /* Deflect ball */
+    if (hit_axis)
+    {
+        ball->dx = -ball->dx;
+        /* Add slight random perturbation to dx to prevent loops */
+        ball->dx += (float)((rand() % 3) - 1) * 0.5f;
+        if (ball->dx == 0.0f)
+            ball->dx = 1.0f;
+        /* Reposition */
+        if (prev_ball_x + radius <= mx)
+            ball->x = (float)(mx - radius);
+        else
+            ball->x = (float)(mx + mw + radius);
+    }
+    else
+    {
+        ball->dy = -ball->dy;
+        ball->dx += (float)((rand() % 3) - 1) * 0.5f;
+        if (ball->dx == 0.0f)
+            ball->dx = 1.0f;
+        /* Reposition */
+        if (prev_ball_y + radius <= my)
+            ball->y = (float)(my - radius);
+        else
+            ball->y = (float)(my + mh + radius);
+    }
+
+    /* Damage monster */
+    monster.hp--;
+    if (monster.hp <= 0)
+    {
+        monster.active = 0;
+        score += 100;
+    }
+
+    return 1;
+}
+
 void init_brick_palette()
 {
     /* Each row gets 3 shades: base, light, dark (RGB values are 0-63). */
@@ -580,6 +718,14 @@ void init_pill_palette()
     set_palette_color(PILL_COLOR_GLYPH, 63, 63, 63);  /* glyph */
 }
 
+void init_monster_palette()
+{
+    /* Monster colors (indices 67-69): sickly green body. RGB values are 0-63. */
+    set_palette_color(MONSTER_PALETTE_START + 0, 10, 45, 10); /* base green */
+    set_palette_color(MONSTER_PALETTE_START + 1, 20, 63, 20); /* light green */
+    set_palette_color(MONSTER_PALETTE_START + 2,  4, 20,  4); /* dark green */
+}
+
 void init_bricks(int level)
 {
     int i, j;
@@ -622,8 +768,8 @@ void init_level(int level)
     int track;
     current_level = level;
 
-    /* Each level gets its own music track (tracks 0-14). */
-    track = (level >= 1 && level <= MAX_LEVELS) ? (level - 1) : 0;
+    /* Each level gets its own music track (tracks 0-14, capped). */
+    track = (level >= 1 && level <= 15) ? (level - 1) : 0;
     audio_music_set_track(track);
     audio_music_restart();
 
@@ -631,6 +777,24 @@ void init_level(int level)
     launch_requested = 0;
     reset_paddle();
     reset_life_pill();
+
+    /* Init monster for level 16 only */
+    if (level == 16)
+    {
+        monster.active = 1;
+        monster.hp = MONSTER_HP;
+        monster.x = SCREEN_WIDTH / 2 - MONSTER_WIDTH / 2;
+        monster.y = 130;
+    }
+    else
+    {
+        monster.active = 0;
+        monster.hp = 0;
+        monster.x = 0;
+        monster.y = 0;
+    }
+
+    old_monster_active = 0;
 
     init_bricks(level);
 }
@@ -1061,6 +1225,13 @@ int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
             ball->dx = 1.0f;
     }
 
+    /* Monster collision */
+    if (check_monster_collision(ball, prev_ball_x, prev_ball_y))
+    {
+        increase_ball_speed(ball);
+        audio_event_wall();
+    }
+
     if (check_brick_collision(ball, prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
     {
         brick_collided = 1;
@@ -1141,6 +1312,9 @@ int check_win()
             }
         }
     }
+    /* Level 16: also require the monster to be defeated */
+    if (current_level == 16 && monster.active)
+        return 0;
     return 1;
 }
 
@@ -1281,6 +1455,8 @@ void game_loop()
                     if (laser_shots[i].active)
                         draw_laser_shot(laser_shots[i]);
                 }
+                if (monster.active)
+                    draw_monster(monster);
                 draw_ui(score, lives, current_level);
                 if (paused)
                 {
@@ -1306,6 +1482,9 @@ void game_loop()
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
             old_pill_active = life_pill.active;
+            old_monster_x = monster.x;
+            old_monster_y = monster.y;
+            old_monster_active = monster.active;
             for (i = 0; i < MAX_LASER_SHOTS; i++)
             {
                 old_laser_active[i] = laser_shots[i].active;
@@ -1376,6 +1555,7 @@ void game_loop()
                 if (!spawned_this_frame)
                     update_life_pill();
 
+                update_monster();
                 update_laser_shots(destroyed_brick_x, destroyed_brick_y, &destroyed_brick_count);
             }
             else
@@ -1426,6 +1606,15 @@ void game_loop()
                 redraw_bricks_in_area(x1, y1, x2, y2);
             }
 
+            /* Erase monster old position */
+            if (old_monster_active)
+            {
+                erase_monster_with_background(old_monster_x, old_monster_y);
+                redraw_bricks_in_area(old_monster_x - 1, old_monster_y - 3,
+                                      old_monster_x + MONSTER_WIDTH + 1,
+                                      old_monster_y + MONSTER_HEIGHT + 1);
+            }
+
             /* Erase destroyed bricks */
             for (i = 0; i < destroyed_brick_count; i++)
             {
@@ -1446,6 +1635,8 @@ void game_loop()
                 if (laser_shots[i].active)
                     draw_laser_shot(laser_shots[i]);
             }
+            if (monster.active)
+                draw_monster(monster);
 
             /* Redraw UI (borders, score, lives) */
             draw_ui(score, lives, current_level);
@@ -1511,6 +1702,7 @@ int main()
     init_paddle_palette();
     init_pink_palette();
     init_pill_palette();
+    init_monster_palette();
     audio_init();
     mouse_init();
 

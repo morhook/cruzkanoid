@@ -882,6 +882,134 @@ void far erase_rect_with_background(int x, int y, int width, int height)
 }
 
 
+void far draw_monster(Monster monster)
+{
+    int i, j;
+    int x = monster.x;
+    int y = monster.y;
+    int w = MONSTER_WIDTH;
+    int h = MONSTER_HEIGHT;
+    unsigned char body_color  = MONSTER_PALETTE_START + 0;
+    unsigned char light_color = MONSTER_PALETTE_START + 1;
+    unsigned char dark_color  = MONSTER_PALETTE_START + 2;
+    unsigned char eye_color   = 15; /* white eyes */
+    unsigned char pupil_color = 0;  /* black pupils */
+    unsigned char tooth_color = 15; /* white teeth */
+    int hp = monster.hp;
+
+    /* Body fill */
+    for (i = 1; i < h - 1; i++)
+    {
+        for (j = 1; j < w - 1; j++)
+        {
+            unsigned char c = body_color;
+            /* Top highlight row */
+            if (i == 1)
+                c = light_color;
+            /* Bottom shadow row */
+            else if (i == h - 2)
+                c = dark_color;
+            put_pixel(x + j, y + i, c);
+        }
+    }
+
+    /* Border */
+    for (j = 0; j < w; j++)
+    {
+        put_pixel(x + j, y,         dark_color);
+        put_pixel(x + j, y + h - 1, dark_color);
+    }
+    for (i = 0; i < h; i++)
+    {
+        put_pixel(x,         y + i, dark_color);
+        put_pixel(x + w - 1, y + i, dark_color);
+    }
+
+    /* Spiky top — three upward spikes */
+    put_pixel(x + 4,  y - 1, dark_color);
+    put_pixel(x + 4,  y - 2, body_color);
+    put_pixel(x + 11, y - 1, dark_color);
+    put_pixel(x + 11, y - 2, body_color);
+    put_pixel(x + 11, y - 3, body_color);
+    put_pixel(x + 18, y - 1, dark_color);
+    put_pixel(x + 18, y - 2, body_color);
+
+    /* Eyes — two 3x2 white rectangles */
+    /* Left eye */
+    put_pixel(x + 4, y + 3, eye_color);
+    put_pixel(x + 5, y + 3, eye_color);
+    put_pixel(x + 6, y + 3, eye_color);
+    put_pixel(x + 4, y + 4, eye_color);
+    put_pixel(x + 5, y + 4, eye_color);
+    put_pixel(x + 6, y + 4, eye_color);
+    /* Left pupil */
+    put_pixel(x + 5, y + 4, pupil_color);
+
+    /* Right eye */
+    put_pixel(x + 16, y + 3, eye_color);
+    put_pixel(x + 17, y + 3, eye_color);
+    put_pixel(x + 18, y + 3, eye_color);
+    put_pixel(x + 16, y + 4, eye_color);
+    put_pixel(x + 17, y + 4, eye_color);
+    put_pixel(x + 18, y + 4, eye_color);
+    /* Right pupil */
+    put_pixel(x + 17, y + 4, pupil_color);
+
+    /* Angry eyebrows (slant inward) */
+    put_pixel(x + 4,  y + 2, dark_color);
+    put_pixel(x + 5,  y + 2, dark_color);
+    put_pixel(x + 6,  y + 1, dark_color);
+    put_pixel(x + 16, y + 1, dark_color);
+    put_pixel(x + 17, y + 2, dark_color);
+    put_pixel(x + 18, y + 2, dark_color);
+
+    /* Mouth — jagged teeth row, width varies with hp */
+    {
+        int mouth_y = y + h - 4;
+        int tooth_gap;
+
+        /* Draw a row of teeth; fewer teeth as hp decreases */
+        if (hp >= 3)
+        {
+            /* Full set: 3 teeth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            /* Tooth tips */
+            put_pixel(x + 5,  mouth_y - 1, tooth_color);
+            put_pixel(x + 6,  mouth_y - 1, tooth_color);
+            put_pixel(x + 11, mouth_y - 1, tooth_color);
+            put_pixel(x + 12, mouth_y - 1, tooth_color);
+            put_pixel(x + 17, mouth_y - 1, tooth_color);
+            put_pixel(x + 18, mouth_y - 1, tooth_color);
+        }
+        else if (hp == 2)
+        {
+            /* Damaged: 2 teeth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            put_pixel(x + 7,  mouth_y - 1, tooth_color);
+            put_pixel(x + 8,  mouth_y - 1, tooth_color);
+            put_pixel(x + 15, mouth_y - 1, tooth_color);
+            put_pixel(x + 16, mouth_y - 1, tooth_color);
+        }
+        else
+        {
+            /* Nearly dead: cracked mouth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            put_pixel(x + 11, mouth_y - 1, tooth_color);
+            put_pixel(x + 12, mouth_y - 1, tooth_color);
+        }
+        (void)tooth_gap;
+    }
+}
+
+void far erase_monster_with_background(int x, int y)
+{
+    /* +3 above for spikes */
+    draw_background_area(x - 1, y - 3, x + MONSTER_WIDTH + 1, y + MONSTER_HEIGHT + 1);
+}
+
 void draw_brick(int x, int y, int width, int height, unsigned char base_color)
 {
     int i, j;
