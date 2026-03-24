@@ -166,5 +166,5 @@ jobs:
 
       - name: Push to itch.io
         env:
-          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
         run: butler push .artifact/cruzkan.zip morhook/cruzkanoid:dos-windows
