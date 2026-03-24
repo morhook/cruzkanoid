@@ -12,7 +12,7 @@
 
 #define BRICK_WIDTH 30
 #define BRICK_HEIGHT 10
-#define BRICK_ROWS 6
+#define BRICK_ROWS 8
 #define BRICK_COLS 10
 #define BRICK_GAP 2
 #define BRICK_PALETTE_START 32
@@ -20,7 +20,7 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
-#define MAX_LEVELS 10
+#define MAX_LEVELS 15
 #define LIFE_POWERUP_CHANCE 2
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
@@ -29,18 +29,53 @@
 #define MAX_BRICKS_DESTROYED_PER_FRAME (MAX_BALLS + MAX_LASER_SHOTS)
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
-    {
-        /* Each row uses 10 bits (bit j => column j). */
-        /*  1 */ {0x3FF, 0x2AA, 0x155, 0x2AA, 0x3FF, 0},
-        /*  2 */ {0x3FF, 0x201, 0x201, 0x201, 0x3FF, 0},
-        /*  3 */ {0x155, 0x155, 0x155, 0x155, 0x155, 0},
-        /*  4 */ {0x303, 0x0CC, 0x030, 0x0CC, 0x303, 0},
-        /*  5 */ {0x030, 0x078, 0x0FC, 0x1FE, 0x3FF, 0},
-        /*  6 */ {0x3CF, 0x3CF, 0x201, 0x3CF, 0x3CF, 0},
-        /*  7 */ {0x01F, 0x03F, 0x07F, 0x0FF, 0x1FF, 0},
-        /*  8 */ {0x2DB, 0x36D, 0x1B6, 0x36D, 0x2DB, 0},
-        /*  9 */ {0x0FC, 0x3CF, 0x2AA, 0x3CF, 0x0FC, 0},
-        /* 10 */ {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0X3FF},
+{
+    /* Each row uses 10 bits (bit j => column j). 8 rows per level. */
+
+    /*  1: Bordered diamond - classic opener */
+    {0x3FF, 0x2AA, 0x155, 0x2AA, 0x155, 0x2AA, 0x3FF, 0},
+
+    /*  2: Hollow rectangle */
+    {0x3FF, 0x201, 0x201, 0x201, 0x201, 0x201, 0x3FF, 0},
+
+    /*  3: Alternating stripes */
+    {0x155, 0x2AA, 0x155, 0x2AA, 0x155, 0x2AA, 0x155, 0},
+
+    /*  4: Diamond cross */
+    {0x084, 0x1CE, 0x3FF, 0x1CE, 0x084, 0x1CE, 0x3FF, 0},
+
+    /*  5: Staircase left-to-right */
+    {0x001, 0x003, 0x007, 0x00F, 0x01F, 0x03F, 0x07F, 0x0FF},
+
+    /*  6: X pattern */
+    {0x201, 0x102, 0x084, 0x048, 0x048, 0x084, 0x102, 0x201},
+
+    /*  7: Plus / cross */
+    {0x040, 0x040, 0x040, 0x3FF, 0x3FF, 0x040, 0x040, 0x040},
+
+    /*  8: Checkerboard dense */
+    {0x2DB, 0x36D, 0x1B6, 0x2DB, 0x36D, 0x1B6, 0x2DB, 0x36D},
+
+    /*  9: V-shape / arrowhead pointing up */
+    {0x201, 0x102, 0x084, 0x048, 0x030, 0x048, 0x084, 0x102},
+
+    /* 10: Hourglass */
+    {0x3FF, 0x1FE, 0x0FC, 0x078, 0x078, 0x0FC, 0x1FE, 0x3FF},
+
+    /* 11: Spiral inward */
+    {0x3FF, 0x201, 0x27F, 0x241, 0x25F, 0x250, 0x270, 0x3FF},
+
+    /* 12: Two separate boxes */
+    {0x1E0, 0x120, 0x120, 0x1E0, 0x01E, 0x012, 0x012, 0x01E},
+
+    /* 13: Castle battlements */
+    {0x3FF, 0x249, 0x3FF, 0x201, 0x201, 0x3FF, 0x249, 0x3FF},
+
+    /* 14: Random scatter / dense noise */
+    {0x2D6, 0x16B, 0x3AD, 0x1DA, 0x2B5, 0x16A, 0x3D6, 0x2AB},
+
+    /* 15: Final - all bricks */
+    {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF},
 };
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
@@ -501,6 +536,21 @@ void init_brick_palette()
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 0, 10, 20, 55);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 1, 28, 40, 63);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 2, 5, 10, 30);
+
+    /* Row 5: orange */
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 0, 55, 30, 0);
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 1, 63, 48, 14);
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 2, 30, 14, 0);
+
+    /* Row 6: cyan */
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 0, 5, 50, 50);
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 1, 20, 63, 63);
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 2, 2, 25, 25);
+
+    /* Row 7: purple */
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 0, 38, 10, 55);
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 1, 52, 28, 63);
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 2, 18, 4, 28);
 }
 
 void init_paddle_palette()
@@ -513,11 +563,12 @@ void init_paddle_palette()
 
 void init_pink_palette()
 {
-    /* Pink colors for heart background (indices 52-54). RGB values are 0-63. */
-    set_palette_color(52, 63, 32, 48); /* Light pink */
-    set_palette_color(53, 55, 15, 35); /* Medium pink */
-    set_palette_color(54, 40, 8, 20);  /* Dark pink */
-    set_palette_color(55, 63, 63, 63);  /* White */
+    /* Pink colors for heart background (indices 59-62). RGB values are 0-63.
+       Moved from 52-55 to avoid collision with brick row 5-7 palette (47-55). */
+    set_palette_color(59, 63, 32, 48); /* Light pink */
+    set_palette_color(60, 55, 15, 35); /* Medium pink */
+    set_palette_color(61, 40, 8, 20);  /* Dark pink */
+    set_palette_color(62, 63, 63, 63); /* White */
 }
 
 void init_pill_palette()
@@ -568,19 +619,13 @@ void init_bricks(int level)
 
 void init_level(int level)
 {
+    int track;
     current_level = level;
 
-    /* Switch music for level 2 only */
-    if (level == 2)
-    {
-        audio_music_set_track(1);
-        audio_music_restart();
-    }
-    else
-    {
-        audio_music_set_track(0);
-        audio_music_restart();
-    }
+    /* Each level gets its own music track (tracks 0-14). */
+    track = (level >= 1 && level <= MAX_LEVELS) ? (level - 1) : 0;
+    audio_music_set_track(track);
+    audio_music_restart();
 
     ball_stuck = 1;
     launch_requested = 0;

@@ -746,10 +746,14 @@ void far draw_background()
     int heart_size = 9;
     int spacing = heart_size + 1;
     int offset = heart_size / 2;
-    unsigned char base_color = 52;
+    /* Pink palette now lives at indices 59-62 (moved from 52-55).
+       base_color = 59 (light pink), variants at 60 and 61. */
+    unsigned char base_color = 59;
 
-    /* Level 2 has a black background */
-    if (current_level == 2)
+    /* Level 2 and levels 6-10: plain black background */
+    /* Levels 11-15: dark blue tint background */
+    /* Levels 1, 3-5: pink heart background (default) */
+    if (current_level == 2 || (current_level >= 6 && current_level <= 10))
     {
         draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
@@ -762,9 +766,24 @@ void far draw_background()
         return;
     }
 
+    if (current_level >= 11)
+    {
+        /* Deep navy / dark blue tint */
+        draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+
+        if (!background_buffer)
+        {
+            background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
+        }
+
+        capture_background();
+        return;
+    }
+
+    /* Levels 1-5: pink heart background. */
     /* Clear to base color so hearts don't stack or leave artifacts. */
     draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
-    
+
     if (!background_buffer)
     {
         background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -775,7 +794,7 @@ void far draw_background()
         for (x = offset; x + heart_size - 1 < SCREEN_WIDTH; x += spacing)
         {
             /* Vary heart colors for visual interest */
-            unsigned char color = 52 + ((x + y) / spacing) % 3;
+            unsigned char color = 59 + ((x + y) / spacing) % 3;
             draw_heart(x, y, heart_size, color + 1);
         }
     }
@@ -788,9 +807,9 @@ unsigned char get_heart_color(int x, int y)
 {
     int heart_size = 8;
     int spacing = heart_size - 2;
-    
-    /* Use the same formula as the original background */
-    return 52 + ((x + y) / spacing) % 3;
+
+    /* Pink palette now at 59-61 (moved from 52-54). */
+    return 59 + ((x + y) / spacing) % 3;
 }
 
 void far draw_background_area(int x1, int y1, int x2, int y2)
