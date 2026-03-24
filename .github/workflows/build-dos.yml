@@ -148,3 +148,23 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -m "Update cruzkan.zip from ${GITHUB_SHA::7}"
           git push origin site
+
+  deploy-itch:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CRUZKAN-game
+          path: .artifact
+
+      - name: Setup butler
+        uses: remarkablegames/setup-butler@v1
+
+      - name: Push to itch.io
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+        run: butler push .artifact/cruzkan.zip morhook/cruzkanoid:dos-windows
