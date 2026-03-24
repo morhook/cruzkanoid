@@ -441,6 +441,38 @@ static const MusicNote music_track15[] = {
     {NOTE_C4, 880}, {0, 880},
     {0, 0}};
 
+/* Track 16 - Victory / credits theme: bright, celebratory, looping */
+static const MusicNote music_track16[] = {
+    /* Fanfare opener */
+    {NOTE_C5, 110}, {NOTE_E5, 110}, {NOTE_G5, 110}, {NOTE_C5, 110},
+    {NOTE_E5, 110}, {NOTE_G5, 110}, {NOTE_C5, 220}, {0, 110},
+    {NOTE_G4, 110}, {NOTE_B4, 110}, {NOTE_D5, 110}, {NOTE_G4, 110},
+    {NOTE_B4, 110}, {NOTE_D5, 110}, {NOTE_G4, 220}, {0, 110},
+    /* Happy arpeggio run */
+    {NOTE_C5, 70},  {NOTE_D5, 70},  {NOTE_E5, 70},  {NOTE_F5, 70},
+    {NOTE_G5, 70},  {NOTE_A5, 70},  {NOTE_B5, 70},  {NOTE_C5, 70},
+    {NOTE_B5, 70},  {NOTE_A5, 70},  {NOTE_G5, 70},  {NOTE_F5, 70},
+    {NOTE_E5, 70},  {NOTE_D5, 70},  {NOTE_C5, 140}, {0, 70},
+    /* Melody A */
+    {NOTE_E5, 220}, {NOTE_G5, 220}, {NOTE_A5, 440}, {0, 110},
+    {NOTE_D5, 220}, {NOTE_F5, 220}, {NOTE_G5, 440}, {0, 110},
+    {NOTE_C5, 220}, {NOTE_E5, 220}, {NOTE_G5, 220}, {NOTE_E5, 220},
+    {NOTE_C5, 440}, {0, 220},
+    /* Bridge - bouncy */
+    {NOTE_G4, 110}, {NOTE_C5, 110}, {NOTE_E5, 110}, {NOTE_G5, 110},
+    {NOTE_E5, 110}, {NOTE_C5, 110}, {NOTE_G4, 220}, {0, 110},
+    {NOTE_F4, 110}, {NOTE_A4, 110}, {NOTE_C5, 110}, {NOTE_F5, 110},
+    {NOTE_C5, 110}, {NOTE_A4, 110}, {NOTE_F4, 220}, {0, 110},
+    /* Melody B - triumphant */
+    {NOTE_G5, 330}, {NOTE_E5, 110}, {NOTE_C5, 220}, {NOTE_E5, 220},
+    {NOTE_G5, 440}, {0, 110},
+    {NOTE_A5, 330}, {NOTE_F5, 110}, {NOTE_D5, 220}, {NOTE_F5, 220},
+    {NOTE_A5, 440}, {0, 110},
+    /* Tail - quick run back to top */
+    {NOTE_B5, 70},  {NOTE_A5, 70},  {NOTE_G5, 70},  {NOTE_F5, 70},
+    {NOTE_E5, 70},  {NOTE_D5, 70},  {NOTE_C5, 140}, {0, 140},
+    {0, 0}};
+
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
 static unsigned int opl_addr0 = 0x388;
@@ -963,6 +995,7 @@ void far music_set_track(int track_index)
         case 12: active_track = music_track13; break;
         case 13: active_track = music_track14; break;
         case 14: active_track = music_track15; use_drum_mute = 0; break;
+        case 15: active_track = music_track16; use_drum_mute = 0; break;
         default: active_track = music_track;   break;
     }
 

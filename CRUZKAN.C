@@ -1234,6 +1234,172 @@ void intro_scene()
     clear_screen(0);
 }
 
+static void credits_scene(int final_score)
+{
+    /* Credits lines - all chars are in font */
+    static char *credits_lines[] = {
+        "YOU WIN!!!",
+        "",
+        "Final Score:",
+        "",          /* filled with score at runtime */
+        "",
+        "- CRUZKANOID -",
+        "",
+        "Thanks to my wife,",
+        "daughters and my dog",
+        "for supporting",
+        "my channel.",
+        "",
+        "Also thanks to",
+        "subscribers for",
+        "making it possible",
+        "to buy new games.",
+        "",
+        "10 pushups per",
+        "subscription!!!",
+        "",
+        "twitch.tv/morhook",
+        "",
+        "",
+        "Press any key",
+        "to play again"
+    };
+    static char score_str[24];
+    /* Heart animation state */
+    int hx[6], hy[6], hdx[6], hdy[6];
+    int i, j;
+    /* Scrolling state */
+    int line_count;
+    int line_y[25]; /* max lines */
+    int scroll_done;
+    int last_line_y;
+    char *txt;
+    int txt_len, txt_x;
+    /* Palette for rainbow text cycling */
+    unsigned char text_color;
+    int frame;
+
+    /* Fill in the score line */
+    sprintf(score_str, "%d", final_score);
+    credits_lines[3] = score_str;
+
+    line_count = 25;
+
+    /* Initial Y positions: stack lines below screen, 12px apart */
+    for (i = 0; i < line_count; i++)
+        line_y[i] = 210 + i * 12;
+
+    /* Init hearts: spread across screen with bouncy velocities */
+    hx[0] = 40;  hy[0] = 50;  hdx[0] =  2; hdy[0] =  1;
+    hx[1] = 100; hy[1] = 120; hdx[1] = -1; hdy[1] =  2;
+    hx[2] = 200; hy[2] = 30;  hdx[2] =  2; hdy[2] = -1;
+    hx[3] = 260; hy[3] = 90;  hdx[3] = -2; hdy[3] =  2;
+    hx[4] = 160; hy[4] = 160; hdx[4] =  1; hdy[4] = -2;
+    hx[5] = 80;  hy[5] = 180; hdx[5] = -1; hdy[5] = -1;
+
+    /* Start victory music */
+    audio_music_set_track(15);
+    audio_music_restart();
+
+    clear_screen(0);
+    frame = 0;
+
+    scroll_done = 0;
+    while (!scroll_done)
+    {
+        /* Check for keypress to exit */
+        if (kbhit())
+        {
+            getch();
+            break;
+        }
+
+        wait_vblank();
+
+        /* Erase hearts by drawing black circles in old position */
+        for (i = 0; i < 6; i++)
+            draw_filled_rect(hx[i] - 6, hy[i] - 6, 14, 14, 0);
+
+        /* Move hearts and bounce off edges */
+        for (i = 0; i < 6; i++)
+        {
+            hx[i] += hdx[i];
+            hy[i] += hdy[i];
+            if (hx[i] < 6  || hx[i] > 313) { hdx[i] = -hdx[i]; hx[i] += hdx[i]; }
+            if (hy[i] < 6  || hy[i] > 193) { hdy[i] = -hdy[i]; hy[i] += hdy[i]; }
+        }
+
+        /* Scroll lines up by 1 pixel */
+        for (i = 0; i < line_count; i++)
+            line_y[i]--;
+
+        /* Black out the whole screen text area each frame to avoid smearing */
+        draw_filled_rect(0, 0, 320, 200, 0);
+
+        /* Draw hearts */
+        for (i = 0; i < 6; i++)
+        {
+            /* Cycle colors: red, pink, yellow, cyan, green, white */
+            unsigned char hcol;
+            switch (i % 6) {
+                case 0: hcol = 4;  break; /* red */
+                case 1: hcol = 13; break; /* bright magenta/pink */
+                case 2: hcol = 14; break; /* yellow */
+                case 3: hcol = 11; break; /* cyan */
+                case 4: hcol = 10; break; /* bright green */
+                default: hcol = 15; break; /* white */
+            }
+            draw_heart(hx[i], hy[i], 5, hcol);
+        }
+
+        /* Draw visible credit lines */
+        for (i = 0; i < line_count; i++)
+        {
+            int y = line_y[i];
+            if (y < -8 || y > 200)
+                continue;
+            txt = credits_lines[i];
+            if (txt[0] == '\0')
+                continue;
+
+            /* Center the text: each char is 8px wide */
+            txt_len = 0;
+            j = 0;
+            while (txt[j] != '\0') { txt_len++; j++; }
+            txt_x = (320 - txt_len * 8) / 2;
+            if (txt_x < 0) txt_x = 0;
+
+            /* Alternate line colors for variety */
+            switch (i % 5) {
+                case 0: text_color = 15; break; /* white */
+                case 1: text_color = 14; break; /* yellow */
+                case 2: text_color = 11; break; /* cyan */
+                case 3: text_color = 13; break; /* magenta */
+                default: text_color = 10; break; /* green */
+            }
+            /* First two lines always bright white */
+            if (i == 0) text_color = 15;
+
+            draw_text_transparent(txt_x, y, txt, text_color);
+        }
+
+        audio_update();
+
+        /* Done when last line has scrolled off the top */
+        last_line_y = line_y[line_count - 1];
+        if (last_line_y < -8)
+            scroll_done = 1;
+
+        frame++;
+    }
+
+    /* Drain keyboard */
+    while (kbhit()) getch();
+
+    audio_music_stop();
+    clear_screen(0);
+}
+
 void game_loop()
 {
     char buffer[50];
@@ -1479,29 +1645,27 @@ void game_loop()
 
     audio_music_stop();
 
-    clear_screen(0);
-    draw_background();
     if (lives == 0)
     {
+        clear_screen(0);
+        draw_background();
         draw_text(110, 90, "GAME OVER!");
+        sprintf(buffer, "Final Score: %d", score);
+        draw_text(90, 105, buffer);
+        draw_text(70, 120, "Press any key to restart");
+        delay(2000);
+        while (!kbhit())
+        {
+            audio_update();
+            delay(20);
+        }
+        getch();
+        drain_keyboard_buffer();
     }
     else
     {
-        draw_text(120, 90, "YOU WIN!");
+        credits_scene(score);
     }
-
-    sprintf(buffer, "Final Score: %d", score);
-    draw_text(90, 105, buffer);
-    draw_text(70, 120, "Press any key to restart");
-    delay(2000);
-
-    while (!kbhit())
-    {
-        audio_update();
-        delay(20);
-    }
-    getch();
-    drain_keyboard_buffer();
 }
 
 int main()

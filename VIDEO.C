@@ -263,7 +263,7 @@ void far erase_paddle(int x, Paddle paddle)
 
 static unsigned char *get_font_char(char c)
 {
-    static unsigned char font_data[47][7] = {
+    static unsigned char font_data[68][7] = {
         /* 0 */ {0x70, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
         /* 1 */ {0x20, 0x60, 0x20, 0x20, 0x20, 0x20, 0x70},
         /* 2 */ {0x70, 0x88, 0x08, 0x10, 0x20, 0x40, 0xF8},
@@ -310,6 +310,24 @@ static unsigned char *get_font_char(char c)
         /* D */ {0xF0, 0x88, 0x88, 0x88, 0x88, 0x88, 0xF0},
         /* K */ {0x88, 0x98, 0xA8, 0xC0, 0xA8, 0x98, 0x88},
         /* Z */ {0xF8, 0x08, 0x10, 0x20, 0x40, 0x80, 0xF8},
+        /* B */ {0xF0, 0x88, 0x88, 0xF0, 0x88, 0x88, 0xF0},
+        /* H */ {0x88, 0x88, 0x88, 0xF8, 0x88, 0x88, 0x88},
+        /* T */ {0xF8, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20},
+        /* ! */ {0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x20},
+        /* / */ {0x08, 0x10, 0x10, 0x20, 0x40, 0x40, 0x80},
+        /* . */ {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20},
+        /* , */ {0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x40},
+        /* b */ {0x80, 0x80, 0xF0, 0x88, 0x88, 0x88, 0xF0},
+        /* d */ {0x08, 0x08, 0x78, 0x88, 0x88, 0x88, 0x78},
+        /* f */ {0x18, 0x20, 0x70, 0x20, 0x20, 0x20, 0x20},
+        /* g */ {0x00, 0x00, 0x78, 0x88, 0x88, 0x78, 0x08, },
+        /* h */ {0x80, 0x80, 0xF0, 0x88, 0x88, 0x88, 0x88},
+        /* m */ {0x00, 0x00, 0xD8, 0xA8, 0xA8, 0xA8, 0x88},
+        /* p */ {0x00, 0x00, 0xF0, 0x88, 0x88, 0xF0, 0x80},
+        /* u */ {0x00, 0x00, 0x88, 0x88, 0x88, 0x98, 0x68},
+        /* w */ {0x00, 0x00, 0x88, 0x88, 0xA8, 0xA8, 0x50},
+        /* - */ {0x00, 0x00, 0x00, 0xF8, 0x00, 0x00, 0x00},
+        /* ' */ {0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00},
         /*unk*/ {0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8}};
 
     if (c >= '0' && c <= '9')
@@ -356,37 +374,73 @@ static unsigned char *get_font_char(char c)
         return font_data[26];
     if (c == 'Z')
         return font_data[45];
+    if (c == 'B')
+        return font_data[46];
+    if (c == 'H')
+        return font_data[47];
+    if (c == 'T')
+        return font_data[48];
+    if (c == '!')
+        return font_data[49];
+    if (c == '/')
+        return font_data[50];
+    if (c == '.')
+        return font_data[51];
+    if (c == ',')
+        return font_data[52];
     if (c == 'a')
         return font_data[27];
+    if (c == 'b')
+        return font_data[53];
     if (c == 'c')
         return font_data[28];
+    if (c == 'd')
+        return font_data[54];
     if (c == 'e')
         return font_data[29];
+    if (c == 'f')
+        return font_data[55];
+    if (c == 'g')
+        return font_data[56];
+    if (c == 'h')
+        return font_data[57];
     if (c == 'i')
         return font_data[30];
     if (c == 'k')
         return font_data[31];
     if (c == 'l')
         return font_data[32];
+    if (c == 'm')
+        return font_data[58];
     if (c == 'n')
         return font_data[33];
     if (c == 'o')
         return font_data[34];
+    if (c == 'p')
+        return font_data[59];
     if (c == 'r')
         return font_data[35];
     if (c == 's')
         return font_data[36];
     if (c == 't')
         return font_data[37];
+    if (c == 'u')
+        return font_data[60];
     if (c == 'v')
         return font_data[38];
+    if (c == 'w')
+        return font_data[61];
     if (c == 'x')
         return font_data[39];
     if (c == 'y')
         return font_data[40];
     if (c == ' ')
         return font_data[41];
-    return font_data[46]; /* unknown char */
+    if (c == '-')
+        return font_data[62];
+    if (c == '\'')
+        return font_data[63];
+    return font_data[64]; /* unknown char */
 }
 
 void far draw_char(int x, int y, char c, unsigned char color)
