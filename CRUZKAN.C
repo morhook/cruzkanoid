@@ -1427,7 +1427,7 @@ static void credits_scene(int final_score)
         "Also thanks to",
         "subscribers for",
         "making it possible",
-        "to buy new games.",
+        "to buy new and create games.",
         "",
         "10 pushups per",
         "subscription!!!",
