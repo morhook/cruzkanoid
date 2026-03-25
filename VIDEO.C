@@ -263,7 +263,7 @@ void far erase_paddle(int x, Paddle paddle)
 
 static unsigned char *get_font_char(char c)
 {
-    static unsigned char font_data[47][7] = {
+    static unsigned char font_data[68][7] = {
         /* 0 */ {0x70, 0x88, 0x88, 0x88, 0x88, 0x88, 0x70},
         /* 1 */ {0x20, 0x60, 0x20, 0x20, 0x20, 0x20, 0x70},
         /* 2 */ {0x70, 0x88, 0x08, 0x10, 0x20, 0x40, 0xF8},
@@ -310,6 +310,24 @@ static unsigned char *get_font_char(char c)
         /* D */ {0xF0, 0x88, 0x88, 0x88, 0x88, 0x88, 0xF0},
         /* K */ {0x88, 0x98, 0xA8, 0xC0, 0xA8, 0x98, 0x88},
         /* Z */ {0xF8, 0x08, 0x10, 0x20, 0x40, 0x80, 0xF8},
+        /* B */ {0xF0, 0x88, 0x88, 0xF0, 0x88, 0x88, 0xF0},
+        /* H */ {0x88, 0x88, 0x88, 0xF8, 0x88, 0x88, 0x88},
+        /* T */ {0xF8, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20},
+        /* ! */ {0x20, 0x20, 0x20, 0x20, 0x20, 0x00, 0x20},
+        /* / */ {0x08, 0x10, 0x10, 0x20, 0x40, 0x40, 0x80},
+        /* . */ {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20},
+        /* , */ {0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x40},
+        /* b */ {0x80, 0x80, 0xF0, 0x88, 0x88, 0x88, 0xF0},
+        /* d */ {0x08, 0x08, 0x78, 0x88, 0x88, 0x88, 0x78},
+        /* f */ {0x18, 0x20, 0x70, 0x20, 0x20, 0x20, 0x20},
+        /* g */ {0x00, 0x00, 0x78, 0x88, 0x88, 0x78, 0x08, },
+        /* h */ {0x80, 0x80, 0xF0, 0x88, 0x88, 0x88, 0x88},
+        /* m */ {0x00, 0x00, 0xD8, 0xA8, 0xA8, 0xA8, 0x88},
+        /* p */ {0x00, 0x00, 0xF0, 0x88, 0x88, 0xF0, 0x80},
+        /* u */ {0x00, 0x00, 0x88, 0x88, 0x88, 0x98, 0x68},
+        /* w */ {0x00, 0x00, 0x88, 0x88, 0xA8, 0xA8, 0x50},
+        /* - */ {0x00, 0x00, 0x00, 0xF8, 0x00, 0x00, 0x00},
+        /* ' */ {0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00},
         /*unk*/ {0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8, 0xF8}};
 
     if (c >= '0' && c <= '9')
@@ -356,37 +374,73 @@ static unsigned char *get_font_char(char c)
         return font_data[26];
     if (c == 'Z')
         return font_data[45];
+    if (c == 'B')
+        return font_data[46];
+    if (c == 'H')
+        return font_data[47];
+    if (c == 'T')
+        return font_data[48];
+    if (c == '!')
+        return font_data[49];
+    if (c == '/')
+        return font_data[50];
+    if (c == '.')
+        return font_data[51];
+    if (c == ',')
+        return font_data[52];
     if (c == 'a')
         return font_data[27];
+    if (c == 'b')
+        return font_data[53];
     if (c == 'c')
         return font_data[28];
+    if (c == 'd')
+        return font_data[54];
     if (c == 'e')
         return font_data[29];
+    if (c == 'f')
+        return font_data[55];
+    if (c == 'g')
+        return font_data[56];
+    if (c == 'h')
+        return font_data[57];
     if (c == 'i')
         return font_data[30];
     if (c == 'k')
         return font_data[31];
     if (c == 'l')
         return font_data[32];
+    if (c == 'm')
+        return font_data[58];
     if (c == 'n')
         return font_data[33];
     if (c == 'o')
         return font_data[34];
+    if (c == 'p')
+        return font_data[59];
     if (c == 'r')
         return font_data[35];
     if (c == 's')
         return font_data[36];
     if (c == 't')
         return font_data[37];
+    if (c == 'u')
+        return font_data[60];
     if (c == 'v')
         return font_data[38];
+    if (c == 'w')
+        return font_data[61];
     if (c == 'x')
         return font_data[39];
     if (c == 'y')
         return font_data[40];
     if (c == ' ')
         return font_data[41];
-    return font_data[46]; /* unknown char */
+    if (c == '-')
+        return font_data[62];
+    if (c == '\'')
+        return font_data[63];
+    return font_data[64]; /* unknown char */
 }
 
 void far draw_char(int x, int y, char c, unsigned char color)
@@ -746,10 +800,14 @@ void far draw_background()
     int heart_size = 9;
     int spacing = heart_size + 1;
     int offset = heart_size / 2;
-    unsigned char base_color = 52;
+    /* Pink palette now lives at indices 59-62 (moved from 52-55).
+       base_color = 59 (light pink), variants at 60 and 61. */
+    unsigned char base_color = 59;
 
-    /* Level 2 has a black background */
-    if (current_level == 2)
+    /* Level 2 and levels 6-10: plain black background */
+    /* Levels 11-15: dark blue tint background */
+    /* Levels 1, 3-5: pink heart background (default) */
+    if (current_level == 2 || (current_level >= 6 && current_level <= 10))
     {
         draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
@@ -762,9 +820,24 @@ void far draw_background()
         return;
     }
 
+    if (current_level >= 11)
+    {
+        /* Deep navy / dark blue tint */
+        draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+
+        if (!background_buffer)
+        {
+            background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
+        }
+
+        capture_background();
+        return;
+    }
+
+    /* Levels 1-5: pink heart background. */
     /* Clear to base color so hearts don't stack or leave artifacts. */
     draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
-    
+
     if (!background_buffer)
     {
         background_buffer = (unsigned char far *)farmalloc((unsigned long)SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -775,7 +848,7 @@ void far draw_background()
         for (x = offset; x + heart_size - 1 < SCREEN_WIDTH; x += spacing)
         {
             /* Vary heart colors for visual interest */
-            unsigned char color = 52 + ((x + y) / spacing) % 3;
+            unsigned char color = 59 + ((x + y) / spacing) % 3;
             draw_heart(x, y, heart_size, color + 1);
         }
     }
@@ -788,9 +861,9 @@ unsigned char get_heart_color(int x, int y)
 {
     int heart_size = 8;
     int spacing = heart_size - 2;
-    
-    /* Use the same formula as the original background */
-    return 52 + ((x + y) / spacing) % 3;
+
+    /* Pink palette now at 59-61 (moved from 52-54). */
+    return 59 + ((x + y) / spacing) % 3;
 }
 
 void far draw_background_area(int x1, int y1, int x2, int y2)
@@ -862,6 +935,134 @@ void far erase_rect_with_background(int x, int y, int width, int height)
     draw_background_area(x1, y1, x2, y2);
 }
 
+
+void far draw_monster(Monster monster)
+{
+    int i, j;
+    int x = monster.x;
+    int y = monster.y;
+    int w = MONSTER_WIDTH;
+    int h = MONSTER_HEIGHT;
+    unsigned char body_color  = MONSTER_PALETTE_START + 0;
+    unsigned char light_color = MONSTER_PALETTE_START + 1;
+    unsigned char dark_color  = MONSTER_PALETTE_START + 2;
+    unsigned char eye_color   = 15; /* white eyes */
+    unsigned char pupil_color = 0;  /* black pupils */
+    unsigned char tooth_color = 15; /* white teeth */
+    int hp = monster.hp;
+
+    /* Body fill */
+    for (i = 1; i < h - 1; i++)
+    {
+        for (j = 1; j < w - 1; j++)
+        {
+            unsigned char c = body_color;
+            /* Top highlight row */
+            if (i == 1)
+                c = light_color;
+            /* Bottom shadow row */
+            else if (i == h - 2)
+                c = dark_color;
+            put_pixel(x + j, y + i, c);
+        }
+    }
+
+    /* Border */
+    for (j = 0; j < w; j++)
+    {
+        put_pixel(x + j, y,         dark_color);
+        put_pixel(x + j, y + h - 1, dark_color);
+    }
+    for (i = 0; i < h; i++)
+    {
+        put_pixel(x,         y + i, dark_color);
+        put_pixel(x + w - 1, y + i, dark_color);
+    }
+
+    /* Spiky top — three upward spikes */
+    put_pixel(x + 4,  y - 1, dark_color);
+    put_pixel(x + 4,  y - 2, body_color);
+    put_pixel(x + 11, y - 1, dark_color);
+    put_pixel(x + 11, y - 2, body_color);
+    put_pixel(x + 11, y - 3, body_color);
+    put_pixel(x + 18, y - 1, dark_color);
+    put_pixel(x + 18, y - 2, body_color);
+
+    /* Eyes — two 3x2 white rectangles */
+    /* Left eye */
+    put_pixel(x + 4, y + 3, eye_color);
+    put_pixel(x + 5, y + 3, eye_color);
+    put_pixel(x + 6, y + 3, eye_color);
+    put_pixel(x + 4, y + 4, eye_color);
+    put_pixel(x + 5, y + 4, eye_color);
+    put_pixel(x + 6, y + 4, eye_color);
+    /* Left pupil */
+    put_pixel(x + 5, y + 4, pupil_color);
+
+    /* Right eye */
+    put_pixel(x + 16, y + 3, eye_color);
+    put_pixel(x + 17, y + 3, eye_color);
+    put_pixel(x + 18, y + 3, eye_color);
+    put_pixel(x + 16, y + 4, eye_color);
+    put_pixel(x + 17, y + 4, eye_color);
+    put_pixel(x + 18, y + 4, eye_color);
+    /* Right pupil */
+    put_pixel(x + 17, y + 4, pupil_color);
+
+    /* Angry eyebrows (slant inward) */
+    put_pixel(x + 4,  y + 2, dark_color);
+    put_pixel(x + 5,  y + 2, dark_color);
+    put_pixel(x + 6,  y + 1, dark_color);
+    put_pixel(x + 16, y + 1, dark_color);
+    put_pixel(x + 17, y + 2, dark_color);
+    put_pixel(x + 18, y + 2, dark_color);
+
+    /* Mouth — jagged teeth row, width varies with hp */
+    {
+        int mouth_y = y + h - 4;
+        int tooth_gap;
+
+        /* Draw a row of teeth; fewer teeth as hp decreases */
+        if (hp >= 3)
+        {
+            /* Full set: 3 teeth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            /* Tooth tips */
+            put_pixel(x + 5,  mouth_y - 1, tooth_color);
+            put_pixel(x + 6,  mouth_y - 1, tooth_color);
+            put_pixel(x + 11, mouth_y - 1, tooth_color);
+            put_pixel(x + 12, mouth_y - 1, tooth_color);
+            put_pixel(x + 17, mouth_y - 1, tooth_color);
+            put_pixel(x + 18, mouth_y - 1, tooth_color);
+        }
+        else if (hp == 2)
+        {
+            /* Damaged: 2 teeth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            put_pixel(x + 7,  mouth_y - 1, tooth_color);
+            put_pixel(x + 8,  mouth_y - 1, tooth_color);
+            put_pixel(x + 15, mouth_y - 1, tooth_color);
+            put_pixel(x + 16, mouth_y - 1, tooth_color);
+        }
+        else
+        {
+            /* Nearly dead: cracked mouth */
+            for (j = 4; j <= 19; j++)
+                put_pixel(x + j, mouth_y, dark_color);
+            put_pixel(x + 11, mouth_y - 1, tooth_color);
+            put_pixel(x + 12, mouth_y - 1, tooth_color);
+        }
+        (void)tooth_gap;
+    }
+}
+
+void far erase_monster_with_background(int x, int y)
+{
+    /* +3 above for spikes */
+    draw_background_area(x - 1, y - 3, x + MONSTER_WIDTH + 1, y + MONSTER_HEIGHT + 1);
+}
 
 void draw_brick(int x, int y, int width, int height, unsigned char base_color)
 {

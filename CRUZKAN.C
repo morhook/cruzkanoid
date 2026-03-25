@@ -12,7 +12,7 @@
 
 #define BRICK_WIDTH 30
 #define BRICK_HEIGHT 10
-#define BRICK_ROWS 6
+#define BRICK_ROWS 8
 #define BRICK_COLS 10
 #define BRICK_GAP 2
 #define BRICK_PALETTE_START 32
@@ -20,7 +20,7 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
-#define MAX_LEVELS 10
+#define MAX_LEVELS 16
 #define LIFE_POWERUP_CHANCE 2
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
@@ -29,18 +29,56 @@
 #define MAX_BRICKS_DESTROYED_PER_FRAME (MAX_BALLS + MAX_LASER_SHOTS)
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
-    {
-        /* Each row uses 10 bits (bit j => column j). */
-        /*  1 */ {0x3FF, 0x2AA, 0x155, 0x2AA, 0x3FF, 0},
-        /*  2 */ {0x3FF, 0x201, 0x201, 0x201, 0x3FF, 0},
-        /*  3 */ {0x155, 0x155, 0x155, 0x155, 0x155, 0},
-        /*  4 */ {0x303, 0x0CC, 0x030, 0x0CC, 0x303, 0},
-        /*  5 */ {0x030, 0x078, 0x0FC, 0x1FE, 0x3FF, 0},
-        /*  6 */ {0x3CF, 0x3CF, 0x201, 0x3CF, 0x3CF, 0},
-        /*  7 */ {0x01F, 0x03F, 0x07F, 0x0FF, 0x1FF, 0},
-        /*  8 */ {0x2DB, 0x36D, 0x1B6, 0x36D, 0x2DB, 0},
-        /*  9 */ {0x0FC, 0x3CF, 0x2AA, 0x3CF, 0x0FC, 0},
-        /* 10 */ {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0X3FF},
+{
+    /* Each row uses 10 bits (bit j => column j). 8 rows per level. */
+
+    /*  1: Bordered diamond - classic opener */
+    {0x3FF, 0x2AA, 0x155, 0x2AA, 0x155, 0x2AA, 0x3FF, 0},
+
+    /*  2: Hollow rectangle */
+    {0x3FF, 0x201, 0x201, 0x201, 0x201, 0x201, 0x3FF, 0},
+
+    /*  3: Alternating stripes */
+    {0x155, 0x2AA, 0x155, 0x2AA, 0x155, 0x2AA, 0x155, 0},
+
+    /*  4: Diamond cross */
+    {0x084, 0x1CE, 0x3FF, 0x1CE, 0x084, 0x1CE, 0x3FF, 0},
+
+    /*  5: Staircase left-to-right */
+    {0x001, 0x003, 0x007, 0x00F, 0x01F, 0x03F, 0x07F, 0x0FF},
+
+    /*  6: X pattern */
+    {0x201, 0x102, 0x084, 0x048, 0x048, 0x084, 0x102, 0x201},
+
+    /*  7: Plus / cross */
+    {0x040, 0x040, 0x040, 0x3FF, 0x3FF, 0x040, 0x040, 0x040},
+
+    /*  8: Checkerboard dense */
+    {0x2DB, 0x36D, 0x1B6, 0x2DB, 0x36D, 0x1B6, 0x2DB, 0x36D},
+
+    /*  9: V-shape / arrowhead pointing up */
+    {0x201, 0x102, 0x084, 0x048, 0x030, 0x048, 0x084, 0x102},
+
+    /* 10: Hourglass */
+    {0x3FF, 0x1FE, 0x0FC, 0x078, 0x078, 0x0FC, 0x1FE, 0x3FF},
+
+    /* 11: Spiral inward */
+    {0x3FF, 0x201, 0x27F, 0x241, 0x25F, 0x250, 0x270, 0x3FF},
+
+    /* 12: Two separate boxes */
+    {0x1E0, 0x120, 0x120, 0x1E0, 0x01E, 0x012, 0x012, 0x01E},
+
+    /* 13: Castle battlements */
+    {0x3FF, 0x249, 0x3FF, 0x201, 0x201, 0x3FF, 0x249, 0x3FF},
+
+    /* 14: Random scatter / dense noise */
+    {0x2D6, 0x16B, 0x3AD, 0x1DA, 0x2B5, 0x16A, 0x3D6, 0x2AB},
+
+    /* 15: Final - all bricks */
+    {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF},
+
+    /* 16: Monster level - sparse top rows, monster is the main threat */
+    {0x3FF, 0x000, 0x3FF, 0x000, 0x000, 0x000, 0x000, 0x000},
 };
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
@@ -65,6 +103,11 @@ static int brick_field_x1 = 0;
 static int brick_field_y1 = 0;
 static int brick_field_x2 = 0;
 static int brick_field_y2 = 0;
+
+Monster monster;
+static int old_monster_x = 0;
+static int old_monster_y = 0;
+static int old_monster_active = 0;
 
 static int key_vx = 0;
 static int key_offset = 0;
@@ -280,6 +323,24 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
             continue;
         }
 
+        /* Monster collision */
+        if (monster.active &&
+            laser_shots[i].x >= monster.x &&
+            laser_shots[i].x < monster.x + MONSTER_WIDTH &&
+            laser_shots[i].y >= monster.y &&
+            laser_shots[i].y < monster.y + MONSTER_HEIGHT)
+        {
+            monster.hp--;
+            if (monster.hp <= 0)
+            {
+                monster.active = 0;
+                score += 100;
+            }
+            laser_shots[i].active = 0;
+            audio_event_brick(0);
+            continue;
+        }
+
         for (row = 0; row < BRICK_ROWS; row++)
         {
             for (col = 0; col < BRICK_COLS; col++)
@@ -474,6 +535,118 @@ void update_life_pill()
     }
 }
 
+void update_monster()
+{
+    int target_x;
+    int center;
+
+    if (!monster.active)
+        return;
+
+    /* Track paddle center: slide toward paddle center at MONSTER_SPEED */
+    center = paddle.x + paddle.width / 2 - MONSTER_WIDTH / 2;
+    if (monster.x < center)
+    {
+        monster.x += MONSTER_SPEED;
+        if (monster.x > center)
+            monster.x = center;
+    }
+    else if (monster.x > center)
+    {
+        monster.x -= MONSTER_SPEED;
+        if (monster.x < center)
+            monster.x = center;
+    }
+
+    /* Clamp to screen */
+    if (monster.x < 2)
+        monster.x = 2;
+    if (monster.x + MONSTER_WIDTH > SCREEN_WIDTH - 2)
+        monster.x = SCREEN_WIDTH - 2 - MONSTER_WIDTH;
+
+    (void)target_x;
+}
+
+/* Check ball vs monster collision. Returns 1 if hit. */
+int check_monster_collision(Ball *ball, float prev_ball_x, float prev_ball_y)
+{
+    int radius = BALL_SIZE / 2;
+    int mx, my, mw, mh;
+    int from_top, from_bottom, from_left, from_right;
+    int hit_axis;
+
+    if (!monster.active)
+        return 0;
+
+    mx = monster.x;
+    my = monster.y;
+    mw = MONSTER_WIDTH;
+    mh = MONSTER_HEIGHT;
+
+    if (ball->x + radius <= mx || ball->x - radius >= mx + mw ||
+        ball->y + radius <= my || ball->y - radius >= my + mh)
+        return 0;
+
+    /* Determine which face was hit */
+    from_left   = (prev_ball_x + radius <= mx) && (ball->x + radius > mx);
+    from_right  = (prev_ball_x - radius >= mx + mw) && (ball->x - radius < mx + mw);
+    from_top    = (prev_ball_y + radius <= my) && (ball->y + radius > my);
+    from_bottom = (prev_ball_y - radius >= my + mh) && (ball->y - radius < my + mh);
+
+    if (from_left || from_right)
+        hit_axis = 1; /* flip dx */
+    else if (from_top || from_bottom)
+        hit_axis = 0; /* flip dy */
+    else
+    {
+        /* Corner: resolve by minimum overlap */
+        int ol = (int)(ball->x + radius) - mx;
+        int or2 = (mx + mw) - (int)(ball->x - radius);
+        int ot = (int)(ball->y + radius) - my;
+        int ob = (my + mh) - (int)(ball->y - radius);
+        int min_x = (ol < or2) ? ol : or2;
+        int min_y = (ot < ob) ? ot : ob;
+        hit_axis = (min_x < min_y) ? 1 : 0;
+    }
+
+    /* Deflect ball */
+    if (hit_axis)
+    {
+        ball->dx = -ball->dx;
+        /* Add slight random perturbation to dx to prevent loops */
+        ball->dx += (float)((rand() % 3) - 1) * 0.5f;
+        if (ball->dx == 0.0f)
+            ball->dx = 1.0f;
+        /* Reposition */
+        if (prev_ball_x + radius <= mx)
+            ball->x = (float)(mx - radius);
+        else
+            ball->x = (float)(mx + mw + radius);
+    }
+    else
+    {
+        ball->dy = -ball->dy;
+        ball->dx += (float)((rand() % 3) - 1) * 0.5f;
+        if (ball->dx == 0.0f)
+            ball->dx = 1.0f;
+        /* Reposition */
+        if (prev_ball_y + radius <= my)
+            ball->y = (float)(my - radius);
+        else
+            ball->y = (float)(my + mh + radius);
+    }
+
+    /* Damage monster */
+    monster.hp--;
+    if (monster.hp <= 0)
+    {
+        monster.active = 0;
+        score += 100;
+    }
+
+    return 1;
+}
+
 void init_brick_palette()
 {
     /* Each row gets 3 shades: base, light, dark (RGB values are 0-63). */
@@ -501,6 +674,21 @@ void init_brick_palette()
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 0, 10, 20, 55);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 1, 28, 40, 63);
     set_palette_color(BRICK_PALETTE_START + 4 * BRICK_PALETTE_STRIDE + 2, 5, 10, 30);
+
+    /* Row 5: orange */
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 0, 55, 30, 0);
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 1, 63, 48, 14);
+    set_palette_color(BRICK_PALETTE_START + 5 * BRICK_PALETTE_STRIDE + 2, 30, 14, 0);
+
+    /* Row 6: cyan */
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 0, 5, 50, 50);
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 1, 20, 63, 63);
+    set_palette_color(BRICK_PALETTE_START + 6 * BRICK_PALETTE_STRIDE + 2, 2, 25, 25);
+
+    /* Row 7: purple */
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 0, 38, 10, 55);
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 1, 52, 28, 63);
+    set_palette_color(BRICK_PALETTE_START + 7 * BRICK_PALETTE_STRIDE + 2, 18, 4, 28);
 }
 
 void init_paddle_palette()
@@ -513,11 +701,12 @@ void init_paddle_palette()
 
 void init_pink_palette()
 {
-    /* Pink colors for heart background (indices 52-54). RGB values are 0-63. */
-    set_palette_color(52, 63, 32, 48); /* Light pink */
-    set_palette_color(53, 55, 15, 35); /* Medium pink */
-    set_palette_color(54, 40, 8, 20);  /* Dark pink */
-    set_palette_color(55, 63, 63, 63);  /* White */
+    /* Pink colors for heart background (indices 59-62). RGB values are 0-63.
+       Moved from 52-55 to avoid collision with brick row 5-7 palette (47-55). */
+    set_palette_color(59, 63, 32, 48); /* Light pink */
+    set_palette_color(60, 55, 15, 35); /* Medium pink */
+    set_palette_color(61, 40, 8, 20);  /* Dark pink */
+    set_palette_color(62, 63, 63, 63); /* White */
 }
 
 void init_pill_palette()
@@ -527,6 +716,14 @@ void init_pill_palette()
     set_palette_color(PILL_COLOR_BASE, 8, 22, 50);    /* base */
     set_palette_color(PILL_COLOR_BORDER, 2, 6, 20);   /* outline */
     set_palette_color(PILL_COLOR_GLYPH, 63, 63, 63);  /* glyph */
+}
+
+void init_monster_palette()
+{
+    /* Monster colors (indices 67-69): sickly green body. RGB values are 0-63. */
+    set_palette_color(MONSTER_PALETTE_START + 0, 10, 45, 10); /* base green */
+    set_palette_color(MONSTER_PALETTE_START + 1, 20, 63, 20); /* light green */
+    set_palette_color(MONSTER_PALETTE_START + 2,  4, 20,  4); /* dark green */
 }
 
 void init_bricks(int level)
@@ -568,24 +765,36 @@ void init_bricks(int level)
 
 void init_level(int level)
 {
+    int track;
     current_level = level;
 
-    /* Switch music for level 2 only */
-    if (level == 2)
-    {
-        audio_music_set_track(1);
-        audio_music_restart();
-    }
-    else
-    {
-        audio_music_set_track(0);
-        audio_music_restart();
-    }
+    /* Each level gets its own music track (tracks 0-14, capped). */
+    track = (level >= 1 && level <= 15) ? (level - 1) : 0;
+    audio_music_set_track(track);
+    audio_music_restart();
 
     ball_stuck = 1;
     launch_requested = 0;
     reset_paddle();
     reset_life_pill();
+
+    /* Init monster for level 16 only */
+    if (level == 16)
+    {
+        monster.active = 1;
+        monster.hp = MONSTER_HP;
+        monster.x = SCREEN_WIDTH / 2 - MONSTER_WIDTH / 2;
+        monster.y = 130;
+    }
+    else
+    {
+        monster.active = 0;
+        monster.hp = 0;
+        monster.x = 0;
+        monster.y = 0;
+    }
+
+    old_monster_active = 0;
 
     init_bricks(level);
 }
@@ -1016,6 +1225,13 @@ int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
             ball->dx = 1.0f;
     }
 
+    /* Monster collision */
+    if (check_monster_collision(ball, prev_ball_x, prev_ball_y))
+    {
+        increase_ball_speed(ball);
+        audio_event_wall();
+    }
+
     if (check_brick_collision(ball, prev_ball_x, prev_ball_y, brick_hit_x, brick_hit_y, &brick_hit_row, &brick_hit_axis, &brick_destroyed, &brick_pill_type))
     {
         brick_collided = 1;
@@ -1096,6 +1312,9 @@ int check_win()
             }
         }
     }
+    /* Level 16: also require the monster to be defeated */
+    if (current_level == 16 && monster.active)
+        return 0;
     return 1;
 }
 
@@ -1189,9 +1408,178 @@ void intro_scene()
     clear_screen(0);
 }
 
+static void credits_scene(int final_score, int did_win)
+{
+    /* Credits lines - all chars are in font */
+    static char *credits_lines[] = {
+        "",
+        "",
+        "Final Score:",
+        "",          /* filled with score at runtime */
+        "",
+        "- CRUZKANOID -",
+        "",
+        "Thanks to my wife,",
+        "daughters and my dog",
+        "for supporting",
+        "my channel.",
+        "",
+        "Also thanks to",
+        "subscribers for",
+        "making it possible",
+        "to buy new and create games.",
+        "",
+        "10 pushups per",
+        "subscription!!!",
+        "",
+        "twitch.tv/morhook",
+        "",
+        "",
+        "Press any key",
+        "to play again"
+    };
+    static char score_str[24];
+    /* Heart animation state */
+    int hx[6], hy[6], hdx[6], hdy[6];
+    int i, j;
+    /* Scrolling state */
+    int line_count;
+    int line_y[25]; /* max lines */
+    int scroll_done;
+    int last_line_y;
+    char *txt;
+    int txt_len, txt_x;
+    /* Palette for rainbow text cycling */
+    unsigned char text_color;
+    int frame;
+
+    /* Fill in the score line */
+    sprintf(score_str, "%d", final_score);
+    credits_lines[0] = did_win ? "YOU WIN!!!" : "GAME OVER!";
+    credits_lines[3] = score_str;
+
+    line_count = 25;
+
+    /* Initial Y positions: stack lines below screen, 12px apart */
+    for (i = 0; i < line_count; i++)
+        line_y[i] = 210 + i * 12;
+
+    /* Init hearts: spread across screen with bouncy velocities */
+    hx[0] = 40;  hy[0] = 50;  hdx[0] =  2; hdy[0] =  1;
+    hx[1] = 100; hy[1] = 120; hdx[1] = -1; hdy[1] =  2;
+    hx[2] = 200; hy[2] = 30;  hdx[2] =  2; hdy[2] = -1;
+    hx[3] = 260; hy[3] = 90;  hdx[3] = -2; hdy[3] =  2;
+    hx[4] = 160; hy[4] = 160; hdx[4] =  1; hdy[4] = -2;
+    hx[5] = 80;  hy[5] = 180; hdx[5] = -1; hdy[5] = -1;
+
+    /* Start credits music (victory or dead march). */
+    if (did_win)
+        audio_music_set_track(15);
+    else
+        audio_music_set_track(16);
+    audio_music_restart();
+
+    clear_screen(0);
+    frame = 0;
+
+    scroll_done = 0;
+    while (!scroll_done)
+    {
+        /* Check for keypress to exit */
+        if (kbhit())
+        {
+            getch();
+            break;
+        }
+
+        wait_vblank();
+
+        /* Erase hearts by drawing black circles in old position */
+        for (i = 0; i < 6; i++)
+            draw_filled_rect(hx[i] - 6, hy[i] - 6, 14, 14, 0);
+
+        /* Move hearts and bounce off edges */
+        for (i = 0; i < 6; i++)
+        {
+            hx[i] += hdx[i];
+            hy[i] += hdy[i];
+            if (hx[i] < 6  || hx[i] > 313) { hdx[i] = -hdx[i]; hx[i] += hdx[i]; }
+            if (hy[i] < 6  || hy[i] > 193) { hdy[i] = -hdy[i]; hy[i] += hdy[i]; }
+        }
+
+        /* Scroll lines up by 1 pixel */
+        for (i = 0; i < line_count; i++)
+            line_y[i]--;
+
+        /* Black out the whole screen text area each frame to avoid smearing */
+        draw_filled_rect(0, 0, 320, 200, 0);
+
+        /* Draw hearts */
+        for (i = 0; i < 6; i++)
+        {
+            /* Cycle colors: red, pink, yellow, cyan, green, white */
+            unsigned char hcol;
+            switch (i % 6) {
+                case 0: hcol = 4;  break; /* red */
+                case 1: hcol = 13; break; /* bright magenta/pink */
+                case 2: hcol = 14; break; /* yellow */
+                case 3: hcol = 11; break; /* cyan */
+                case 4: hcol = 10; break; /* bright green */
+                default: hcol = 15; break; /* white */
+            }
+            draw_heart(hx[i], hy[i], 5, hcol);
+        }
+
+        /* Draw visible credit lines */
+        for (i = 0; i < line_count; i++)
+        {
+            int y = line_y[i];
+            if (y < -8 || y > 200)
+                continue;
+            txt = credits_lines[i];
+            if (txt[0] == '\0')
+                continue;
+
+            /* Center the text: each char is 8px wide */
+            txt_len = 0;
+            j = 0;
+            while (txt[j] != '\0') { txt_len++; j++; }
+            txt_x = (320 - txt_len * 8) / 2;
+            if (txt_x < 0) txt_x = 0;
+
+            /* Alternate line colors for variety */
+            switch (i % 5) {
+                case 0: text_color = 15; break; /* white */
+                case 1: text_color = 14; break; /* yellow */
+                case 2: text_color = 11; break; /* cyan */
+                case 3: text_color = 13; break; /* magenta */
+                default: text_color = 10; break; /* green */
+            }
+            /* First two lines always bright white */
+            if (i == 0) text_color = 15;
+
+            draw_text_transparent(txt_x, y, txt, text_color);
+        }
+
+        audio_update();
+
+        /* Done when last line has scrolled off the top */
+        last_line_y = line_y[line_count - 1];
+        if (last_line_y < -8)
+            scroll_done = 1;
+
+        frame++;
+    }
+
+    /* Drain keyboard */
+    while (kbhit()) getch();
+
+    audio_music_stop();
+    clear_screen(0);
+}
+
 void game_loop()
 {
-    char buffer[50];
     int old_ball_x[MAX_BALLS];
     int old_ball_y[MAX_BALLS];
     int old_ball_active[MAX_BALLS];
@@ -1236,6 +1624,8 @@ void game_loop()
                     if (laser_shots[i].active)
                         draw_laser_shot(laser_shots[i]);
                 }
+                if (monster.active)
+                    draw_monster(monster);
                 draw_ui(score, lives, current_level);
                 if (paused)
                 {
@@ -1261,6 +1651,9 @@ void game_loop()
             old_pill_x = life_pill.x;
             old_pill_y = life_pill.y;
             old_pill_active = life_pill.active;
+            old_monster_x = monster.x;
+            old_monster_y = monster.y;
+            old_monster_active = monster.active;
             for (i = 0; i < MAX_LASER_SHOTS; i++)
             {
                 old_laser_active[i] = laser_shots[i].active;
@@ -1331,6 +1724,7 @@ void game_loop()
                 if (!spawned_this_frame)
                     update_life_pill();
 
+                update_monster();
                 update_laser_shots(destroyed_brick_x, destroyed_brick_y, &destroyed_brick_count);
             }
             else
@@ -1381,6 +1775,15 @@ void game_loop()
                 redraw_bricks_in_area(x1, y1, x2, y2);
             }
 
+            /* Erase monster old position */
+            if (old_monster_active)
+            {
+                erase_monster_with_background(old_monster_x, old_monster_y);
+                redraw_bricks_in_area(old_monster_x - 1, old_monster_y - 3,
+                                      old_monster_x + MONSTER_WIDTH + 1,
+                                      old_monster_y + MONSTER_HEIGHT + 1);
+            }
+
             /* Erase destroyed bricks */
             for (i = 0; i < destroyed_brick_count; i++)
             {
@@ -1401,6 +1804,8 @@ void game_loop()
                 if (laser_shots[i].active)
                     draw_laser_shot(laser_shots[i]);
             }
+            if (monster.active)
+                draw_monster(monster);
 
             /* Redraw UI (borders, score, lives) */
             draw_ui(score, lives, current_level);
@@ -1434,29 +1839,14 @@ void game_loop()
 
     audio_music_stop();
 
-    clear_screen(0);
-    draw_background();
     if (lives == 0)
     {
-        draw_text(110, 90, "GAME OVER!");
+        credits_scene(score, 0);
     }
     else
     {
-        draw_text(120, 90, "YOU WIN!");
+        credits_scene(score, 1);
     }
-
-    sprintf(buffer, "Final Score: %d", score);
-    draw_text(90, 105, buffer);
-    draw_text(70, 120, "Press any key to restart");
-    delay(2000);
-
-    while (!kbhit())
-    {
-        audio_update();
-        delay(20);
-    }
-    getch();
-    drain_keyboard_buffer();
 }
 
 int main()
@@ -1466,6 +1856,7 @@ int main()
     init_paddle_palette();
     init_pink_palette();
     init_pill_palette();
+    init_monster_palette();
     audio_init();
     mouse_init();
 

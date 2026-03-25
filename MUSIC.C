@@ -219,8 +219,290 @@ static const MusicNote music_track2[] = {
      {0, 0, 440},
 
      {0, 0, 110},
-     
+
      {0, 0, 0}};
+
+/* Track 2 (level 3): Waltz feel - slow 3/4 time in C major */
+static const MusicNote music_track3[] = {
+    {NOTE_C4, 0, 330}, {NOTE_E4, 0, 330}, {NOTE_G4, 0, 330},
+    {NOTE_F4, 0, 330}, {NOTE_A4, 0, 330}, {NOTE_C5, 0, 330},
+    {NOTE_G4, 0, 330}, {NOTE_B4, 0, 330}, {NOTE_D5, 0, 330},
+    {NOTE_E4, 0, 330}, {NOTE_G4, 0, 330}, {NOTE_B4, 0, 330},
+    {NOTE_C4, 0, 330}, {NOTE_E4, 0, 330}, {NOTE_G4, 0, 330},
+    {NOTE_A3, 0, 330}, {NOTE_C4, 0, 330}, {NOTE_E4, 0, 330},
+    {NOTE_F3, 0, 330}, {NOTE_A3, 0, 330}, {NOTE_C4, 0, 330},
+    {NOTE_G3, 0, 330}, {NOTE_B3, 0, 330}, {NOTE_D4, 0, 330},
+    {NOTE_C4, 0, 660}, {0, 0, 330},
+    {NOTE_E4, 0, 330}, {NOTE_G4, 0, 330}, {NOTE_C5, 0, 330},
+    {NOTE_D4, 0, 330}, {NOTE_F4, 0, 330}, {NOTE_A4, 0, 330},
+    {NOTE_E4, 0, 330}, {NOTE_G4, 0, 330}, {NOTE_B4, 0, 330},
+    {NOTE_C5, 0, 660}, {0, 0, 330},
+    {0, 0, 0}};
+
+/* Track 3 (level 4): Bouncy staccato - short notes, A minor */
+static const MusicNote music_track4[] = {
+    {NOTE_A4, 0, 55}, {0, 0, 55}, {NOTE_A4, 0, 55}, {0, 0, 55},
+    {NOTE_C5, 0, 55}, {0, 0, 55}, {NOTE_E5, 0, 55}, {0, 0, 55},
+    {NOTE_A4, 0, 55}, {0, 0, 55}, {NOTE_G4, 0, 55}, {0, 0, 55},
+    {NOTE_E4, 0, 55}, {0, 0, 110}, {0, 0, 55},
+    {NOTE_F4, 0, 55}, {0, 0, 55}, {NOTE_F4, 0, 55}, {0, 0, 55},
+    {NOTE_A4, 0, 55}, {0, 0, 55}, {NOTE_C5, 0, 55}, {0, 0, 55},
+    {NOTE_F4, 0, 55}, {0, 0, 55}, {NOTE_E4, 0, 55}, {0, 0, 55},
+    {NOTE_C4, 0, 55}, {0, 0, 110}, {0, 0, 55},
+    {NOTE_G4, 0, 55}, {0, 0, 55}, {NOTE_G4, 0, 55}, {0, 0, 55},
+    {NOTE_B4, 0, 55}, {0, 0, 55}, {NOTE_D5, 0, 55}, {0, 0, 55},
+    {NOTE_G4, 0, 55}, {0, 0, 55}, {NOTE_F4, 0, 55}, {0, 0, 55},
+    {NOTE_D4, 0, 55}, {0, 0, 110}, {0, 0, 55},
+    {NOTE_E4, 0, 55}, {0, 0, 55}, {NOTE_A4, 0, 55}, {0, 0, 55},
+    {NOTE_C5, 0, 55}, {0, 0, 55}, {NOTE_E5, 0, 55}, {0, 0, 55},
+    {NOTE_A5, 0, 220}, {0, 0, 220},
+    {0, 0, 0}};
+
+/* Track 4 (level 5): Minor descending line - E minor, melancholic */
+static const MusicNote music_track5[] = {
+    {NOTE_E5, 0, 165}, {NOTE_D5, 0, 165}, {NOTE_C5, 0, 165}, {NOTE_B4, 0, 165},
+    {NOTE_A4, 0, 165}, {NOTE_G4, 0, 165}, {NOTE_F4, 0, 165}, {NOTE_E4, 0, 330},
+    {NOTE_G4, 0, 165}, {NOTE_A4, 0, 165}, {NOTE_B4, 0, 165}, {NOTE_C5, 0, 165},
+    {NOTE_D5, 0, 165}, {NOTE_E5, 0, 165}, {NOTE_F5, 0, 165}, {NOTE_E5, 0, 330},
+    {NOTE_E5, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_A4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_C5, 0, 440}, {0, 0, 110},
+    {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_E4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 5 (level 6): Fast melodic run - G major, energetic */
+static const MusicNote music_track6[] = {
+    {NOTE_G4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_C5, 0, 70},
+    {NOTE_D5, 0, 70}, {NOTE_E5, 0, 70}, {NOTE_D5, 0, 70}, {NOTE_C5, 0, 70},
+    {NOTE_B4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_G4, 0, 70}, {NOTE_F4, 0, 70},
+    {NOTE_E4, 0, 70}, {NOTE_D4, 0, 70}, {NOTE_E4, 0, 70}, {NOTE_F4, 0, 70},
+    {NOTE_G4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_D5, 0, 70}, {NOTE_G5, 0, 70},
+    {NOTE_F5, 0, 70}, {NOTE_E5, 0, 70}, {NOTE_D5, 0, 70}, {NOTE_C5, 0, 70},
+    {NOTE_B4, 0, 70}, {NOTE_G4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_D5, 0, 70},
+    {NOTE_G5, 0, 280}, {0, 0, 140},
+    {NOTE_D5, 0, 70}, {NOTE_C5, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_A4, 0, 70},
+    {NOTE_G4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_C5, 0, 70},
+    {NOTE_D5, 0, 280}, {0, 0, 140},
+    {NOTE_G5, 0, 70}, {NOTE_F5, 0, 70}, {NOTE_E5, 0, 70}, {NOTE_D5, 0, 70},
+    {NOTE_C5, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_G4, 0, 70},
+    {NOTE_G4, 0, 560}, {0, 0, 0}};
+
+/* Track 6 (level 7): Slow atmospheric - D minor, sparse */
+static const MusicNote music_track7[] = {
+    {NOTE_D4, 0, 440}, {0, 0, 110},
+    {NOTE_F4, 0, 440}, {0, 0, 110},
+    {NOTE_A4, 0, 440}, {0, 0, 110},
+    {NOTE_D5, 0, 880}, {0, 0, 220},
+    {NOTE_C5, 0, 440}, {0, 0, 110},
+    {NOTE_A4, 0, 440}, {0, 0, 110},
+    {NOTE_G4, 0, 440}, {0, 0, 110},
+    {NOTE_F4, 0, 880}, {0, 0, 220},
+    {NOTE_D4, 0, 440}, {0, 0, 110},
+    {NOTE_E4, 0, 440}, {0, 0, 110},
+    {NOTE_F4, 0, 440}, {0, 0, 110},
+    {NOTE_A4, 0, 440}, {0, 0, 110},
+    {NOTE_C5, 0, 440}, {0, 0, 110},
+    {NOTE_D5, 0, 1320}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 7 (level 8): Upbeat major - C major, cheerful */
+static const MusicNote music_track8[] = {
+    {NOTE_C4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_F5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_G5, 0, 110},
+    {NOTE_F5, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_G5, 0, 440}, {0, 0, 110},
+    {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_F4, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_C4, 0, 110},
+    {NOTE_C4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 8 (level 9): Rhythmic syncopated - A minor funky */
+static const MusicNote music_track9[] = {
+    {NOTE_A4, 0, 165}, {0, 0, 55}, {NOTE_C5, 0, 110},
+    {NOTE_E5, 0, 165}, {0, 0, 55}, {NOTE_A4, 0, 110},
+    {NOTE_G4, 0, 165}, {0, 0, 55}, {NOTE_E4, 0, 110},
+    {NOTE_A4, 0, 220}, {0, 0, 110},
+    {NOTE_F4, 0, 165}, {0, 0, 55}, {NOTE_A4, 0, 110},
+    {NOTE_C5, 0, 165}, {0, 0, 55}, {NOTE_F4, 0, 110},
+    {NOTE_E4, 0, 165}, {0, 0, 55}, {NOTE_C4, 0, 110},
+    {NOTE_F4, 0, 220}, {0, 0, 110},
+    {NOTE_G4, 0, 165}, {0, 0, 55}, {NOTE_B4, 0, 110},
+    {NOTE_D5, 0, 165}, {0, 0, 55}, {NOTE_G4, 0, 110},
+    {NOTE_F4, 0, 165}, {0, 0, 55}, {NOTE_D4, 0, 110},
+    {NOTE_G4, 0, 220}, {0, 0, 110},
+    {NOTE_A4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_D5, 0, 110},
+    {NOTE_E5, 0, 440}, {0, 0, 220},
+    {0, 0, 0}};
+
+/* Track 9 (level 10): Tense chromatic - rising suspense */
+static const MusicNote music_track10[] = {
+    {NOTE_A3, 0, 165}, {NOTE_AS5, 0, 165}, {NOTE_A3, 0, 165},
+    {NOTE_B5, 0, 165},  {NOTE_A3, 0, 165}, {NOTE_AS5, 0, 165},
+    {NOTE_A3, 0, 330}, {0, 0, 165},
+    {NOTE_B3, 0, 165}, {NOTE_B5, 0, 165},  {NOTE_B3, 0, 165},
+    {NOTE_AS5, 0, 165},{NOTE_B3, 0, 165}, {NOTE_B5, 0, 165},
+    {NOTE_B3, 0, 330}, {0, 0, 165},
+    {NOTE_C4, 0, 165}, {NOTE_E5, 0, 165},  {NOTE_C4, 0, 165},
+    {NOTE_DS7, 0, 165},{NOTE_C4, 0, 165}, {NOTE_E5, 0, 165},
+    {NOTE_C4, 0, 330}, {0, 0, 165},
+    {NOTE_E4, 0, 110}, {NOTE_E7, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_FS7, 0, 110},{NOTE_E4, 0, 110}, {NOTE_G7, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_A7, 0, 110},
+    {NOTE_A4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 10 (level 11): Energetic fast - D major, racing */
+static const MusicNote music_track11[] = {
+    {NOTE_D4, 0, 70},  {NOTE_F4, 0, 70},  {NOTE_A4, 0, 70},  {NOTE_D5, 0, 70},
+    {NOTE_A4, 0, 70},  {NOTE_F4, 0, 70},  {NOTE_D4, 0, 70},  {NOTE_F4, 0, 70},
+    {NOTE_G4, 0, 70},  {NOTE_B4, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_G5, 0, 70},
+    {NOTE_D5, 0, 70},  {NOTE_B4, 0, 70},  {NOTE_G4, 0, 70},  {NOTE_B4, 0, 70},
+    {NOTE_A4, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_A5, 0, 70},
+    {NOTE_E5, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_A4, 0, 70},  {NOTE_C5, 0, 70},
+    {NOTE_D5, 0, 70},  {NOTE_F5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_D5, 0, 70},
+    {NOTE_F5, 0, 280}, {0, 0, 70},
+    {NOTE_A5, 0, 70},  {NOTE_G5, 0, 70},  {NOTE_F5, 0, 70},  {NOTE_E5, 0, 70},
+    {NOTE_D5, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_B4, 0, 70},  {NOTE_A4, 0, 70},
+    {NOTE_D4, 0, 280}, {0, 0, 280},
+    {0, 0, 0}};
+
+/* Track 11 (level 12): Triumphant fanfare - F major, bold */
+static const MusicNote music_track12[] = {
+    {NOTE_F4, 0, 220}, {NOTE_F4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_C5, 0, 330}, {NOTE_A4, 0, 110},
+    {NOTE_F4, 0, 220}, {NOTE_C5, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_F4, 0, 660},
+    {NOTE_G4, 0, 220}, {NOTE_G4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_C5, 0, 220}, {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_G4, 0, 220}, {NOTE_A4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_C5, 0, 660},
+    {NOTE_C5, 0, 220}, {NOTE_C5, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_F5, 0, 330}, {NOTE_D5, 0, 110},
+    {NOTE_C5, 0, 220}, {NOTE_A4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_F4, 0, 880}, {0, 0, 0}};
+
+/* Track 12 (level 13): Dark minor fast - B minor aggressive */
+static const MusicNote music_track13[] = {
+    {NOTE_B4, 0, 70},  {NOTE_A4, 0, 70},  {NOTE_G4, 0, 70},  {NOTE_F4, 0, 70},
+    {NOTE_E4, 0, 70},  {NOTE_F4, 0, 70},  {NOTE_G4, 0, 70},  {NOTE_A4, 0, 70},
+    {NOTE_B4, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_F5, 0, 70},  {NOTE_B4, 0, 70},
+    {NOTE_A5, 0, 280}, {0, 0, 70},
+    {NOTE_G4, 0, 70},  {NOTE_F4, 0, 70},  {NOTE_E4, 0, 70},  {NOTE_D4, 0, 70},
+    {NOTE_E4, 0, 70},  {NOTE_F4, 0, 70},  {NOTE_G4, 0, 70},  {NOTE_A4, 0, 70},
+    {NOTE_B4, 0, 140}, {NOTE_B4, 0, 140}, {NOTE_B4, 0, 70},  {NOTE_A4, 0, 70},
+    {NOTE_G4, 0, 280}, {0, 0, 70},
+    {NOTE_F4, 0, 55},  {NOTE_G4, 0, 55},  {NOTE_A4, 0, 55},  {NOTE_B4, 0, 55},
+    {NOTE_C5, 0, 55},  {NOTE_D5, 0, 55},  {NOTE_E5, 0, 55},  {NOTE_F5, 0, 55},
+    {NOTE_G5, 0, 55},  {NOTE_A5, 0, 55},  {NOTE_B5, 0, 55},  {NOTE_A5, 0, 55},
+    {NOTE_G5, 0, 55},  {NOTE_F5, 0, 55},  {NOTE_E5, 0, 55},  {NOTE_D5, 0, 55},
+    {NOTE_B4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 13 (level 14): Frenetic high-speed - chromatic chaos */
+static const MusicNote music_track14[] = {
+    {NOTE_E5, 0, 55},  {NOTE_DS7, 0, 55}, {NOTE_E5, 0, 55},  {NOTE_FS7, 0, 55},
+    {NOTE_E5, 0, 55},  {NOTE_G7, 0, 55},  {NOTE_E5, 0, 55},  {NOTE_A7, 0, 55},
+    {NOTE_D5, 0, 55},  {NOTE_DS7, 0, 55}, {NOTE_D5, 0, 55},  {NOTE_E7, 0, 55},
+    {NOTE_D5, 0, 55},  {NOTE_FS7, 0, 55}, {NOTE_D5, 0, 55},  {NOTE_G7, 0, 55},
+    {NOTE_C5, 0, 55},  {NOTE_E7, 0, 55},  {NOTE_C5, 0, 55},  {NOTE_FS7, 0, 55},
+    {NOTE_C5, 0, 55},  {NOTE_G7, 0, 55},  {NOTE_C5, 0, 55},  {NOTE_AS7, 0, 55},
+    {NOTE_B4, 0, 55},  {NOTE_DS7, 0, 55}, {NOTE_B4, 0, 55},  {NOTE_E7, 0, 55},
+    {NOTE_B4, 0, 55},  {NOTE_FS7, 0, 55}, {NOTE_B4, 0, 55},  {NOTE_B7, 0, 55},
+    {NOTE_E5, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_A4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_E4, 0, 110},
+    {NOTE_E4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
+/* Track 14 (level 15): Epic finale - full chords, triumphant */
+static const MusicNote music_track15[] = {
+    /* Bold opening */
+    {NOTE_C4, 0, 220}, {NOTE_G4, 0, 220}, {NOTE_C5, 0, 220}, {NOTE_E5, 0, 220},
+    {NOTE_G5, 0, 440}, {0, 0, 220},
+    {NOTE_F4, 0, 220}, {NOTE_A4, 0, 220}, {NOTE_C5, 0, 220}, {NOTE_F5, 0, 220},
+    {NOTE_A5, 0, 440}, {0, 0, 220},
+    /* Rising arpeggio run */
+    {NOTE_G4, 0, 70},  {NOTE_A4, 0, 70},  {NOTE_B4, 0, 70},  {NOTE_C5, 0, 70},
+    {NOTE_D5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_F5, 0, 70},  {NOTE_G5, 0, 70},
+    {NOTE_A5, 0, 70},  {NOTE_B5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_G5, 0, 70},
+    {NOTE_F5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_C5, 0, 70},
+    /* Heroic theme */
+    {NOTE_C5, 0, 330}, {NOTE_G4, 0, 110}, {NOTE_E4, 0, 220}, {NOTE_G4, 0, 220},
+    {NOTE_C5, 0, 440}, {0, 0, 110},
+    {NOTE_F5, 0, 330}, {NOTE_C5, 0, 110}, {NOTE_A4, 0, 220}, {NOTE_C5, 0, 220},
+    {NOTE_F5, 0, 440}, {0, 0, 110},
+    {NOTE_G5, 0, 330}, {NOTE_D5, 0, 110}, {NOTE_B4, 0, 220}, {NOTE_D5, 0, 220},
+    {NOTE_G5, 0, 440}, {0, 0, 110},
+    /* Final flourish */
+    {NOTE_E5, 0, 70},  {NOTE_G5, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_E5, 0, 70},
+    {NOTE_G5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_B5, 0, 70},  {NOTE_A5, 0, 70},
+    {NOTE_G5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_G4, 0, 70},
+    {NOTE_C4, 0, 880}, {0, 0, 880},
+    {0, 0, 0}};
+
+/* Track 16 - Victory / credits theme: bright, celebratory, looping */
+static const MusicNote music_track16[] = {
+    /* Fanfare opener */
+    {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_G5, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_G5, 0, 110}, {NOTE_C5, 0, 220}, {0, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_B4, 0, 110}, {NOTE_D5, 0, 110}, {NOTE_G4, 0, 220}, {0, 0, 110},
+    /* Happy arpeggio run */
+    {NOTE_C5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_F5, 0, 70},
+    {NOTE_G5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_B5, 0, 70},  {NOTE_C5, 0, 70},
+    {NOTE_B5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_G5, 0, 70},  {NOTE_F5, 0, 70},
+    {NOTE_E5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_C5, 0, 140}, {0, 0, 70},
+    /* Melody A */
+    {NOTE_E5, 0, 220}, {NOTE_G5, 0, 220}, {NOTE_A5, 0, 440}, {0, 0, 110},
+    {NOTE_D5, 0, 220}, {NOTE_F5, 0, 220}, {NOTE_G5, 0, 440}, {0, 0, 110},
+    {NOTE_C5, 0, 220}, {NOTE_E5, 0, 220}, {NOTE_G5, 0, 220}, {NOTE_E5, 0, 220},
+    {NOTE_C5, 0, 440}, {0, 0, 220},
+    /* Bridge - bouncy */
+    {NOTE_G4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_G5, 0, 110},
+    {NOTE_E5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_G4, 0, 220}, {0, 0, 110},
+    {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_F5, 0, 110},
+    {NOTE_C5, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_F4, 0, 220}, {0, 0, 110},
+    /* Melody B - triumphant */
+    {NOTE_G5, 0, 330}, {NOTE_E5, 0, 110}, {NOTE_C5, 0, 220}, {NOTE_E5, 0, 220},
+    {NOTE_G5, 0, 440}, {0, 0, 110},
+    {NOTE_A5, 0, 330}, {NOTE_F5, 0, 110}, {NOTE_D5, 0, 220}, {NOTE_F5, 0, 220},
+    {NOTE_A5, 0, 440}, {0, 0, 110},
+    /* Tail - quick run back to top */
+    {NOTE_B5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_G5, 0, 70},  {NOTE_F5, 0, 70},
+    {NOTE_E5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_C5, 0, 140}, {0, 0, 140},
+    {0, 0, 0}};
+
+/* Track 17 - Losing credits theme: dead march, slow and somber */
+static const MusicNote music_track17[] = {
+    /* Tolling intro */
+    {NOTE_A3, 0, 440}, {0, 0, 220},
+    {NOTE_A3, 0, 440}, {0, 0, 220},
+    {NOTE_E4, 0, 440}, {0, 0, 220},
+    {NOTE_A3, 0, 660}, {0, 0, 220},
+
+    /* March motif A */
+    {NOTE_A3, 0, 220}, {0, 0, 110}, {NOTE_A3, 0, 220}, {0, 0, 110},
+    {NOTE_C4, 0, 220}, {0, 0, 110}, {NOTE_E4, 0, 440}, {0, 0, 220},
+    {NOTE_G3, 0, 220}, {0, 0, 110}, {NOTE_G3, 0, 220}, {0, 0, 110},
+    {NOTE_C4, 0, 220}, {NOTE_B3, 0, 220}, {NOTE_A3, 0, 440}, {0, 0, 220},
+
+    /* March motif B */
+    {NOTE_A3, 0, 220}, {0, 0, 110}, {NOTE_C4, 0, 220}, {0, 0, 110},
+    {NOTE_E4, 0, 220}, {0, 0, 110}, {NOTE_A4, 0, 440}, {0, 0, 220},
+    {NOTE_G4, 0, 220}, {NOTE_F4, 0, 220}, {NOTE_E4, 0, 220}, {NOTE_D4, 0, 220},
+    {NOTE_C4, 0, 440}, {0, 0, 220},
+
+    /* Descending close */
+    {NOTE_E4, 0, 220}, {NOTE_D4, 0, 220}, {NOTE_C4, 0, 220}, {NOTE_B3, 0, 220},
+    {NOTE_A3, 0, 660}, {0, 0, 220},
+    {NOTE_E4, 0, 220}, {NOTE_D4, 0, 220}, {NOTE_C4, 0, 220}, {NOTE_A3, 0, 220},
+    {NOTE_A3, 0, 880}, {0, 0, 440},
+
+    {0, 0, 0}};
 
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
@@ -765,25 +1047,41 @@ void far music_set_track(int track_index)
 {
     unsigned int i;
     unsigned int acc_ms;
+    int use_drum_mute;
 
-    /* Select the appropriate track */
-    if (track_index == 1)
-        active_track = music_track2;
-    else
-        active_track = music_track;
+    /* Select the appropriate track pointer */
+    use_drum_mute = 1;
+    switch (track_index)
+    {
+        case 1:  active_track = music_track2;  use_drum_mute = 0; break;
+        case 2:  active_track = music_track3;  break;
+        case 3:  active_track = music_track4;  break;
+        case 4:  active_track = music_track5;  break;
+        case 5:  active_track = music_track6;  break;
+        case 6:  active_track = music_track7;  use_drum_mute = 0; break;
+        case 7:  active_track = music_track8;  break;
+        case 8:  active_track = music_track9;  use_drum_mute = 0; break;
+        case 9:  active_track = music_track10; break;
+        case 10: active_track = music_track11; break;
+        case 11: active_track = music_track12; break;
+        case 12: active_track = music_track13; break;
+        case 13: active_track = music_track14; break;
+        case 14: active_track = music_track15; use_drum_mute = 0; break;
+        case 15: active_track = music_track16; use_drum_mute = 0; break;
+        case 16: active_track = music_track17; use_drum_mute = 0; break;
+        default: active_track = music_track;   break;
+    }
 
     /* Recalculate music_len for the new track */
     music_len = 0;
     while (active_track[music_len].ms != 0U)
         music_len++;
 
-    /* Compute drum mute boundary only for track 0.
-       Track 2 has variable-duration held notes that cause drum_step to race
-       ahead of music_index, making the mute fire prematurely. Since track 2
-       has a short loop anyway, leave drums unmuted and let the loop wrap
-       (music_advance_index) reset drum_step naturally. */
+    /* Compute drum mute boundary for tracks that need a clean fade-out
+       before looping.  Tracks with long held notes or variable durations
+       skip this to prevent the mute firing prematurely. */
     music_drum_mute_start = 0;
-    if (track_index != 1)
+    if (use_drum_mute)
     {
         acc_ms = 0;
         i = music_len;

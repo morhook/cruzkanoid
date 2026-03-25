@@ -6,11 +6,13 @@
 #define PADDLE_WIDTH 40
 #define PADDLE_HEIGHT 8
 #define BALL_SIZE 4
-#define PADDLE_PALETTE_START 48
+/* Brick rows 0-7 use palette indices 32-55 (8 rows x 3 shades = 24 entries).
+   Paddle and pill palettes live after that to avoid collision. */
+#define PADDLE_PALETTE_START 56
 #define PILL_WIDTH 8
 #define PILL_HEIGHT 12
 #define PILL_FALL_SPEED 2
-#define PILL_PALETTE_START 55
+#define PILL_PALETTE_START 63
 #define PILL_COLOR_LIGHT (PILL_PALETTE_START + 0)
 #define PILL_COLOR_BASE (PILL_PALETTE_START + 1)
 #define PILL_COLOR_BORDER (PILL_PALETTE_START + 2)
@@ -25,6 +27,11 @@
 #define MAX_LASER_SHOTS 8
 #define PADDLE_WIDTH_GROW (PADDLE_WIDTH + 12)
 #define PADDLE_WIDTH_SHRINK (PADDLE_WIDTH - 12)
+#define MONSTER_WIDTH 24
+#define MONSTER_HEIGHT 16
+#define MONSTER_HP 3
+#define MONSTER_SPEED 2
+#define MONSTER_PALETTE_START 67
 
 typedef struct
 {
@@ -63,5 +70,12 @@ typedef struct
     int hp;
     int gives_life;
 } Brick;
+
+typedef struct
+{
+    int x, y;
+    int hp;
+    int active;
+} Monster;
 
 #endif /* CRUZKAN_H */

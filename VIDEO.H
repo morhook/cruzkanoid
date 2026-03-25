@@ -68,4 +68,8 @@ void far erase_rect_with_background(int x, int y, int width, int height);
 
 void draw_brick(int x, int y, int width, int height, unsigned char base_color);
 
+void far draw_monster(Monster monster);
+
+void far erase_monster_with_background(int x, int y);
+
 #endif /* VIDEO_H */
