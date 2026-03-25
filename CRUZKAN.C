@@ -1408,11 +1408,11 @@ void intro_scene()
     clear_screen(0);
 }
 
-static void credits_scene(int final_score)
+static void credits_scene(int final_score, int did_win)
 {
     /* Credits lines - all chars are in font */
     static char *credits_lines[] = {
-        "YOU WIN!!!",
+        "",
         "",
         "Final Score:",
         "",          /* filled with score at runtime */
@@ -1455,6 +1455,7 @@ static void credits_scene(int final_score)
 
     /* Fill in the score line */
     sprintf(score_str, "%d", final_score);
+    credits_lines[0] = did_win ? "YOU WIN!!!" : "GAME OVER!";
     credits_lines[3] = score_str;
 
     line_count = 25;
@@ -1471,8 +1472,11 @@ static void credits_scene(int final_score)
     hx[4] = 160; hy[4] = 160; hdx[4] =  1; hdy[4] = -2;
     hx[5] = 80;  hy[5] = 180; hdx[5] = -1; hdy[5] = -1;
 
-    /* Start victory music */
-    audio_music_set_track(15);
+    /* Start credits music (victory or dead march). */
+    if (did_win)
+        audio_music_set_track(15);
+    else
+        audio_music_set_track(16);
     audio_music_restart();
 
     clear_screen(0);
@@ -1576,7 +1580,6 @@ static void credits_scene(int final_score)
 
 void game_loop()
 {
-    char buffer[50];
     int old_ball_x[MAX_BALLS];
     int old_ball_y[MAX_BALLS];
     int old_ball_active[MAX_BALLS];
@@ -1838,24 +1841,11 @@ void game_loop()
 
     if (lives == 0)
     {
-        clear_screen(0);
-        draw_background();
-        draw_text(110, 90, "GAME OVER!");
-        sprintf(buffer, "Final Score: %d", score);
-        draw_text(90, 105, buffer);
-        draw_text(70, 120, "Press any key to restart");
-        delay(2000);
-        while (!kbhit())
-        {
-            audio_update();
-            delay(20);
-        }
-        getch();
-        drain_keyboard_buffer();
+        credits_scene(score, 0);
     }
     else
     {
-        credits_scene(score);
+        credits_scene(score, 1);
     }
 }
 

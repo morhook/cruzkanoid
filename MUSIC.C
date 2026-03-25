@@ -473,6 +473,34 @@ static const MusicNote music_track16[] = {
     {NOTE_E5, 70},  {NOTE_D5, 70},  {NOTE_C5, 140}, {0, 140},
     {0, 0}};
 
+/* Track 17 - Losing credits theme: dead march, slow and somber */
+static const MusicNote music_track17[] = {
+    /* Tolling intro */
+    {NOTE_A3, 440}, {0, 220},
+    {NOTE_A3, 440}, {0, 220},
+    {NOTE_E4, 440}, {0, 220},
+    {NOTE_A3, 660}, {0, 220},
+
+    /* March motif A */
+    {NOTE_A3, 220}, {0, 110}, {NOTE_A3, 220}, {0, 110},
+    {NOTE_C4, 220}, {0, 110}, {NOTE_E4, 440}, {0, 220},
+    {NOTE_G3, 220}, {0, 110}, {NOTE_G3, 220}, {0, 110},
+    {NOTE_C4, 220}, {NOTE_B3, 220}, {NOTE_A3, 440}, {0, 220},
+
+    /* March motif B */
+    {NOTE_A3, 220}, {0, 110}, {NOTE_C4, 220}, {0, 110},
+    {NOTE_E4, 220}, {0, 110}, {NOTE_A4, 440}, {0, 220},
+    {NOTE_G4, 220}, {NOTE_F4, 220}, {NOTE_E4, 220}, {NOTE_D4, 220},
+    {NOTE_C4, 440}, {0, 220},
+
+    /* Descending close */
+    {NOTE_E4, 220}, {NOTE_D4, 220}, {NOTE_C4, 220}, {NOTE_B3, 220},
+    {NOTE_A3, 660}, {0, 220},
+    {NOTE_E4, 220}, {NOTE_D4, 220}, {NOTE_C4, 220}, {NOTE_A3, 220},
+    {NOTE_A3, 880}, {0, 440},
+
+    {0, 0}};
+
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
 static unsigned int opl_addr0 = 0x388;
@@ -996,6 +1024,7 @@ void far music_set_track(int track_index)
         case 13: active_track = music_track14; break;
         case 14: active_track = music_track15; use_drum_mute = 0; break;
         case 15: active_track = music_track16; use_drum_mute = 0; break;
+        case 16: active_track = music_track17; use_drum_mute = 0; break;
         default: active_track = music_track;   break;
     }
 
