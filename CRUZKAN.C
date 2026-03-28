@@ -27,6 +27,12 @@
 #define LASER_SHOT_SPEED 6
 #define LASER_FIRE_COOLDOWN_FRAMES 6
 #define MAX_BRICKS_DESTROYED_PER_FRAME (MAX_BALLS + MAX_LASER_SHOTS)
+#define BRICK_SCORE 12
+#define PILL_SCORE_LIFE 50
+#define PILL_SCORE_GROW 25
+#define PILL_SCORE_SHRINK 25
+#define PILL_SCORE_MULTIBALL 40
+#define PILL_SCORE_LASER 40
 
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
 {
@@ -112,6 +118,22 @@ static int old_monster_active = 0;
 static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
+
+static int pill_score_value(int pill_type)
+{
+    if (pill_type == PILL_TYPE_LIFE)
+        return PILL_SCORE_LIFE;
+    if (pill_type == PILL_TYPE_GROW)
+        return PILL_SCORE_GROW;
+    if (pill_type == PILL_TYPE_SHRINK)
+        return PILL_SCORE_SHRINK;
+    if (pill_type == PILL_TYPE_MULTIBALL)
+        return PILL_SCORE_MULTIBALL;
+    if (pill_type == PILL_TYPE_LASER)
+        return PILL_SCORE_LASER;
+
+    return 0;
+}
 
 static int count_active_balls(void)
 {
@@ -361,7 +383,7 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
                     if (bricks[row][col].hp <= 0)
                     {
                         bricks[row][col].active = 0;
-                        score += 10;
+                        score += BRICK_SCORE;
                         record_destroyed_brick(destroyed_xs, destroyed_ys, destroyed_count,
                                               bricks[row][col].x, bricks[row][col].y);
 
@@ -493,6 +515,7 @@ void update_life_pill()
         life_pill.y - half_h < paddle.y + PADDLE_HEIGHT)
     {
         life_pill.active = 0;
+        score += pill_score_value(life_pill.type);
         prev_paddle_x = paddle.x;
         prev_paddle_width = paddle.width;
         if (life_pill.type == PILL_TYPE_LIFE)
@@ -1121,7 +1144,7 @@ int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int 
                     if (bricks[i][j].hp <= 0)
                     {
                         bricks[i][j].active = 0;
-                        score += 10;
+                        score += BRICK_SCORE;
                         if (hit_destroyed)
                             *hit_destroyed = 1;
                         if (bricks[i][j].gives_life)
