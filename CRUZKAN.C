@@ -1537,20 +1537,36 @@ static void credits_scene(int final_score, int did_win)
         /* Black out the whole screen text area each frame to avoid smearing */
         draw_filled_rect(0, 0, 320, 200, 0);
 
-        /* Draw hearts */
+        /* Draw floating icons: hearts on win, dead skulls on game over */
         for (i = 0; i < 6; i++)
         {
-            /* Cycle colors: red, pink, yellow, cyan, green, white */
             unsigned char hcol;
-            switch (i % 6) {
-                case 0: hcol = 4;  break; /* red */
-                case 1: hcol = 13; break; /* bright magenta/pink */
-                case 2: hcol = 14; break; /* yellow */
-                case 3: hcol = 11; break; /* cyan */
-                case 4: hcol = 10; break; /* bright green */
-                default: hcol = 15; break; /* white */
+            if (did_win)
+            {
+                /* Cycle colors: red, pink, yellow, cyan, green, white */
+                switch (i % 6) {
+                    case 0: hcol = 4;  break; /* red */
+                    case 1: hcol = 13; break; /* bright magenta/pink */
+                    case 2: hcol = 14; break; /* yellow */
+                    case 3: hcol = 11; break; /* cyan */
+                    case 4: hcol = 10; break; /* bright green */
+                    default: hcol = 15; break; /* white */
+                }
+                draw_heart(hx[i], hy[i], 5, hcol);
             }
-            draw_heart(hx[i], hy[i], 5, hcol);
+            else
+            {
+                /* Eerie dead colors: grey, dark grey, brown, bone, purple, ghostly cyan */
+                switch (i % 6) {
+                    case 0: hcol = 7;  break; /* light grey */
+                    case 1: hcol = 8;  break; /* dark grey */
+                    case 2: hcol = 6;  break; /* dark yellow/brown */
+                    case 3: hcol = 15; break; /* bone white */
+                    case 4: hcol = 5;  break; /* dark magenta/purple */
+                    default: hcol = 3; break; /* ghostly cyan */
+                }
+                draw_dead_icon(hx[i], hy[i], hcol);
+            }
         }
 
         /* Draw visible credit lines */

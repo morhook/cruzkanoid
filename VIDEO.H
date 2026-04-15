@@ -54,6 +54,8 @@ void far fade_palette_color(unsigned char index,
 
 void far draw_heart(int cx, int cy, int size, unsigned char color);
 
+void far draw_dead_icon(int cx, int cy, unsigned char color);
+
 void far draw_background();
 
 void far draw_background_area(int x1, int y1, int x2, int y2);
