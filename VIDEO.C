@@ -794,6 +794,36 @@ void far draw_heart(int cx, int cy, int size, unsigned char color)
     }
 }
 
+void far draw_dead_icon(int cx, int cy, unsigned char color)
+{
+    int x, y;
+    int start_x = cx - 4;
+    int start_y = cy - 4;
+    /* 9x9 skull bitmap */
+    static const char *skull[9] = {
+        "011111100",
+        "111111110",
+        "101111010",
+        "111111110",
+        "011111100",
+        "010101010",
+        "011111100",
+        "000000000",
+        "000000000"
+    };
+
+    for (y = 0; y < 9; y++)
+    {
+        for (x = 0; x < 9; x++)
+        {
+            if (skull[y][x] == '1')
+            {
+                put_pixel(start_x + x, start_y + y, color);
+            }
+        }
+    }
+}
+
 void far draw_background()
 {
     int x, y;
