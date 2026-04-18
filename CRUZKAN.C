@@ -996,6 +996,10 @@ void get_inputs()
         paddle.vx = 0;
         key_vx = 0;
         launch_requested = 0;
+        if (!paused)
+            restore_vga_palette();
+        else
+            save_vga_palette();
     }
 
     if (paused)

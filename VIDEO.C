@@ -2,6 +2,7 @@
 #include <alloc.h>
 #include <string.h>
 #include <mem.h>
+#include <stdio.h>
 
 #include "cruzkan.h"
 #include "video.h" 
@@ -13,6 +14,13 @@ static unsigned char far *vga_back = 0;
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
 
 static unsigned char far *background_buffer = 0;
+
+/* Pig pause image */
+static unsigned char far *pig_pixels = 0;
+static unsigned char pig_palette[256][3];
+static unsigned char game_palette[256][3];
+static int pig_loaded = 0;
+static int game_palette_saved = 0;
 
 void far init_video_buffers(void)
 {
@@ -777,13 +785,129 @@ void far draw_bordered_text(int x, int y, char *text, unsigned char border_color
     draw_text_transparent(x, y, text, 0);
 }
 
-void far draw_pause_overlay()
+void far save_vga_palette(void)
+{
+    int i;
+    for (i = 0; i < 256; i++)
+    {
+        outp(0x3C7, (unsigned char)i);
+        game_palette[i][0] = inp(0x3C9);
+        game_palette[i][1] = inp(0x3C9);
+        game_palette[i][2] = inp(0x3C9);
+    }
+    game_palette_saved = 1;
+}
+
+void far restore_vga_palette(void)
+{
+    int i;
+    if (!game_palette_saved)
+        return;
+    outp(0x3C8, 0);
+    for (i = 0; i < 256; i++)
+    {
+        outp(0x3C9, game_palette[i][0]);
+        outp(0x3C9, game_palette[i][1]);
+        outp(0x3C9, game_palette[i][2]);
+    }
+}
+
+static void set_pig_palette(void)
+{
+    int i;
+    outp(0x3C8, 0);
+    for (i = 0; i < 256; i++)
+    {
+        outp(0x3C9, pig_palette[i][0]);
+        outp(0x3C9, pig_palette[i][1]);
+        outp(0x3C9, pig_palette[i][2]);
+    }
+}
+
+static void load_pig_pcx(void)
+{
+    FILE *f;
+    long file_size;
+    long palette_offset;
+    long pixel_offset;
+    unsigned char byte, color;
+    int count;
+    long decoded;
+    int i;
+    unsigned char buf3[3];
+
+    if (pig_loaded)
+        return;
+
+    if (!pig_pixels)
+        pig_pixels = (unsigned char far *)farmalloc(64000L);
+    if (!pig_pixels)
+        return;
+
+    f = fopen("PIG.PCX", "rb");
+    if (!f)
+        return;
+
+    /* Get file size */
+    fseek(f, 0L, SEEK_END);
+    file_size = ftell(f);
+
+    /* Read 256-color palette from last 769 bytes (marker 0x0C + 768 bytes RGB) */
+    palette_offset = file_size - 769L;
+    fseek(f, palette_offset, SEEK_SET);
+    fread(buf3, 1, 1, f); /* skip 0x0C marker */
+    for (i = 0; i < 256; i++)
+    {
+        fread(buf3, 1, 3, f);
+        /* PCX palette: 0-255, VGA DAC: 0-63 -> shift right 2 */
+        pig_palette[i][0] = buf3[0] >> 2;
+        pig_palette[i][1] = buf3[1] >> 2;
+        pig_palette[i][2] = buf3[2] >> 2;
+    }
+
+    /* Decode RLE pixel data starting at byte 128 */
+    pixel_offset = 128L;
+    fseek(f, pixel_offset, SEEK_SET);
+    decoded = 0L;
+    while (decoded < 64000L)
+    {
+        byte = (unsigned char)fgetc(f);
+        if ((byte & 0xC0) == 0xC0)
+        {
+            count = (int)(byte & 0x3F);
+            color = (unsigned char)fgetc(f);
+            while (count-- > 0 && decoded < 64000L)
+                pig_pixels[decoded++] = color;
+        }
+        else
+        {
+            pig_pixels[decoded++] = byte;
+        }
+    }
+
+    fclose(f);
+    pig_loaded = 1;
+}
+
+void far draw_pause_overlay(void)
 {
     char line1[] = "PAUSED";
     char line2[] = "P OR PAUSE";
     int x1 = (SCREEN_WIDTH - ((sizeof(line1) - 1) * 8)) / 2;
     int x2 = (SCREEN_WIDTH - ((sizeof(line2) - 1) * 8)) / 2;
-    int y = 90;
+    int y = 8;
+
+    load_pig_pcx();
+
+    if (pig_loaded && pig_pixels)
+    {
+        set_pig_palette();
+        _fmemcpy(vga_real, pig_pixels, 64000L);
+    }
+    else
+    {
+        draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+    }
 
     draw_bordered_text(x1, y, line1, 15);
     draw_bordered_text(x2, y + 12, line2, 15);

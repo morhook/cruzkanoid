@@ -43,7 +43,9 @@ void far draw_char(int x, int y, char c, unsigned char color);
 
 void far draw_text(int x, int y, char *text);
 
-void far draw_pause_overlay();
+void far save_vga_palette(void);
+void far restore_vga_palette(void);
+void far draw_pause_overlay(void);
 
 void far draw_ui(int score, int lives, int current_level);
 
