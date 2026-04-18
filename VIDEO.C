@@ -1,30 +1,64 @@
 #include <dos.h>
 #include <alloc.h>
+#include <string.h>
+#include <mem.h>
 
 #include "cruzkan.h"
 #include "video.h" 
 
 extern int current_level;
 
+static unsigned char far *vga_real = (unsigned char far *)0xA0000000L;
+static unsigned char far *vga_back = 0;
 unsigned char far *VGA = (unsigned char far *)0xA0000000L;
+
 static unsigned char far *background_buffer = 0;
+
+void far init_video_buffers(void)
+{
+    if (!vga_back)
+        vga_back = (unsigned char far *)farmalloc(64000L);
+    if (!background_buffer)
+        background_buffer = (unsigned char far *)farmalloc(64000L);
+}
+
+void far close_video_buffers(void)
+{
+    if (vga_back)
+    {
+        farfree(vga_back);
+        vga_back = 0;
+    }
+    if (background_buffer)
+    {
+        farfree(background_buffer);
+        background_buffer = 0;
+    }
+    VGA = vga_real;
+}
+
+void far use_backbuffer(int use)
+{
+    if (use && vga_back)
+        VGA = vga_back;
+    else
+        VGA = vga_real;
+}
+
+void far flip_video(void)
+{
+    if (vga_back)
+    {
+        wait_vblank();
+        _fmemcpy(vga_real, vga_back, 64000U);
+    }
+}
 
 static void capture_background(void)
 {
-    int x, y;
-    unsigned long row;
-
     if (!background_buffer)
         return;
-
-    for (y = 0; y < SCREEN_HEIGHT; y++)
-    {
-        row = (unsigned long)y * SCREEN_WIDTH;
-        for (x = 0; x < SCREEN_WIDTH; x++)
-        {
-            background_buffer[row + x] = VGA[row + x];
-        }
-    }
+    _fmemcpy(background_buffer, vga_real, 64000U);
 }
 
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
@@ -84,13 +118,12 @@ void far put_pixel(int x, int y, unsigned char color)
 
 void far draw_rect(int x, int y, int width, int height, unsigned char color)
 {
-    int i, j;
+    int i;
     for (i = 0; i < height; i++)
     {
-        for (j = 0; j < width; j++)
-        {
-            put_pixel(x + j, y + i, color);
-        }
+        int py = y + i;
+        if (py < 0 || py >= SCREEN_HEIGHT) continue;
+        _fmemset(VGA + (unsigned long)py * SCREEN_WIDTH + x, color, width);
     }
 }
 
@@ -101,14 +134,7 @@ void far draw_filled_rect(int x, int y, int width, int height, unsigned char col
 
 void far clear_screen(unsigned char color)
 {
-    int i, j;
-    for (i = 0; i < SCREEN_WIDTH; i++)
-    {
-        for (j = 0; j < SCREEN_HEIGHT; j++)
-        {
-            put_pixel(i, j, color);
-        }
-    }
+    _fmemset(VGA, color, 64000U);
 }
 void far draw_paddle(Paddle paddle)
 {

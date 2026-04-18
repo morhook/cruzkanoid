@@ -3,6 +3,14 @@
 
 #include "cruzkan.h"
 
+void far init_video_buffers(void);
+
+void far close_video_buffers(void);
+
+void far use_backbuffer(int use);
+
+void far flip_video(void);
+
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b);
 
 void far set_mode(unsigned char mode);

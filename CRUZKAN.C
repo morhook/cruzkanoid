@@ -980,6 +980,7 @@ void get_inputs()
         { // ESC
             mouse_shutdown();
             audio_shutdown();
+            close_video_buffers();
             set_mode(0x03);
             exit(0);
         }
@@ -1475,6 +1476,7 @@ static void credits_scene(int final_score, int did_win)
     /* Palette for rainbow text cycling */
     unsigned char text_color;
     int frame;
+    int k;
 
     /* Fill in the score line */
     sprintf(score_str, "%d", final_score);
@@ -1502,6 +1504,8 @@ static void credits_scene(int final_score, int did_win)
         audio_music_set_track(16);
     audio_music_restart();
 
+    init_video_buffers();
+    use_backbuffer(1);
     clear_screen(0);
     frame = 0;
 
@@ -1515,11 +1519,7 @@ static void credits_scene(int final_score, int did_win)
             break;
         }
 
-        wait_vblank();
-
-        /* Erase hearts by drawing black circles in old position */
-        for (i = 0; i < 6; i++)
-            draw_filled_rect(hx[i] - 6, hy[i] - 6, 14, 14, 0);
+        clear_screen(0);
 
         /* Move hearts and bounce off edges */
         for (i = 0; i < 6; i++)
@@ -1533,9 +1533,6 @@ static void credits_scene(int final_score, int did_win)
         /* Scroll lines up by 1 pixel */
         for (i = 0; i < line_count; i++)
             line_y[i]--;
-
-        /* Black out the whole screen text area each frame to avoid smearing */
-        draw_filled_rect(0, 0, 320, 200, 0);
 
         /* Draw floating icons: hearts on win, dead skulls on game over */
         for (i = 0; i < 6; i++)
@@ -1600,6 +1597,7 @@ static void credits_scene(int final_score, int did_win)
             draw_text_transparent(txt_x, y, txt, text_color);
         }
 
+        flip_video();
         audio_update();
 
         /* Done when last line has scrolled off the top */
@@ -1608,11 +1606,75 @@ static void credits_scene(int final_score, int did_win)
             scroll_done = 1;
 
         frame++;
+        delay(10);
     }
 
-    /* Drain keyboard */
-    while (kbhit()) getch();
+    /* Wait a bit after scrolling finishes with some animation */
+    for (i = 0; i < 300; i++)
+    {
+        if (kbhit()) { getch(); break; }
+        
+        clear_screen(0);
+        /* Keep icons moving during the pause */
+        for (j = 0; j < 6; j++)
+        {
+            unsigned char hcol;
+            hx[j] += hdx[j];
+            hy[j] += hdy[j];
+            if (hx[j] < 6  || hx[j] > 313) { hdx[j] = -hdx[j]; hx[j] += hdx[j]; }
+            if (hy[j] < 6  || hy[j] > 193) { hdy[j] = -hdy[j]; hy[j] += hdy[j]; }
+            
+            if (did_win)
+            {
+                switch (j % 6) {
+                    case 0: hcol = 4;  break;
+                    case 1: hcol = 13; break;
+                    case 2: hcol = 14; break;
+                    case 3: hcol = 11; break;
+                    case 4: hcol = 10; break;
+                    default: hcol = 15; break;
+                }
+                draw_heart(hx[j], hy[j], 5, hcol);
+            }
+            else
+            {
+                switch (j % 6) {
+                    case 0: hcol = 7; break;
+                    case 1: hcol = 8; break;
+                    case 2: hcol = 6; break;
+                    case 3: hcol = 15; break;
+                    case 4: hcol = 5; break;
+                    default: hcol = 3; break;
+                }
+                draw_dead_icon(hx[j], hy[j], hcol);
+            }
+        }
+        /* Keep static lines visible (they are already scrolled up) */
+        for (j = 0; j < line_count; j++)
+        {
+            int y = line_y[j];
+            if (y < -8 || y > 200) continue;
+            txt = credits_lines[j];
+            if (txt[0] == '\0') continue;
+            txt_len = 0; k = 0; while (txt[k] != '\0') { txt_len++; k++; }
+            txt_x = (320 - txt_len * 8) / 2;
+            if (txt_x < 0) txt_x = 0;
+            switch (j % 5) {
+                case 0: text_color = 15; break;
+                case 1: text_color = 14; break;
+                case 2: text_color = 11; break;
+                case 3: text_color = 13; break;
+                default: text_color = 10; break;
+            }
+            if (j == 0) text_color = 15;
+            draw_text_transparent(txt_x, y, txt, text_color);
+        }
+        flip_video();
+        audio_update();
+        delay(10);
+    }
 
+    use_backbuffer(0);
     audio_music_stop();
     clear_screen(0);
 }
@@ -1891,6 +1953,7 @@ void game_loop()
 int main()
 {
     set_mode(0x13); /* 320x200 256 color mode */
+    init_video_buffers();
     init_brick_palette();
     init_paddle_palette();
     init_pink_palette();
