@@ -14,11 +14,11 @@ For running on your browser thanks to the magic of `js-dos` (dosbox on the web) 
 
 ## Features
 - 320x200 VGA graphics (Mode 13h)
-- 5 rows x 10 columns of colorful bricks
+- 8 rows x 10 columns of colorful bricks
 - Paddle controls with arrow keys
 - Ball physics with paddle spin
 - Score tracking
-- 3 lives
+- Single life with ball loss reset
 - Sound effects (PC speaker, optional Sound Blaster)
 - Win/lose conditions
 
@@ -54,7 +54,7 @@ or else you'll hear the PC Speaker version (protect your ears!)
 ## Game Rules
 - Destroy all bricks to win
 - Don't let the ball fall below the paddle
-- Each brick is worth 10 points
+- Each brick is worth 12 points
 - Ball direction changes based on where it hits the paddle
 
 ## Technical Details

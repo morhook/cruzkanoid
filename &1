@@ -1,0 +1,86 @@
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+cruzkan.c:
+Warning cruzkan.c 968: Constant out of range in comparison in function get_inputs
+Warning cruzkan.c 1427: 'intro_voice_volume' is assigned a value that is never used in function intro_scene
+Warning cruzkan.c 1427: 'intro_master_volume' is assigned a value that is never used in function intro_scene
+audio.c:
+Warning audio.c 178: Constant out of range in comparison in function sb_dsp_write
+Warning audio.c 182: Code has no effect in function sb_dsp_write
+Warning audio.c 196: Constant out of range in comparison in function sb_dsp_read
+Warning audio.c 208: Code has no effect in function sb_reset_and_detect
+Warning audio.c 210: Code has no effect in function sb_reset_and_detect
+Warning audio.c 213: Constant out of range in comparison in function sb_reset_and_detect
+Warning audio.c 246: Code has no effect in function sb_isr
+Warning audio.c 247: Code has no effect in function sb_isr
+Warning audio.c 253: Code has no effect in function sb_pic_unmask_irq
+Warning audio.c 257: Code has no effect in function sb_pic_unmask_irq
+Warning audio.c 258: Code has no effect in function sb_pic_unmask_irq
+Warning audio.c 264: Code has no effect in function sb_pic_restore_masks
+Warning audio.c 265: Code has no effect in function sb_pic_restore_masks
+Warning audio.c 283: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 286: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 289: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 290: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 294: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 297: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 300: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 301: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 304: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 307: Code has no effect in function sb_dma_setup_8bit
+Warning audio.c 319: Code has no effect in function sb_stop_internal
+Warning audio.c 584: Constant out of range in comparison in function sb_init_internal
+music.c:
+Warning music.c 543: Code has no effect in function opl_write_port
+Warning music.c 545: Code has no effect in function opl_write_port
+video.c:
+Warning video.c 74: Code has no effect in function set_palette_color
+Warning video.c 75: Code has no effect in function set_palette_color
+Warning video.c 76: Code has no effect in function set_palette_color
+Warning video.c 77: Code has no effect in function set_palette_color
+Warning video.c 706: Parameter 'ball' is never used in function erase_ball
+Warning video.c 791: Code has no effect in function save_vga_palette
+Warning video.c 804: Code has no effect in function restore_vga_palette
+Warning video.c 807: Code has no effect in function restore_vga_palette
+Warning video.c 808: Code has no effect in function restore_vga_palette
+Warning video.c 809: Code has no effect in function restore_vga_palette
+Warning video.c 816: Code has no effect in function set_pig_palette
+Warning video.c 819: Code has no effect in function set_pig_palette
+Warning video.c 820: Code has no effect in function set_pig_palette
+Warning video.c 821: Code has no effect in function set_pig_palette
+Warning video.c 1089: 'size' is assigned a value that is never used in function erase_ball_with_background
+Warning video.c 1089: Parameter 'ball' is never used in function erase_ball_with_background
+mouse.c:
+dmaw.c:
+Warning dmaw.c 228: Code has no effect in function start_wav_file
+Warning dmaw.c 236: Code has no effect in function start_wav_file
+Warning dmaw.c 315: Code has no effect in function stop_wav_file
+Warning dmaw.c 544: Code has no effect in function DMAOutputISR
+Warning dmaw.c 555: Code has no effect in function DMAOutputISR
+Warning dmaw.c 670: Code has no effect in function InitDMADSP
+Warning dmaw.c 671: Code has no effect in function InitDMADSP
+Warning dmaw.c 673: Code has no effect in function InitDMADSP
+Warning dmaw.c 674: Code has no effect in function InitDMADSP
+Warning dmaw.c 675: Code has no effect in function InitDMADSP
+Warning dmaw.c 687: Code has no effect in function InitDMADSP
+Warning dmaw.c 688: Code has no effect in function InitDMADSP
+Warning dmaw.c 690: Code has no effect in function InitDMADSP
+Warning dmaw.c 691: Code has no effect in function InitDMADSP
+Warning dmaw.c 692: Code has no effect in function InitDMADSP
+Warning dmaw.c 696: Code has no effect in function InitDMADSP
+Warning dmaw.c 697: Code has no effect in function InitDMADSP
+Warning dmaw.c 698: Code has no effect in function InitDMADSP
+Warning dmaw.c 703: Code has no effect in function InitDMADSP
+Warning dmaw.c 705: Code has no effect in function InitDMADSP
+Warning dmaw.c 972: Code has no effect in function DSPOut
+Warning dmaw.c 988: Code has no effect in function ResetDSP
+Warning dmaw.c 990: Code has no effect in function ResetDSP
+Warning dmaw.c 997: Code has no effect in function ResetDSP
+Warning dmaw.c 1019: Code has no effect in function SetMixer
+Warning dmaw.c 1020: Code has no effect in function SetMixer
+Warning dmaw.c 1022: Code has no effect in function SetMixer
+Warning dmaw.c 1023: Code has no effect in function SetMixer
+Warning dmaw.c 1025: Code has no effect in function SetMixer
+Warning dmaw.c 1026: Code has no effect in function SetMixer
+Error 1038: Could not find file '2.cpp'
+
+	Available memory 3942648

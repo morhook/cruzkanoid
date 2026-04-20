@@ -34,6 +34,8 @@ static ToneSource tone_source = TONE_NONE;
 
 static void audio_start_tone_internal(int freq, int ms, ToneSource source);
 static void audio_start_tone_internal_chord(int freq, int freq2, int ms, ToneSource source);
+
+/* Forward declaration: full definition below in the Sound Blaster backend section. */
 static int sb_present;
 
 typedef struct
@@ -954,16 +956,6 @@ void far audio_event_life_lost_blocking(void)
     sound(450);
     delay(170);
     nosound();
-}
-
-void far audio_event_life_up_blocking(void)
-{
-    if (!audio_enabled)
-        return;
-
-    audio_stop_internal();
-    life_up_stop_sequence();
-    life_up_start_sequence();
 }
 
 void far audio_event_level_clear_blocking(void)

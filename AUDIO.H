@@ -19,7 +19,6 @@ void far audio_event_wall(void);
 void far audio_event_brick(int row);
 void far audio_event_multiball(void);
 void far audio_event_life_lost_blocking(void);
-void far audio_event_life_up_blocking(void);
 void far audio_event_level_clear_blocking(void);
 
 void delay_with_audio(int ms);

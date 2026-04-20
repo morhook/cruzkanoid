@@ -13,6 +13,7 @@ Prefer existing DOS/Turbo C conventions over modern C defaults.
   - `AUDIO.C` / `AUDIO.H` - speaker/SB/OPL audio
   - `MOUSE.C` / `MOUSE.H` - mouse input via INT 33h
   - `DMAW.C` / `DMAW.H` - WAV DMA playback support
+  - `MUSIC.C` / `MUSIC.H` - music sequencing and playback
 
 ## Build Commands
 
@@ -38,7 +39,7 @@ Useful when compiler output is long (`| more`).
 
 ### Direct compile command (inside DOS)
 ```bat
-tcc -ml -Ic:\tc\include -Lc:\tc\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C DMAW.C
+tcc -ml -Ic:\tc\include -Lc:\tc\lib CRUZKAN.C AUDIO.C VIDEO.C MOUSE.C DMAW.C MUSIC.C
 ```
 
 ### Run command
