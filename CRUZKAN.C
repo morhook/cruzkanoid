@@ -34,6 +34,9 @@
 #define PILL_SCORE_MULTIBALL 40
 #define PILL_SCORE_LASER 40
 
+#define CREDITS_MODE_WIN  0
+#define CREDITS_MODE_QUIT 1
+
 static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
 {
     /* Each row uses 10 bits (bit j => column j). 8 rows per level. */
@@ -104,6 +107,7 @@ static int life_pill_spawn_type = PILL_TYPE_NONE;
 static int life_pill_spawn_x = 0;
 static int life_pill_spawn_y = 0;
 static int laser_fire_cooldown = 0;
+static int exit_requested = 0;
 static int brick_field_x1 = 0;
 static int brick_field_y1 = 0;
 static int brick_field_x2 = 0;
@@ -979,12 +983,9 @@ void get_inputs()
             }
         }
         if (key == 27 || key == 'q' || key == 'Q')
-        { // ESC
-            mouse_shutdown();
-            audio_shutdown();
-            close_video_buffers();
-            set_mode(0x03);
-            exit(0);
+        { // ESC / Q: request exit, shutdown happens after credits in main()
+            exit_requested = 1;
+            return;
         }
     }
 
@@ -1425,7 +1426,7 @@ void intro_scene()
     clear_screen(0);
 }
 
-static void credits_scene(int final_score, int did_win)
+static void credits_scene(int final_score, int mode)
 {
     /* Credits lines - all chars are in font */
     static char *credits_lines[] = {
@@ -1450,10 +1451,6 @@ static void credits_scene(int final_score, int did_win)
         "subscription!!!",
         "",
         "twitch.tv/morhook",
-        "",
-        "",
-        "Press any key",
-        "to play again"
     };
     static char score_str[24];
     /* Heart animation state */
@@ -1470,13 +1467,21 @@ static void credits_scene(int final_score, int did_win)
     unsigned char text_color;
     int frame;
     int k;
+    int use_hearts;
+    int allow_skip;
 
     /* Fill in the score line */
     sprintf(score_str, "%d", final_score);
-    credits_lines[0] = did_win ? "YOU WIN!!!" : "GAME OVER!";
+    if (mode == CREDITS_MODE_WIN)
+        credits_lines[0] = "YOU WIN!!!";
+    else
+        credits_lines[0] = "THANKS FOR PLAYING!";
     credits_lines[3] = score_str;
 
-    line_count = 25;
+    use_hearts = (mode == CREDITS_MODE_WIN);
+    allow_skip = (mode == CREDITS_MODE_WIN);
+
+    line_count = 22;
 
     /* Initial Y positions: stack lines below screen, 12px apart */
     for (i = 0; i < line_count; i++)
@@ -1491,7 +1496,7 @@ static void credits_scene(int final_score, int did_win)
     hx[5] = 80;  hy[5] = 180; hdx[5] = -1; hdy[5] = -1;
 
     /* Start credits music (victory or dead march). */
-    if (did_win)
+    if (mode == CREDITS_MODE_WIN)
         audio_music_set_track(15);
     else
         audio_music_set_track(16);
@@ -1505,8 +1510,8 @@ static void credits_scene(int final_score, int did_win)
     scroll_done = 0;
     while (!scroll_done)
     {
-        /* Check for keypress to exit */
-        if (kbhit())
+        /* Check for keypress to exit (WIN/DEAD only; QUIT credits are unskippable) */
+        if (allow_skip && kbhit())
         {
             getch();
             break;
@@ -1531,7 +1536,7 @@ static void credits_scene(int final_score, int did_win)
         for (i = 0; i < 6; i++)
         {
             unsigned char hcol;
-            if (did_win)
+            if (use_hearts)
             {
                 /* Cycle colors: red, pink, yellow, cyan, green, white */
                 switch (i % 6) {
@@ -1605,7 +1610,7 @@ static void credits_scene(int final_score, int did_win)
     /* Wait a bit after scrolling finishes with some animation */
     for (i = 0; i < 300; i++)
     {
-        if (kbhit()) { getch(); break; }
+        if (allow_skip && kbhit()) { getch(); break; }
         
         clear_screen(0);
         /* Keep icons moving during the pause */
@@ -1617,7 +1622,7 @@ static void credits_scene(int final_score, int did_win)
             if (hx[j] < 6  || hx[j] > 313) { hdx[j] = -hdx[j]; hx[j] += hdx[j]; }
             if (hy[j] < 6  || hy[j] > 193) { hdy[j] = -hdy[j]; hy[j] += hdy[j]; }
             
-            if (did_win)
+            if (use_hearts)
             {
                 switch (j % 6) {
                     case 0: hcol = 4;  break;
@@ -1666,6 +1671,9 @@ static void credits_scene(int final_score, int did_win)
         audio_update();
         delay(10);
     }
+
+    if (!allow_skip)
+        drain_keyboard_buffer();
 
     use_backbuffer(0);
     audio_music_stop();
@@ -1760,6 +1768,8 @@ void game_loop()
 
             /* Update game state */
             get_inputs();
+            if (exit_requested)
+                return;
             if (!paused)
             {
                 spawned_this_frame = 0;
@@ -1930,7 +1940,7 @@ void game_loop()
 
     audio_music_stop();
 
-    credits_scene(score, 1);
+    credits_scene(score, CREDITS_MODE_WIN);
 }
 
 int main()
@@ -1957,7 +1967,17 @@ int main()
     {
         init_game();
         game_loop();
+        if (exit_requested)
+            break;
     }
+
+    if (exit_requested)
+        credits_scene(score, CREDITS_MODE_QUIT);
+
+    mouse_shutdown();
+    audio_shutdown();
+    close_video_buffers();
+    set_mode(0x03);
 
     return 0;
 }
