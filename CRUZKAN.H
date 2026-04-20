@@ -18,7 +18,7 @@
 #define PILL_COLOR_BORDER (PILL_PALETTE_START + 2)
 #define PILL_COLOR_GLYPH (PILL_PALETTE_START + 3)
 #define PILL_TYPE_NONE 0
-#define PILL_TYPE_LIFE 1
+#define PILL_TYPE_NEXTLEVEL 1
 #define PILL_TYPE_GROW 2
 #define PILL_TYPE_SHRINK 3
 #define PILL_TYPE_MULTIBALL 4
@@ -68,7 +68,6 @@ typedef struct
     int active;
     int color;
     int hp;
-    int gives_life;
 } Brick;
 
 typedef struct

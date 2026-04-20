@@ -720,7 +720,7 @@ void far erase_laser_shot_with_background(int x, int y)
     draw_background_area(x - 1, y - 4, x + 1, y + 1);
 }
 
-void far draw_ui(int score, int lives, int current_level)
+void far draw_ui(int score, int current_level)
 {
     char buffer[50];
 
@@ -738,9 +738,7 @@ void far draw_ui(int score, int lives, int current_level)
     sprintf(buffer, "Level: %d", current_level);
     draw_text(120, 5, buffer);
 
-    erase_rect_with_background(200, 5, 72, 7);
-    sprintf(buffer, "Lives: %d", lives);
-    draw_text(200, 5, buffer);
+
 }
 void far draw_char_transparent(int x, int y, char c, unsigned char color)
 {

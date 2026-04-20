@@ -28,7 +28,7 @@
 #define LASER_FIRE_COOLDOWN_FRAMES 6
 #define MAX_BRICKS_DESTROYED_PER_FRAME (MAX_BALLS + MAX_LASER_SHOTS)
 #define BRICK_SCORE 12
-#define PILL_SCORE_LIFE 50
+#define PILL_SCORE_NEXTLEVEL 50
 #define PILL_SCORE_GROW 25
 #define PILL_SCORE_SHRINK 25
 #define PILL_SCORE_MULTIBALL 40
@@ -94,7 +94,6 @@ Paddle paddle;
 Pill life_pill;
 LaserShot laser_shots[MAX_LASER_SHOTS];
 int score = 0;
-int lives = 3;
 int current_level = 1;
 int ball_stuck = 1;
 int launch_requested = 0;
@@ -121,8 +120,8 @@ static int rng_seeded = 0;
 
 static int pill_score_value(int pill_type)
 {
-    if (pill_type == PILL_TYPE_LIFE)
-        return PILL_SCORE_LIFE;
+    if (pill_type == PILL_TYPE_NEXTLEVEL)
+        return PILL_SCORE_NEXTLEVEL;
     if (pill_type == PILL_TYPE_GROW)
         return PILL_SCORE_GROW;
     if (pill_type == PILL_TYPE_SHRINK)
@@ -387,16 +386,11 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
                         record_destroyed_brick(destroyed_xs, destroyed_ys, destroyed_count,
                                               bricks[row][col].x, bricks[row][col].y);
 
-                        if (bricks[row][col].gives_life)
-                        {
-                            bricks[row][col].gives_life = 0;
-                            hit_pill_type = PILL_TYPE_LIFE;
-                        }
-                        else if ((rand() % LIFE_POWERUP_CHANCE) == 0)
+                        if ((rand() % LIFE_POWERUP_CHANCE) == 0)
                         {
                             int roll = rand() % 5;
                             if (roll == 0)
-                                hit_pill_type = PILL_TYPE_LIFE;
+                                hit_pill_type = PILL_TYPE_NEXTLEVEL;
                             else if (roll == 1)
                                 hit_pill_type = PILL_TYPE_GROW;
                             else if (roll == 2)
@@ -490,6 +484,8 @@ void spawn_life_pill(int brick_x, int brick_y, int pill_type)
     life_pill.type = pill_type;
 }
 
+void init_level(int level);
+
 void update_life_pill()
 {
     int half_w = PILL_WIDTH / 2;
@@ -518,10 +514,18 @@ void update_life_pill()
         score += pill_score_value(life_pill.type);
         prev_paddle_x = paddle.x;
         prev_paddle_width = paddle.width;
-        if (life_pill.type == PILL_TYPE_LIFE)
+        if (life_pill.type == PILL_TYPE_NEXTLEVEL)
         {
-            lives++;
-            audio_event_life_up_blocking();
+            if (current_level < MAX_LEVELS)
+            {
+                clear_screen(0);
+                draw_background();
+                draw_text(105, 90, "LEVEL CLEAR!");
+                audio_event_level_clear_blocking();
+                delay(1500);
+                init_level(current_level + 1);
+                force_redraw = 1;
+            }
         }
         else if (life_pill.type == PILL_TYPE_GROW)
         {
@@ -781,7 +785,6 @@ void init_bricks(int level)
             bricks[i][j].active = (row_mask & (1U << j)) ? 1 : 0;
             bricks[i][j].color = BRICK_PALETTE_START + i * BRICK_PALETTE_STRIDE;
             bricks[i][j].hp = 1;
-            bricks[i][j].gives_life = 0;
         }
     }
 }
@@ -909,7 +912,6 @@ void init_game()
     drain_keyboard_buffer();
 
     score = 0;
-    lives = 3;
     audio_music_restart();
     reset_life_pill();
     init_level(1);
@@ -1152,30 +1154,21 @@ int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int 
                         score += BRICK_SCORE;
                         if (hit_destroyed)
                             *hit_destroyed = 1;
-                        if (bricks[i][j].gives_life)
+                        if ((rand() % LIFE_POWERUP_CHANCE) == 0)
                         {
-                            bricks[i][j].gives_life = 0;
                             if (hit_pill_type)
-                                *hit_pill_type = PILL_TYPE_LIFE;
-                        }
-                        else
-                        {
-                            if ((rand() % LIFE_POWERUP_CHANCE) == 0)
                             {
-                                if (hit_pill_type)
-                                {
-                                    int roll = rand() % 5;
-                                    if (roll == 0)
-                                        *hit_pill_type = PILL_TYPE_LIFE;
-                                    else if (roll == 1)
-                                        *hit_pill_type = PILL_TYPE_GROW;
-                                    else if (roll == 2)
-                                        *hit_pill_type = PILL_TYPE_SHRINK;
-                                    else if (roll == 3)
-                                        *hit_pill_type = PILL_TYPE_MULTIBALL;
-                                    else
-                                        *hit_pill_type = PILL_TYPE_LASER;
-                                }
+                                int roll = rand() % 5;
+                                if (roll == 0)
+                                    *hit_pill_type = PILL_TYPE_NEXTLEVEL;
+                                else if (roll == 1)
+                                    *hit_pill_type = PILL_TYPE_GROW;
+                                else if (roll == 2)
+                                    *hit_pill_type = PILL_TYPE_SHRINK;
+                                else if (roll == 3)
+                                    *hit_pill_type = PILL_TYPE_MULTIBALL;
+                                else
+                                    *hit_pill_type = PILL_TYPE_LASER;
                             }
                         }
                     }
@@ -1306,17 +1299,13 @@ int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
 
         if (count_active_balls() == 0)
         {
-            lives--;
             audio_music_stop();
             audio_event_life_lost_blocking();
-            if (lives > 0)
-            {
-                ball_stuck = 1;
-                launch_requested = 0;
-                reset_paddle();
-                delay_with_audio(1000);
-                audio_music_restart();
-            }
+            ball_stuck = 1;
+            launch_requested = 0;
+            reset_paddle();
+            delay_with_audio(1000);
+            audio_music_restart();
         }
 
         return 0;
@@ -1706,10 +1695,10 @@ void game_loop()
     int destroyed_brick_count;
     int i;
 
-    while (lives > 0)
+    while (1)
     {
         first_frame = 1;
-        while (lives > 0 && !check_win())
+        while (!check_win())
         {
             if (first_frame || force_redraw)
             {
@@ -1731,7 +1720,7 @@ void game_loop()
                 }
                 if (monster.active)
                     draw_monster(monster);
-                draw_ui(score, lives, current_level);
+                draw_ui(score, current_level);
                 if (paused)
                 {
                     draw_pause_overlay();
@@ -1913,7 +1902,7 @@ void game_loop()
                 draw_monster(monster);
 
             /* Redraw UI (borders, score, lives) */
-            draw_ui(score, lives, current_level);
+            draw_ui(score, current_level);
 
             if (paused)
             {
@@ -1923,9 +1912,6 @@ void game_loop()
             audio_update();
             delay(20);
         }
-
-        if (lives == 0)
-            break;
 
         if (current_level < MAX_LEVELS)
         {
@@ -1944,14 +1930,7 @@ void game_loop()
 
     audio_music_stop();
 
-    if (lives == 0)
-    {
-        credits_scene(score, 0);
-    }
-    else
-    {
-        credits_scene(score, 1);
-    }
+    credits_scene(score, 1);
 }
 
 int main()
