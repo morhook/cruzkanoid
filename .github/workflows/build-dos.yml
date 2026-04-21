@@ -88,7 +88,7 @@ jobs:
         run: test -f CRUZKAN.EXE
 
       - name: Build distributable zip
-        run: zip -j cruzkan.zip CRUZKAN.EXE *.wav
+        run: zip -j cruzkan.zip CRUZKAN.EXE *.wav *.PCX
 
       - name: Upload game artifact
         uses: actions/upload-artifact@v4
@@ -98,6 +98,7 @@ jobs:
             cruzkan.zip
             CRUZKAN.EXE
             *.wav
+            *.PCX
 
   deploy-site:
     needs: build
