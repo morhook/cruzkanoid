@@ -403,6 +403,10 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
                                 hit_pill_type = PILL_TYPE_MULTIBALL;
                             else
                                 hit_pill_type = PILL_TYPE_LASER;
+
+                            /* Prevent NEXTLEVEL pill on level 16 */
+                            if (current_level == 16 && hit_pill_type == PILL_TYPE_NEXTLEVEL)
+                                hit_pill_type = PILL_TYPE_NONE;
                         }
 
                         if (hit_pill_type != PILL_TYPE_NONE)
@@ -570,6 +574,9 @@ void update_monster()
 {
     int target_x;
     int center;
+    static int monster_y_direction = 1;  /* 1 = down, -1 = up */
+    int min_y = 50;
+    int max_y = 150;
 
     if (!monster.active)
         return;
@@ -589,11 +596,24 @@ void update_monster()
             monster.x = center;
     }
 
-    /* Clamp to screen */
+    /* Clamp X to screen */
     if (monster.x < 2)
         monster.x = 2;
     if (monster.x + MONSTER_WIDTH > SCREEN_WIDTH - 2)
         monster.x = SCREEN_WIDTH - 2 - MONSTER_WIDTH;
+
+    /* Oscillate on Y-axis */
+    monster.y += monster_y_direction * MONSTER_SPEED;
+    if (monster.y <= min_y)
+    {
+        monster.y = min_y;
+        monster_y_direction = 1;  /* Start moving down */
+    }
+    else if (monster.y >= max_y)
+    {
+        monster.y = max_y;
+        monster_y_direction = -1;  /* Start moving up */
+    }
 
     (void)target_x;
 }
@@ -1170,6 +1190,10 @@ int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int 
                                     *hit_pill_type = PILL_TYPE_MULTIBALL;
                                 else
                                     *hit_pill_type = PILL_TYPE_LASER;
+
+                                /* Prevent NEXTLEVEL pill on level 16 */
+                                if (current_level == 16 && *hit_pill_type == PILL_TYPE_NEXTLEVEL)
+                                    *hit_pill_type = PILL_TYPE_NONE;
                             }
                         }
                     }
