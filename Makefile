@@ -1,4 +1,4 @@
-make:
+build:
 	./make.sh
 
 run:
