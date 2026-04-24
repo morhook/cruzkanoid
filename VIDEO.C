@@ -724,21 +724,20 @@ void far draw_ui(int score, int current_level)
 {
     char buffer[50];
 
-    // Draw border
     draw_rect(0, 0, SCREEN_WIDTH, 1, 15);
     draw_rect(0, 0, 1, SCREEN_HEIGHT, 15);
     draw_rect(SCREEN_WIDTH - 1, 0, 1, SCREEN_HEIGHT, 15);
 
-    // Score and lives at top (pixel coordinates now)
-    erase_rect_with_background(5, 5, 72, 7);
+    draw_rect(2, 2, 316, 1, 7);
+    draw_rect(2, 17, 316, 1, 7);
+    draw_rect(2, 2, 1, 16, 7);
+    draw_rect(317, 2, 1, 16, 7);
+
     sprintf(buffer, "Score: %d", score);
     draw_text(5, 5, buffer);
 
-    erase_rect_with_background(120, 5, 72, 7);
     sprintf(buffer, "Level: %d", current_level);
-    draw_text(120, 5, buffer);
-
-
+    draw_text(245, 5, buffer);
 }
 void far draw_char_transparent(int x, int y, char c, unsigned char color)
 {

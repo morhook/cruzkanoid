@@ -1218,7 +1218,7 @@ int update_ball(Ball *ball, int ball_index, int *brick_hit_x, int *brick_hit_y)
     int radius = BALL_SIZE / 2;
     int min_x = radius + 1;
     int max_x = (SCREEN_WIDTH - 2) - radius;
-    int min_y = radius + 1;
+    int min_y = 21;
     float prev_ball_x = ball->x;
     float prev_ball_y = ball->y;
     int wall_hit = 0;
