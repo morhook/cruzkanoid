@@ -1860,6 +1860,9 @@ void game_loop()
                 destroyed_brick_count = 0;
             }
 
+            /* Redraw UI before vblank so HUD is stable when beam reaches it */
+            draw_ui(score, current_level);
+
             wait_vblank();
             /* Erase old positions */
             for (i = 0; i < MAX_BALLS; i++)
@@ -1935,8 +1938,7 @@ void game_loop()
             if (monster.active)
                 draw_monster(monster);
 
-            /* Redraw UI (borders, score, lives) */
-            draw_ui(score, current_level);
+            /* Note: draw_ui() moved before wait_vblank() above */
 
             if (paused)
             {

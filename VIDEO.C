@@ -64,9 +64,33 @@ void far flip_video(void)
 
 static void capture_background(void)
 {
+    int y;
+    unsigned long row;
+    unsigned char far *src;
+    unsigned char far *dst;
+    unsigned char fill_color;
+    
     if (!background_buffer)
         return;
-    _fmemcpy(background_buffer, vga_real, 64000U);
+    
+    /* Determine fill color based on current level */
+    fill_color = (current_level % 2 == 1) ? 8 : 44;
+    
+    /* Copy rows 19-199 from vga_real to background_buffer */
+    for (y = 19; y < SCREEN_HEIGHT; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        src = vga_real + row;
+        dst = background_buffer + row;
+        _fmemcpy(dst, src, SCREEN_WIDTH);
+    }
+    
+    /* Fill HUD area (rows 0-18) with solid color */
+    for (y = 0; y < 19; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        _fmemset(background_buffer + row, fill_color, SCREEN_WIDTH);
+    }
 }
 
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
@@ -723,15 +747,25 @@ void far erase_laser_shot_with_background(int x, int y)
 void far draw_ui(int score, int current_level)
 {
     char buffer[50];
+    unsigned char fill_color, highlight_color;
 
+    if (current_level % 2 == 1) {
+        fill_color = 8;
+        highlight_color = 7;
+    } else {
+        fill_color = 44;
+        highlight_color = 14;
+    }
+
+    draw_filled_rect(0, 0, SCREEN_WIDTH, 19, fill_color);
     draw_rect(0, 0, SCREEN_WIDTH, 1, 15);
     draw_rect(0, 0, 1, SCREEN_HEIGHT, 15);
     draw_rect(SCREEN_WIDTH - 1, 0, 1, SCREEN_HEIGHT, 15);
 
-    draw_rect(2, 2, 316, 1, 7);
-    draw_rect(2, 17, 316, 1, 7);
-    draw_rect(2, 2, 1, 16, 7);
-    draw_rect(317, 2, 1, 16, 7);
+    draw_rect(2, 2, 316, 1, highlight_color);
+    draw_rect(2, 17, 316, 1, highlight_color);
+    draw_rect(2, 2, 1, 16, highlight_color);
+    draw_rect(317, 2, 1, 16, highlight_color);
 
     sprintf(buffer, "Score: %d", score);
     draw_text(5, 5, buffer);
@@ -981,12 +1015,16 @@ void far draw_background()
        base_color = 59 (light pink), variants at 60 and 61. */
     unsigned char base_color = 59;
 
+    /* Fill HUD area (rows 0-18) with solid color based on level */
+    unsigned char hud_fill = (current_level % 2 == 1) ? 8 : 44;
+    draw_filled_rect(0, 0, SCREEN_WIDTH, 19, hud_fill);
+
     /* Level 2 and levels 6-10: plain black background */
     /* Levels 11-15: dark blue tint background */
     /* Levels 1, 3-5: pink heart background (default) */
     if (current_level == 2 || (current_level >= 6 && current_level <= 10))
     {
-        draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+        draw_filled_rect(0, 19, SCREEN_WIDTH, SCREEN_HEIGHT - 19, 0);
 
         if (!background_buffer)
         {
@@ -1000,7 +1038,7 @@ void far draw_background()
     if (current_level >= 11)
     {
         /* Deep navy / dark blue tint */
-        draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+        draw_filled_rect(0, 19, SCREEN_WIDTH, SCREEN_HEIGHT - 19, 1);
 
         if (!background_buffer)
         {
@@ -1011,9 +1049,9 @@ void far draw_background()
         return;
     }
 
-    /* Levels 1-5: pink heart background. */
-    /* Clear to base color so hearts don't stack or leave artifacts. */
-    draw_filled_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, base_color);
+/* Levels 1-5: pink heart background. */
+/* Clear to base color so hearts don't stack or leave artifacts. */
+draw_filled_rect(0, 19, SCREEN_WIDTH, SCREEN_HEIGHT - 19, base_color);
 
     if (!background_buffer)
     {
@@ -1051,7 +1089,11 @@ void far draw_background_area(int x1, int y1, int x2, int y2)
     if (x2 >= SCREEN_WIDTH) x2 = SCREEN_WIDTH - 1;
     if (y2 >= SCREEN_HEIGHT) y2 = SCREEN_HEIGHT - 1;
     if (x1 > x2 || y1 > y2) return;
-    
+
+    /* Skip HUD area (rows 0-18) to prevent flickering */
+    if (y2 < 19) return;
+    if (y1 < 19) y1 = 19;
+
     if (x1 > x2 || y1 > y2) return;
 
     if (!background_buffer)
