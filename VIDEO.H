@@ -49,6 +49,9 @@ void far draw_pause_overlay(void);
 
 void far draw_ui(int score, int current_level);
 
+void far restore_hud_area(void);
+void far draw_ui_text(int score, int current_level);
+
 void far draw_char_transparent(int x, int y, char c, unsigned char color);
 
 void far draw_text_transparent(int x, int y, char *text, unsigned char color);

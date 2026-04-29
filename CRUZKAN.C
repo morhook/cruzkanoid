@@ -1721,6 +1721,10 @@ void game_loop()
     int launch_dx;
     int old_pill_x, old_pill_y;
     int old_pill_active;
+    int old_monster_x, old_monster_y;
+    int old_monster_active;
+    int old_score;
+    int old_current_level;
     int spawned_this_frame;
     int destroyed_brick_x[MAX_BRICKS_DESTROYED_PER_FRAME];
     int destroyed_brick_y[MAX_BRICKS_DESTROYED_PER_FRAME];
@@ -1730,6 +1734,8 @@ void game_loop()
     while (1)
     {
         first_frame = 1;
+        old_score = -1;
+        old_current_level = -1;
         while (!check_win())
         {
             if (first_frame || force_redraw)
@@ -1753,6 +1759,8 @@ void game_loop()
                 if (monster.active)
                     draw_monster(monster);
                 draw_ui(score, current_level);
+                old_score = score;
+                old_current_level = current_level;
                 if (paused)
                 {
                     draw_pause_overlay();
@@ -1860,8 +1868,14 @@ void game_loop()
                 destroyed_brick_count = 0;
             }
 
-            /* Redraw UI before vblank so HUD is stable when beam reaches it */
-            draw_ui(score, current_level);
+            /* Update HUD text only when score or level changes */
+            if (score != old_score || current_level != old_current_level)
+            {
+                restore_hud_area();
+                draw_ui_text(score, current_level);
+                old_score = score;
+                old_current_level = current_level;
+            }
 
             wait_vblank();
             /* Erase old positions */

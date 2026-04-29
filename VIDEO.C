@@ -91,6 +91,12 @@ static void capture_background(void)
         row = (unsigned long)y * SCREEN_WIDTH;
         _fmemset(background_buffer + row, fill_color, SCREEN_WIDTH);
     }
+    /* Clear text area so score/level text is NOT baked into background */
+    for (y = 4; y <= 15; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        _fmemset(background_buffer + row, fill_color, SCREEN_WIDTH);
+    }
 }
 
 void far set_palette_color(unsigned char index, unsigned char r, unsigned char g, unsigned char b)
@@ -746,7 +752,6 @@ void far erase_laser_shot_with_background(int x, int y)
 
 void far draw_ui(int score, int current_level)
 {
-    char buffer[50];
     unsigned char fill_color, highlight_color;
 
     if (current_level % 2 == 1) {
@@ -767,6 +772,12 @@ void far draw_ui(int score, int current_level)
     draw_rect(2, 2, 1, 16, highlight_color);
     draw_rect(317, 2, 1, 16, highlight_color);
 
+    draw_ui_text(score, current_level);
+}
+
+void far draw_ui_text(int score, int current_level)
+{
+    char buffer[50];
     sprintf(buffer, "Score: %d", score);
     draw_text(5, 5, buffer);
 
@@ -1112,6 +1123,25 @@ void far draw_background_area(int x1, int y1, int x2, int y2)
             {
                 VGA[row + x] = background_buffer[row + x];
             }
+        }
+    }
+}
+
+void far restore_hud_area(void)
+{
+    int x, y;
+    unsigned long row;
+
+    if (!background_buffer)
+        return;
+
+    /* Restore HUD area (rows 0-18) from background buffer */
+    for (y = 0; y < 19; y++)
+    {
+        row = (unsigned long)y * SCREEN_WIDTH;
+        for (x = 0; x < SCREEN_WIDTH; x++)
+        {
+            VGA[row + x] = background_buffer[row + x];
         }
     }
 }
