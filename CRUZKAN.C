@@ -559,10 +559,10 @@ void update_life_pill()
         if (paddle.width > SCREEN_WIDTH - 2)
             paddle.width = SCREEN_WIDTH - 2;
 
-        if (paddle.x < 0)
-            paddle.x = 0;
-        if (paddle.x + paddle.width > SCREEN_WIDTH)
-            paddle.x = SCREEN_WIDTH - paddle.width;
+        if (paddle.x < 1)
+            paddle.x = 1;
+        if (paddle.x + paddle.width > SCREEN_WIDTH - 1)
+            paddle.x = SCREEN_WIDTH - 1 - paddle.width;
         paddle_reposition_required = (paddle.x != prev_paddle_x) ||
                                     (paddle.width != prev_paddle_width);
         if (paddle_reposition_required && mouse_available)
@@ -1071,10 +1071,10 @@ void get_inputs()
 
         paddle.x = target_x;
         paddle.x += key_offset;
-        if (paddle.x < 0)
-            paddle.x = 0;
-        if (paddle.x + paddle.width > SCREEN_WIDTH)
-            paddle.x = SCREEN_WIDTH - paddle.width;
+        if (paddle.x < 1)
+            paddle.x = 1;
+        if (paddle.x + paddle.width > SCREEN_WIDTH - 1)
+            paddle.x = SCREEN_WIDTH - 1 - paddle.width;
 
         paddle.vx = paddle.x - old_x;
         key_offset = paddle.x - target_x;
@@ -1104,14 +1104,14 @@ void get_inputs()
         paddle.x += paddle.vx;
     }
 
-    if (paddle.x < 0)
+    if (paddle.x < 1)
     {
-        paddle.x = 0;
+        paddle.x = 1;
         paddle.vx = 0;
     }
-    if (paddle.x + paddle.width > SCREEN_WIDTH)
+    if (paddle.x + paddle.width > SCREEN_WIDTH - 1)
     {
-        paddle.x = SCREEN_WIDTH - paddle.width;
+        paddle.x = SCREEN_WIDTH - 1 - paddle.width;
         paddle.vx = 0;
     }
 }

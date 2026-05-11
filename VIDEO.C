@@ -1154,6 +1154,12 @@ void far erase_ball_with_background(int x, int y, Ball ball)
     int y1 = y - r - 1;
     int x2 = x + r + 1;
     int y2 = y + r + 1;
+
+    /* Clamp erase box away from the border columns so the white
+       border lines at x=0 and x=SCREEN_WIDTH-1 are never overwritten
+       with background_buffer pixels (which do not include the border). */
+    if (x1 < 1) x1 = 1;
+    if (x2 > SCREEN_WIDTH - 2) x2 = SCREEN_WIDTH - 2;
     
     /* Restore background in the ball's previous area */
     draw_background_area(x1, y1, x2, y2);
@@ -1168,7 +1174,11 @@ void far erase_paddle_with_background(int x, Paddle paddle)
 
     if (paddle.laser_enabled)
         y1 = paddle.y - 3;
-    
+
+    /* Clamp erase box away from border columns (same fix as ball erase). */
+    if (x1 < 1) x1 = 1;
+    if (x2 > SCREEN_WIDTH - 2) x2 = SCREEN_WIDTH - 2;
+
     /* Restore background in the paddle's previous area */
     draw_background_area(x1, y1, x2, y2);
 }
