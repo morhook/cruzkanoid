@@ -1898,11 +1898,10 @@ void game_loop()
                 destroyed_brick_count = 0;
             }
 
-            /* Update HUD text only when score or level changes */
+            /* Update HUD when score or level changes */
             if (score != old_score || current_level != old_current_level)
             {
-                restore_hud_area();
-                draw_ui_text(score, current_level);
+                draw_ui(score, current_level);
                 old_score = score;
                 old_current_level = current_level;
             }

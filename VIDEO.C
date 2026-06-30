@@ -587,15 +587,20 @@ void far draw_ball(Ball ball)
 void far draw_laser_shot(LaserShot shot)
 {
     int i;
+    int py;
 
     if (!shot.active)
         return;
 
     for (i = 0; i < 4; i++)
     {
-        put_pixel(shot.x - 1, shot.y - i, 12);
-        put_pixel(shot.x, shot.y - i, 15);
-        put_pixel(shot.x + 1, shot.y - i, 12);
+        py = shot.y - i;
+        if (py >= 19)
+        {
+            put_pixel(shot.x - 1, py, 12);
+            put_pixel(shot.x, py, 15);
+            put_pixel(shot.x + 1, py, 12);
+        }
     }
 }
 
