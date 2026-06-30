@@ -1209,6 +1209,29 @@ void far draw_monster(Monster monster)
     unsigned char pupil_color = 0;  /* black pupils */
     unsigned char tooth_color = 15; /* white teeth */
     int hp = monster.hp;
+    int max_hp = monster.max_hp;
+    int hit_flash = monster.hit_flash;
+    int damage;
+    int wear_stage;
+    int remaining_pct;
+
+    if (max_hp <= 0)
+        max_hp = 1;
+    if (hp < 0)
+        hp = 0;
+    if (hp > max_hp)
+        hp = max_hp;
+
+    damage = max_hp - hp;
+    wear_stage = (damage * 5) / max_hp;     /* 0..5 */
+    remaining_pct = (hp * 100) / max_hp;
+
+    if (hit_flash > 0)
+    {
+        body_color = 14;
+        light_color = 15;
+        dark_color = 4;
+    }
 
     /* Body fill */
     for (i = 1; i < h - 1; i++)
@@ -1222,6 +1245,16 @@ void far draw_monster(Monster monster)
             /* Bottom shadow row */
             else if (i == h - 2)
                 c = dark_color;
+
+            if (!hit_flash && wear_stage > 0)
+            {
+                int mod = 8 - wear_stage;
+                if (mod < 3)
+                    mod = 3;
+                if (((i + j + damage) % mod) == 0)
+                    c = dark_color;
+            }
+
             put_pixel(x + j, y + i, c);
         }
     }
@@ -1276,44 +1309,82 @@ void far draw_monster(Monster monster)
     put_pixel(x + 17, y + 2, dark_color);
     put_pixel(x + 18, y + 2, dark_color);
 
-    /* Mouth — jagged teeth row, width varies with hp */
+    /* Crack marks increase as HP drops. */
+    if (!hit_flash && wear_stage >= 1)
+    {
+        put_pixel(x + 8,  y + 9,  dark_color);
+        put_pixel(x + 9,  y + 10, dark_color);
+        put_pixel(x + 10, y + 11, dark_color);
+    }
+    if (!hit_flash && wear_stage >= 2)
+    {
+        put_pixel(x + 19, y + 8,  dark_color);
+        put_pixel(x + 18, y + 9,  dark_color);
+        put_pixel(x + 17, y + 10, dark_color);
+    }
+    if (!hit_flash && wear_stage >= 3)
+    {
+        put_pixel(x + 13, y + 14, dark_color);
+        put_pixel(x + 14, y + 14, dark_color);
+        put_pixel(x + 15, y + 14, dark_color);
+        put_pixel(x + 14, y + 15, dark_color);
+    }
+    if (!hit_flash && wear_stage >= 4)
+    {
+        put_pixel(x + 6, y + 16, dark_color);
+        put_pixel(x + 7, y + 17, dark_color);
+        put_pixel(x + 8, y + 18, dark_color);
+    }
+
+    /* Mouth — jagged teeth row, now based on health ratio. */
     {
         int mouth_y = y + h - 4;
-        int tooth_gap;
+        int tooth_count;
 
-        /* Draw a row of teeth; fewer teeth as hp decreases */
-        if (hp >= 3)
+        for (j = 4; j <= 19; j++)
+            put_pixel(x + j, mouth_y, dark_color);
+
+        if (remaining_pct > 80)
+            tooth_count = 4;
+        else if (remaining_pct > 60)
+            tooth_count = 3;
+        else if (remaining_pct > 35)
+            tooth_count = 2;
+        else
+            tooth_count = 1;
+
+        if (tooth_count >= 4)
         {
-            /* Full set: 3 teeth */
-            for (j = 4; j <= 19; j++)
-                put_pixel(x + j, mouth_y, dark_color);
-            /* Tooth tips */
             put_pixel(x + 5,  mouth_y - 1, tooth_color);
             put_pixel(x + 6,  mouth_y - 1, tooth_color);
-            put_pixel(x + 11, mouth_y - 1, tooth_color);
-            put_pixel(x + 12, mouth_y - 1, tooth_color);
+            put_pixel(x + 9,  mouth_y - 1, tooth_color);
+            put_pixel(x + 10, mouth_y - 1, tooth_color);
+            put_pixel(x + 13, mouth_y - 1, tooth_color);
+            put_pixel(x + 14, mouth_y - 1, tooth_color);
             put_pixel(x + 17, mouth_y - 1, tooth_color);
             put_pixel(x + 18, mouth_y - 1, tooth_color);
         }
-        else if (hp == 2)
+        else if (tooth_count == 3)
         {
-            /* Damaged: 2 teeth */
-            for (j = 4; j <= 19; j++)
-                put_pixel(x + j, mouth_y, dark_color);
+            put_pixel(x + 6,  mouth_y - 1, tooth_color);
             put_pixel(x + 7,  mouth_y - 1, tooth_color);
+            put_pixel(x + 11, mouth_y - 1, tooth_color);
+            put_pixel(x + 12, mouth_y - 1, tooth_color);
+            put_pixel(x + 16, mouth_y - 1, tooth_color);
+            put_pixel(x + 17, mouth_y - 1, tooth_color);
+        }
+        else if (tooth_count == 2)
+        {
             put_pixel(x + 8,  mouth_y - 1, tooth_color);
+            put_pixel(x + 9,  mouth_y - 1, tooth_color);
             put_pixel(x + 15, mouth_y - 1, tooth_color);
             put_pixel(x + 16, mouth_y - 1, tooth_color);
         }
         else
         {
-            /* Nearly dead: cracked mouth */
-            for (j = 4; j <= 19; j++)
-                put_pixel(x + j, mouth_y, dark_color);
             put_pixel(x + 11, mouth_y - 1, tooth_color);
             put_pixel(x + 12, mouth_y - 1, tooth_color);
         }
-        (void)tooth_gap;
     }
 }
 

@@ -74,6 +74,8 @@ typedef struct
 {
     int x, y;
     int hp;
+    int max_hp;
+    int hit_flash;
     int active;
 } Monster;
 

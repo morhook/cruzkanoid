@@ -504,6 +504,62 @@ static const MusicNote music_track17[] = {
 
     {0, 0, 0}};
 
+/* Track 18 (level 17): Rising tension, minor pulse */
+static const MusicNote music_track18[] = {
+    {NOTE_A3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_E5, 0, 220}, {0, 0, 110},
+    {NOTE_G3, 0, 110}, {NOTE_D4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_B4, 0, 110},
+    {NOTE_D5, 0, 220}, {0, 0, 110},
+    {NOTE_F3, 0, 110}, {NOTE_C4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_C5, 0, 220}, {0, 0, 110},
+    {NOTE_E3, 0, 110}, {NOTE_B3, 0, 110}, {NOTE_E4, 0, 110}, {NOTE_G4, 0, 110},
+    {NOTE_B4, 0, 220}, {0, 0, 110},
+    {NOTE_A4, 0, 70},  {NOTE_B4, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_D5, 0, 70},
+    {NOTE_E5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_C5, 0, 70},  {NOTE_B4, 0, 70},
+    {NOTE_A4, 0, 440}, {0, 0, 220},
+    {0, 0, 0}};
+
+/* Track 19 (level 18): Fast assault riff */
+static const MusicNote music_track19[] = {
+    {NOTE_D4, 0, 70}, {NOTE_F4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_D5, 0, 70},
+    {NOTE_C5, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_F4, 0, 70}, {NOTE_D4, 0, 70},
+    {NOTE_E4, 0, 70}, {NOTE_G4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_E5, 0, 70},
+    {NOTE_D5, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_G4, 0, 70}, {NOTE_E4, 0, 70},
+    {NOTE_F4, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_C5, 0, 70}, {NOTE_F5, 0, 70},
+    {NOTE_E5, 0, 70}, {NOTE_C5, 0, 70}, {NOTE_A4, 0, 70}, {NOTE_F4, 0, 70},
+    {NOTE_G4, 0, 70}, {NOTE_B4, 0, 70}, {NOTE_D5, 0, 70}, {NOTE_G5, 0, 70},
+    {NOTE_A5, 0, 140}, {NOTE_G5, 0, 140}, {NOTE_F5, 0, 140}, {NOTE_E5, 0, 140},
+    {NOTE_D5, 0, 280}, {0, 0, 140},
+    {0, 0, 0}};
+
+/* Track 20 (level 19): Heavy march before final fight */
+static const MusicNote music_track20[] = {
+    {NOTE_C4, 0, 220}, {0, 0, 110}, {NOTE_C4, 0, 220}, {0, 0, 110},
+    {NOTE_G3, 0, 220}, {0, 0, 110}, {NOTE_C4, 0, 220}, {0, 0, 110},
+    {NOTE_D4, 0, 220}, {0, 0, 110}, {NOTE_D4, 0, 220}, {0, 0, 110},
+    {NOTE_A3, 0, 220}, {0, 0, 110}, {NOTE_D4, 0, 220}, {0, 0, 110},
+    {NOTE_E4, 0, 220}, {0, 0, 110}, {NOTE_E4, 0, 220}, {0, 0, 110},
+    {NOTE_B3, 0, 220}, {0, 0, 110}, {NOTE_E4, 0, 220}, {0, 0, 110},
+    {NOTE_F4, 0, 220}, {NOTE_E4, 0, 220}, {NOTE_D4, 0, 220}, {NOTE_C4, 0, 220},
+    {NOTE_B3, 0, 220}, {NOTE_A3, 0, 220}, {NOTE_G3, 0, 440}, {0, 0, 220},
+    {0, 0, 0}};
+
+/* Track 21 (level 20): Final showdown */
+static const MusicNote music_track21[] = {
+    {NOTE_A4, 0, 110}, {NOTE_E5, 0, 110}, {NOTE_A5, 0, 110}, {NOTE_E5, 0, 110},
+    {NOTE_D5, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_G4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_B4, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_D5, 0, 220}, {0, 0, 110},
+    {NOTE_F4, 0, 110}, {NOTE_C5, 0, 110}, {NOTE_F5, 0, 110}, {NOTE_C5, 0, 110},
+    {NOTE_B4, 0, 110}, {NOTE_A4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_F4, 0, 110},
+    {NOTE_E4, 0, 110}, {NOTE_F4, 0, 110}, {NOTE_G4, 0, 110}, {NOTE_A4, 0, 110},
+    {NOTE_B4, 0, 220}, {0, 0, 110},
+    {NOTE_C5, 0, 70},  {NOTE_D5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_F5, 0, 70},
+    {NOTE_G5, 0, 70},  {NOTE_A5, 0, 70},  {NOTE_B5, 0, 70},  {NOTE_A5, 0, 70},
+    {NOTE_G5, 0, 70},  {NOTE_F5, 0, 70},  {NOTE_E5, 0, 70},  {NOTE_D5, 0, 70},
+    {NOTE_C5, 0, 220}, {NOTE_A4, 0, 220}, {NOTE_E4, 0, 440}, {0, 0, 440},
+    {0, 0, 0}};
+
 /* --- OPL2/OPL3 (AdLib) backend for 2-voice music (SB16) --- */
 static int opl_present = 0;
 static unsigned int opl_addr0 = 0x388;
@@ -1069,6 +1125,10 @@ void far music_set_track(int track_index)
         case 14: active_track = music_track15; use_drum_mute = 0; break;
         case 15: active_track = music_track16; use_drum_mute = 0; break;
         case 16: active_track = music_track17; use_drum_mute = 0; break;
+        case 17: active_track = music_track18; break;
+        case 18: active_track = music_track19; break;
+        case 19: active_track = music_track20; break;
+        case 20: active_track = music_track21; break;
         default: active_track = music_track;   break;
     }
 

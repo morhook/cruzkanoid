@@ -20,7 +20,7 @@
 #define PADDLE_ACCEL 3
 #define PADDLE_MAX_SPEED 8
 #define PADDLE_FRICTION 1
-#define MAX_LEVELS 16
+#define MAX_LEVELS 20
 #define LIFE_POWERUP_CHANCE 2
 #define BALL_SPEED_INCREMENT 0.15f
 #define BALL_SPEED_MAX 7.0f
@@ -83,11 +83,23 @@ static unsigned int level_layouts[MAX_LEVELS][BRICK_ROWS] =
     /* 14: Random scatter / dense noise */
     {0x2D6, 0x16B, 0x3AD, 0x1DA, 0x2B5, 0x16A, 0x3D6, 0x2AB},
 
-    /* 15: Final - all bricks */
+    /* 15: Full wall */
     {0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF, 0x3FF},
 
     /* 16: Monster level - sparse top rows, monster is the main threat */
     {0x3FF, 0x000, 0x3FF, 0x000, 0x000, 0x000, 0x000, 0x000},
+
+    /* 17: Monster gauntlet - side guards and center gates */
+    {0x3FF, 0x381, 0x000, 0x3C3, 0x000, 0x181, 0x000, 0x000},
+
+    /* 18: Twin towers */
+    {0x303, 0x303, 0x303, 0x3FF, 0x0C0, 0x0C0, 0x0C0, 0x000},
+
+    /* 19: Fortress grid */
+    {0x3FF, 0x249, 0x249, 0x249, 0x3FF, 0x000, 0x111, 0x000},
+
+    /* 20: Final monster arena */
+    {0x3FF, 0x3C3, 0x381, 0x381, 0x3C3, 0x000, 0x0E7, 0x000},
 };
 
 Brick bricks[BRICK_ROWS][BRICK_COLS];
@@ -121,6 +133,22 @@ static int old_monster_active = 0;
 static int key_vx = 0;
 static int key_offset = 0;
 static int rng_seeded = 0;
+
+static void damage_monster(void)
+{
+    if (!monster.active)
+        return;
+
+    monster.hp--;
+    monster.hit_flash = 5;
+
+    if (monster.hp <= 0)
+    {
+        monster.active = 0;
+        monster.hit_flash = 0;
+        score += 100;
+    }
+}
 
 static int pill_score_value(int pill_type)
 {
@@ -355,12 +383,7 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
             laser_shots[i].y >= monster.y &&
             laser_shots[i].y < monster.y + MONSTER_HEIGHT)
         {
-            monster.hp--;
-            if (monster.hp <= 0)
-            {
-                monster.active = 0;
-                score += 100;
-            }
+            damage_monster();
             laser_shots[i].active = 0;
             audio_event_brick(0);
             continue;
@@ -404,8 +427,8 @@ static void update_laser_shots(int *destroyed_xs, int *destroyed_ys, int *destro
                             else
                                 hit_pill_type = PILL_TYPE_LASER;
 
-                            /* Prevent NEXTLEVEL pill on level 16 */
-                            if (current_level == 16 && hit_pill_type == PILL_TYPE_NEXTLEVEL)
+                            /* Prevent NEXTLEVEL pill on final level */
+                            if (current_level == MAX_LEVELS && hit_pill_type == PILL_TYPE_NEXTLEVEL)
                                 hit_pill_type = PILL_TYPE_NONE;
                         }
 
@@ -581,6 +604,9 @@ void update_monster()
     if (!monster.active)
         return;
 
+    if (monster.hit_flash > 0)
+        monster.hit_flash--;
+
     /* Track paddle center: slide toward paddle center at MONSTER_SPEED */
     center = paddle.x + paddle.width / 2 - MONSTER_WIDTH / 2;
     if (monster.x < center)
@@ -688,12 +714,7 @@ int check_monster_collision(Ball *ball, float prev_ball_x, float prev_ball_y)
     }
 
     /* Damage monster */
-    monster.hp--;
-    if (monster.hp <= 0)
-    {
-        monster.active = 0;
-        score += 100;
-    }
+    damage_monster();
 
     return 1;
 }
@@ -818,8 +839,13 @@ void init_level(int level)
     int track;
     current_level = level;
 
-    /* Each level gets its own music track (tracks 0-14, capped). */
-    track = (level >= 1 && level <= 15) ? (level - 1) : 0;
+    /* Each level gets its own music track where available. */
+    if (level >= 1 && level <= 15)
+        track = level - 1;
+    else if (level >= 17 && level <= 20)
+        track = level;
+    else
+        track = 0;
     audio_music_set_track(track);
     audio_music_restart();
 
@@ -828,11 +854,13 @@ void init_level(int level)
     reset_paddle();
     reset_life_pill();
 
-    /* Init monster for level 16 only */
-    if (level == 16)
+    /* Init monster for levels 16-20. HP scales by level. */
+    if (level >= 16 && level <= MAX_LEVELS)
     {
         monster.active = 1;
-        monster.hp = MONSTER_HP;
+        monster.max_hp = MONSTER_HP + (level - 16);
+        monster.hp = monster.max_hp;
+        monster.hit_flash = 0;
         monster.x = SCREEN_WIDTH / 2 - MONSTER_WIDTH / 2;
         monster.y = 130;
     }
@@ -840,6 +868,8 @@ void init_level(int level)
     {
         monster.active = 0;
         monster.hp = 0;
+        monster.max_hp = 0;
+        monster.hit_flash = 0;
         monster.x = 0;
         monster.y = 0;
     }
@@ -1191,8 +1221,8 @@ int check_brick_collision(Ball *ball, float prev_ball_x, float prev_ball_y, int 
                                 else
                                     *hit_pill_type = PILL_TYPE_LASER;
 
-                                /* Prevent NEXTLEVEL pill on level 16 */
-                                if (current_level == 16 && *hit_pill_type == PILL_TYPE_NEXTLEVEL)
+                                /* Prevent NEXTLEVEL pill on final level */
+                                if (current_level == MAX_LEVELS && *hit_pill_type == PILL_TYPE_NEXTLEVEL)
                                     *hit_pill_type = PILL_TYPE_NONE;
                             }
                         }
@@ -1354,8 +1384,8 @@ int check_win()
             }
         }
     }
-    /* Level 16: also require the monster to be defeated */
-    if (current_level == 16 && monster.active)
+    /* Monster levels: also require the monster to be defeated */
+    if (current_level >= 16 && current_level <= MAX_LEVELS && monster.active)
         return 0;
     return 1;
 }
